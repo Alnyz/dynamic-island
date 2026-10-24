@@ -40,10 +40,6 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 The panel has buttons for battery, volume, Wi-Fi, Bluetooth, do not disturb, keeping the screen awake, screenshot and lock.
 
-### Other
-
-The island hides while Plasma's edit mode is open, so it doesn't cover the edit toolbar.
-
 ## Requirements
 
 - KDE Plasma 6 on Wayland. The island is a layer-shell surface and uses KWin and Plasma services, so it won't work on X11 or other desktops.
