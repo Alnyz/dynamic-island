@@ -1,8 +1,10 @@
 #include "camerawatcher.h"
 
-#include <QDir>
 #include <QFile>
-#include <QFileInfo>
+
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 CameraWatcher::CameraWatcher(QObject *parent)
     : QObject(parent)
@@ -39,24 +41,41 @@ void CameraWatcher::poll()
 
 QStringList CameraWatcher::scan(const QString &procRoot)
 {
+    // Plain readdir/readlink: QDir and QFileInfo over every fd of every process cost ~0.2 s per pass.
     QStringList names;
-    const QStringList pids = QDir(procRoot).entryList({QStringLiteral("[0-9]*")}, QDir::Dirs);
-    for (const QString &pid : pids) {
-        const QString fdDir = procRoot + QLatin1Char('/') + pid + QStringLiteral("/fd");
+    const QByteArray root = QFile::encodeName(procRoot);
+    DIR *proc = opendir(root.constData());
+    if (!proc)
+        return names;
+    while (const dirent *p = readdir(proc)) {
+        if (p->d_name[0] < '0' || p->d_name[0] > '9')
+            continue;
+        const QByteArray pidDir = root + '/' + p->d_name;
+        const QByteArray fdDir = pidDir + "/fd";
         // Other users' processes aren't readable; that's fine, the camera user is ours.
-        const QFileInfoList fds = QDir(fdDir).entryInfoList(QDir::System | QDir::NoDotAndDotDot);
-        for (const QFileInfo &fd : fds) {
-            if (fd.symLinkTarget().startsWith(QLatin1String("/dev/video"))) {
-                QFile comm(procRoot + QLatin1Char('/') + pid + QStringLiteral("/comm"));
-                if (comm.open(QIODevice::ReadOnly)) {
-                    const QString name = QString::fromUtf8(comm.readAll()).trimmed();
-                    if (!names.contains(name))
-                        names.append(name);
-                }
+        DIR *fds = opendir(fdDir.constData());
+        if (!fds)
+            continue;
+        bool camera = false;
+        char target[64];
+        while (const dirent *fd = readdir(fds)) {
+            const ssize_t n = readlinkat(dirfd(fds), fd->d_name, target, sizeof target - 1);
+            if (n >= 10 && qstrncmp(target, "/dev/video", 10) == 0) {
+                camera = true;
                 break;
             }
         }
+        closedir(fds);
+        if (!camera)
+            continue;
+        QFile comm(QFile::decodeName(pidDir + "/comm"));
+        if (comm.open(QIODevice::ReadOnly)) {
+            const QString name = QString::fromUtf8(comm.readAll()).trimmed();
+            if (!names.contains(name))
+                names.append(name);
+        }
     }
+    closedir(proc);
     names.sort();
     return names;
 }
