@@ -8,9 +8,12 @@ Item {
     property bool playing: false
     property real time: 0
 
-    FrameAnimation {
+    // 30 fps instead of the screen's rate: the shaders drift slowly, so it looks the same at half the cost.
+    Timer {
+        interval: 33
+        repeat: true
         running: art.playing && art.visible && art.name !== "cat"
-        onTriggered: art.time += frameTime
+        onTriggered: art.time += interval / 1000
     }
 
     ShaderEffect {

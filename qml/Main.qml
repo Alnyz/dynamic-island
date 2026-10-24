@@ -149,6 +149,7 @@ Window {
         glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, meetings: prefs.show.meetings })
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
+        userIdle: SystemStatus.userIdle
         onSettingsRequested: {
             settingsWindow.show()
             settingsWindow.raise()

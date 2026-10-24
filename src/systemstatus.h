@@ -23,6 +23,8 @@ class SystemStatus : public QObject
     Q_PROPERTY(bool dnd MEMBER m_dnd NOTIFY changed)
     Q_PROPERTY(bool keepAwake MEMBER m_keepAwake NOTIFY changed)
     Q_PROPERTY(bool editMode MEMBER m_editMode NOTIFY changed)
+    // No keyboard or pointer input for a minute; the idle animation pauses.
+    Q_PROPERTY(bool userIdle MEMBER m_userIdle NOTIFY changed)
 
 public:
     explicit SystemStatus(QObject *parent = nullptr);
@@ -75,6 +77,7 @@ private:
     bool m_dnd = false;
     bool m_keepAwake = false;
     bool m_editMode = false;
+    bool m_userIdle = false;
     uint m_dndCookie = 0;
     uint m_awakeCookie = 0;
 };

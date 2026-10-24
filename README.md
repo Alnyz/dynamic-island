@@ -49,7 +49,7 @@ Packages on Arch:
 
 ```sh
 sudo pacman -S --needed cmake ninja qt6-base qt6-declarative qt6-shadertools \
-    layer-shell-qt kirigami kcalendarcore kguiaddons kconfig \
+    layer-shell-qt kirigami kcalendarcore kguiaddons kconfig kidletime \
     plasma-workspace plasma-pa wireplumber networkmanager bluez-utils spectacle
 ```
 

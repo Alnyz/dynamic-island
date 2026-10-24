@@ -48,6 +48,8 @@ Item {
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
     property string idleAnimation: "builtin:aurora"
     property bool animateOnHoverOnly: true
+    // Nobody is using the computer, so nobody is watching the animation.
+    property bool userIdle: false
     property int glanceTick: 0
     readonly property var glance: {
         // Read only so refreshGlance() re-evaluates this binding.
@@ -370,7 +372,7 @@ Item {
             anchors.leftMargin: 10
             anchors.rightMargin: 10
             name: visible ? island.idleAnimation.slice(8) : ""
-            playing: visible && (!island.animateOnHoverOnly || island.hovered)
+            playing: visible && !island.userIdle && (!island.animateOnHoverOnly || island.hovered)
         }
 
         AnimatedImage {
@@ -382,7 +384,7 @@ Item {
             fillMode: Image.PreserveAspectFit
             source: visible ? island.idleAnimation : ""
             // Playing all day keeps the GPU awake, so by default it only plays under the pointer.
-            playing: visible && (!island.animateOnHoverOnly || island.hovered)
+            playing: visible && !island.userIdle && (!island.animateOnHoverOnly || island.hovered)
             asynchronous: true
         }
     }

@@ -14,6 +14,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
+#include <KIdleTime>
 
 namespace
 {
@@ -64,6 +65,18 @@ SystemStatus::SystemStatus(QObject *parent)
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("/org/kde/ScreenBrightness"),
                                           QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("BrightnessChanged"), this,
                                           SLOT(onBrightnessChanged(QString, int, QString, QString)));
+
+    auto *idle = KIdleTime::instance();
+    idle->addIdleTimeout(60 * 1000);
+    connect(idle, &KIdleTime::timeoutReached, this, [this, idle] {
+        m_userIdle = true;
+        Q_EMIT changed();
+        idle->catchNextResumeEvent();
+    });
+    connect(idle, &KIdleTime::resumingFromIdle, this, [this] {
+        m_userIdle = false;
+        Q_EMIT changed();
+    });
 }
 
 void SystemStatus::onBrightnessChanged(const QString &display, int value, const QString &, const QString &)

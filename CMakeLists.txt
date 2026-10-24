@@ -8,6 +8,7 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Quick QuickTest DBus Network Widget
 find_package(KF6CalendarCore REQUIRED)
 find_package(KF6GuiAddons REQUIRED)
 find_package(KF6Config REQUIRED)
+find_package(KF6IdleTime REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DBUS1 REQUIRED IMPORTED_TARGET dbus-1)
 find_package(LayerShellQt REQUIRED)
@@ -21,7 +22,7 @@ qt_add_qml_module(dynamic-island
 )
 target_include_directories(dynamic-island PRIVATE src)
 qt_add_shaders(dynamic-island "shaders" PREFIX "/" FILES shaders/aurora.frag shaders/wave.frag shaders/fireflies.frag)
-target_link_libraries(dynamic-island PRIVATE Qt6::Widgets Qt6::Quick Qt6::DBus Qt6::Network KF6::CalendarCore KF6::GuiAddons KF6::ConfigCore PkgConfig::DBUS1 LayerShellQt::Interface)
+target_link_libraries(dynamic-island PRIVATE Qt6::Widgets Qt6::Quick Qt6::DBus Qt6::Network KF6::CalendarCore KF6::GuiAddons KF6::ConfigCore KF6::IdleTime PkgConfig::DBUS1 LayerShellQt::Interface)
 
 include(GNUInstallDirs)
 install(TARGETS dynamic-island)
@@ -36,7 +37,7 @@ install(FILES ${CMAKE_BINARY_DIR}/dynamic-island.desktop DESTINATION ${CMAKE_INS
 find_package(Qt6 REQUIRED COMPONENTS Test)
 qt_add_executable(tst_systemstatus tests/cpp/tst_systemstatus.cpp src/systemstatus.cpp src/systemstatus.h)
 target_include_directories(tst_systemstatus PRIVATE src)
-target_link_libraries(tst_systemstatus PRIVATE Qt6::Test Qt6::Gui Qt6::DBus Qt6::Qml)
+target_link_libraries(tst_systemstatus PRIVATE Qt6::Test Qt6::Gui Qt6::DBus Qt6::Qml KF6::IdleTime)
 add_test(NAME cpp_systemstatus COMMAND tst_systemstatus)
 
 qt_add_executable(tst_calendar tests/cpp/tst_calendar.cpp src/calendarsource.cpp src/calendarsource.h)
