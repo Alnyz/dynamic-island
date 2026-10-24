@@ -6,6 +6,8 @@ I wanted something like the Dynamic Island on macOS for my Arch setup, inspired 
 
 It runs on my machine (CachyOS, Plasma 6, Wayland). It hasn't been tested anywhere else yet.
 
+Here's a 16-second demo, recorded on my laptop with demo data: [dynamic-island-showcase-sound.mp4](dynamic-island-showcase-sound.mp4)
+
 ## What it does
 
 ### Closed pill
