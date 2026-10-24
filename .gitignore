@@ -1,0 +1,9 @@
+build/
+# Local tool state and planning notes
+.superpowers/
+.impeccable/
+docs/superpowers/
+# Editors
+.vscode/
+.idea/
+*.user

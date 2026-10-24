@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dynamic Island
+Comment=Music, alerts and quick tools in a notch at the top of the screen
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/dynamic-island
+Icon=media-playback-start
+Terminal=false
+X-KDE-autostart-after=panel
+X-KDE-DBUS-Restricted-Interfaces=org.kde.kwin.ColorPicker
