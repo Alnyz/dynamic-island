@@ -15,7 +15,8 @@ QtObject {
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
         show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true, jobs: true },
-        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true }
+        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true },
+        history: { save: true, days: 7, system: true, apps: true, others: true, off: [] }
     })
 
     // look: "notch" (joined to the top edge) or "pill" (floating below it).
@@ -93,6 +94,21 @@ QtObject {
         property bool meetings: prefs.defaults.show.meetings
         property bool power: prefs.defaults.show.power
         property bool jobs: prefs.defaults.show.jobs
+    }
+
+    // Notification history. off holds the keys of apps switched off. known is JSON text of the apps
+    // seen so far, [{ key, name, icon, kind }]; it and lastSeen are data, so reset leaves them alone.
+    property Settings history: Settings {
+        location: prefs.location
+        category: "history"
+        property bool save: prefs.defaults.history.save
+        property int days: prefs.defaults.history.days
+        property bool system: prefs.defaults.history.system
+        property bool apps: prefs.defaults.history.apps
+        property bool others: prefs.defaults.history.others
+        property var off: prefs.defaults.history.off
+        property string known: "[]"
+        property real lastSeen: 0
     }
 
     // The user's own data, so reset leaves it alone. Links are JSON: [{ name, url }].

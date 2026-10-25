@@ -427,6 +427,16 @@ function historyGroups(items) {
     return groups
 }
 
+// The apps seen so far are kept as JSON text in the config, like quick links.
+function parseKnownApps(json) {
+    try {
+        const list = JSON.parse(json || "[]")
+        return Array.isArray(list) ? list.filter(a => a && a.key) : []
+    } catch (e) {
+        return []
+    }
+}
+
 // The apps listed in Settings; Others have no desktop entry, so they get only the kind switch.
 function rememberApp(apps, n) {
     const kind = notifKind(n)

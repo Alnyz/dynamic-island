@@ -418,6 +418,11 @@ TestCase {
         compare(L.ago(new Date(2026, 9, 23, 9, 0).getTime(), now), "23 Oct")
     }
 
+    function test_parse_known_apps() {
+        compare(L.parseKnownApps("not json"), [])
+        compare(L.parseKnownApps('[{"key":"discord","name":"Discord"},{"name":"no key"}]').length, 1)
+    }
+
     function test_remember_app() {
         const apps = L.rememberApp([], notif())
         compare(apps, [{ key: "org.telegram.desktop", name: "Telegram", icon: "telegram", kind: "apps" }])

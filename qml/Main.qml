@@ -34,9 +34,26 @@ Window {
 
     NotesStore { id: notesStore }
 
+    NotificationLog { id: notificationLog }
+
+    NotificationHistory {
+        id: history
+        items: notificationLog.items
+        lastSeen: prefs.history.lastSeen
+        settings: ({ save: prefs.history.save, system: prefs.history.system, apps: prefs.history.apps, others: prefs.history.others,
+                     off: L.toList(prefs.history.off), days: prefs.history.days })
+        apps: L.parseKnownApps(prefs.history.known)
+        onItemsEdited: items => notificationLog.save(items)
+        onAppsEdited: apps => prefs.history.known = JSON.stringify(apps)
+        onLastSeenChanged: prefs.history.lastSeen = lastSeen
+        Component.onCompleted: prune()
+    }
+
     NotificationWatcher {
         id: notificationWatcher
         onNotified: n => {
+            // Saved before the pop-up switch: history keeps notifications even with island pop-ups off.
+            history.add(n)
             if (!prefs.show.notifications)
                 return
             PlasmaSettings.hidePopupsFor(n.desktopEntry)
