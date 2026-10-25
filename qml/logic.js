@@ -312,7 +312,8 @@ function lastSegment(s) {
 
 // An extraction's destination is a folder, so it is named after its archive instead.
 function jobName(job) {
-    return lastSegment(job.descriptionValue2) || lastSegment(job.descriptionValue1) || job.title || "File"
+    const first = job.title === "Extracting Files" ? [job.descriptionValue1, job.descriptionValue2] : [job.descriptionValue2, job.descriptionValue1]
+    return lastSegment(first[0]) || lastSegment(first[1]) || job.title || "File"
 }
 
 function jobVerb(job) {

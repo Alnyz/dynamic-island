@@ -277,6 +277,7 @@ TestCase {
         compare(L.jobName({ descriptionValue1: "https://x.org/a/b.zip?t=1" }), "b.zip")
         compare(L.jobName({ title: "Copying" }), "Copying")
         compare(L.jobName({}), "File")
+        compare(L.jobName({ title: "Extracting Files", descriptionValue1: "/home/alnyz/test-extract-3gb.zip", descriptionValue2: "/home/alnyz" }), "test-extract-3gb.zip")
     }
 
     function test_job_verb() {
