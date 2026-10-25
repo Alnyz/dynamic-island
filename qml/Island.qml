@@ -23,7 +23,7 @@ Item {
     readonly property bool hovered: hover.hovered
     // Not named `state`: Item already has a `state` property.
     readonly property bool timerActive: timer !== null && (timer.running || timer.paused)
-    readonly property var activities: L.activities(player !== null, timerActive)
+    readonly property var activities: L.activities(player !== null, timerActive, false)
     property int current: 0
     readonly property string activity: activities.length > 0 ? activities[current % activities.length] : ""
     property int cycleInterval: 6000

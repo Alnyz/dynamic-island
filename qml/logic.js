@@ -154,12 +154,14 @@ function wheelSteps(accum, delta) {
 }
 
 // Things currently going on, in the order the closed pill cycles through them.
-function activities(hasPlayer, timerActive) {
+function activities(hasPlayer, timerActive, hasJobs) {
     const list = []
     if (hasPlayer)
         list.push("music")
     if (timerActive)
         list.push("timer")
+    if (hasJobs)
+        list.push("jobs")
     return list
 }
 
@@ -293,4 +295,62 @@ function privacyText(mic, camera) {
     if (camera.length)
         parts.push("Camera: " + camera.join(", "))
     return parts.join(" · ")
+}
+
+// Jobs are the progress reports apps send to Plasma's job tracker; each update carries only what changed.
+function jobMerge(job, props, nowMs) {
+    const next = Object.assign({ startMs: nowMs }, job, props)
+    if (next.percent !== undefined)
+        next.percent = Math.max(0, Math.min(100, Number(next.percent) || 0))
+    return next
+}
+
+function lastSegment(s) {
+    const path = String(s || "").split(/[?#]/)[0].replace(/\/+$/, "")
+    return decodeURIComponent(path.split("/").pop() || "")
+}
+
+function jobName(job) {
+    return lastSegment(job.descriptionValue2) || lastSegment(job.descriptionValue1) || job.title || "File"
+}
+
+function jobVerb(job) {
+    const folder = lastSegment(job.destUrl)
+    return job.title === "Copying" && folder ? "Copying to " + folder : job.title || ""
+}
+
+function jobTimeLeft(job) {
+    if (!(job.speed > 0) || !(job.totalBytes > 0) || job.processedBytes === undefined)
+        return ""
+    const secs = Math.ceil((job.totalBytes - job.processedBytes) / job.speed)
+    if (secs < 60)
+        return Math.max(1, secs) + " s"
+    const mins = Math.ceil(secs / 60)
+    return mins < 60 ? mins + " min" : Math.floor(mins / 60) + " h " + (mins % 60) + " min"
+}
+
+// Jobs younger than 2 s are left out: a rename or a small copy would only flicker.
+function jobsSummary(jobs, nowMs) {
+    const shown = Object.values(jobs).filter(j => nowMs - j.startMs >= 2000).sort((a, b) => a.startMs - b.startMs)
+    if (!shown.length)
+        return { shown: [], count: 0, percent: 0 }
+    const bytes = shown.every(j => j.totalBytes > 0)
+    const percent = bytes ? shown.reduce((a, j) => a + (j.processedBytes || 0), 0) / shown.reduce((a, j) => a + j.totalBytes, 0) * 100
+                          : shown.reduce((a, j) => a + (j.percent || 0), 0) / shown.length
+    return { shown: shown, count: shown.length, percent: Math.round(percent) }
+}
+
+var JOB_DONE = { "Downloading": "Downloaded", "Copying": "Copied", "Moving": "Moved", "Extracting Files": "Extracted" }
+var JOB_FAIL = { "Downloading": "Download failed", "Copying": "Copy failed", "Moving": "Move failed", "Extracting Files": "Extraction failed" }
+
+function jobDoneTitle(job) {
+    return JOB_DONE[job.title] || job.title || ""
+}
+
+function jobFailTitle(job) {
+    return JOB_FAIL[job.title] || (job.title || "Job") + " failed"
+}
+
+function formatGB(bytes) {
+    return (bytes / 1e9).toFixed(1)
 }

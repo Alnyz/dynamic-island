@@ -167,6 +167,8 @@ TestCase {
         compare(L.activities(true, false), ["music"])
         compare(L.activities(false, true), ["timer"])
         compare(L.activities(true, true), ["music", "timer"])
+        compare(L.activities(true, true, true), ["music", "timer", "jobs"])
+        compare(L.activities(false, false, true), ["jobs"])
     }
 
     function test_pick_paused_custom_timeout() {
@@ -256,5 +258,69 @@ TestCase {
         compare(L.clipRows(items, "", "image").map(r => r.header || r.id), ["Recent", "3"])
         compare(L.clipRows(items, "HELLO", "all").map(r => r.header || r.id), ["Recent", "1"])
         compare(L.clipRows([], "", "all").length, 0)
+    }
+
+    function test_job_merge() {
+        const a = L.jobMerge({}, { title: "Downloading", percent: 140 }, 1000)
+        compare(a.startMs, 1000)
+        compare(a.percent, 100)
+        const b = L.jobMerge(a, { speed: 5 }, 3000)
+        compare(b.title, "Downloading")
+        compare(b.startMs, 1000)
+        compare(b.speed, 5)
+        compare(a.speed, undefined)
+    }
+
+    function test_job_name() {
+        compare(L.jobName({ descriptionValue2: "/home/alnyz/Downloads/ubuntu-26.04.1-desktop-amd64.iso" }), "ubuntu-26.04.1-desktop-amd64.iso")
+        compare(L.jobName({ descriptionValue1: "https://x.org/a/b.zip?t=1" }), "b.zip")
+        compare(L.jobName({ title: "Copying" }), "Copying")
+        compare(L.jobName({}), "File")
+    }
+
+    function test_job_verb() {
+        compare(L.jobVerb({ title: "Copying", destUrl: "file:///run/media/alnyz/Backup" }), "Copying to Backup")
+        compare(L.jobVerb({ title: "Extracting Files" }), "Extracting Files")
+    }
+
+    function test_job_time_left() {
+        compare(L.jobTimeLeft({ totalBytes: 100e6, processedBytes: 64e6, speed: 1e6 }), "36 s")
+        compare(L.jobTimeLeft({ totalBytes: 100e6, processedBytes: 64e6, speed: 0 }), "")
+        compare(L.jobTimeLeft({ processedBytes: 64e6, speed: 1e6 }), "")
+        compare(L.jobTimeLeft({ totalBytes: 6.5e9, processedBytes: 0, speed: 11e6 }), "10 min")
+        compare(L.jobTimeLeft({ totalBytes: 4e9, processedBytes: 0, speed: 1e6 }), "1 h 7 min")
+    }
+
+    function test_jobs_summary() {
+        const a = { startMs: 0, totalBytes: 6.5e9, processedBytes: 2.7e9, percent: 42 }
+        const b = { startMs: 0, totalBytes: 14.2e9, processedBytes: 9.1e9, percent: 64 }
+        const young = { startMs: 9000, percent: 10 }
+        const one = L.jobsSummary({ x: a, y: young }, 10000)
+        compare(one.count, 1)
+        compare(one.shown[0], a)
+        compare(L.jobsSummary({ x: a, y: b }, 10000).percent, 57)
+        compare(L.jobsSummary({ x: a, y: { startMs: 0, percent: 50 } }, 10000).percent, 46)
+        const none = L.jobsSummary({}, 10000)
+        compare(none.count, 0)
+        compare(none.percent, 0)
+        compare(none.shown, [])
+    }
+
+    function test_job_titles() {
+        compare(L.jobDoneTitle({ title: "Downloading" }), "Downloaded")
+        compare(L.jobDoneTitle({ title: "Copying" }), "Copied")
+        compare(L.jobDoneTitle({ title: "Moving" }), "Moved")
+        compare(L.jobDoneTitle({ title: "Extracting Files" }), "Extracted")
+        compare(L.jobDoneTitle({ title: "Deleting" }), "Deleting")
+        compare(L.jobFailTitle({ title: "Downloading" }), "Download failed")
+        compare(L.jobFailTitle({ title: "Copying" }), "Copy failed")
+        compare(L.jobFailTitle({ title: "Moving" }), "Move failed")
+        compare(L.jobFailTitle({ title: "Extracting Files" }), "Extraction failed")
+        compare(L.jobFailTitle({ title: "Deleting" }), "Deleting failed")
+    }
+
+    function test_format_gb() {
+        compare(L.formatGB(2.7e9), "2.7")
+        compare(L.formatGB(14.2e9), "14.2")
     }
 }
