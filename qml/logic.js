@@ -193,10 +193,11 @@ function idleGlance(o) {
         return { kind: "batteryLow", title: o.battery + "%", detail: "plug in" }
     const showTime = !!o.show.time
     const showWeather = !!o.show.weather && !isNaN(o.temperature)
-    if (!showTime && !showWeather)
+    const showBattery = !!o.show.battery && o.battery >= 0
+    if (!showTime && !showWeather && !showBattery)
         return { kind: "none" }
     const time = String(o.now.getHours()).padStart(2, "0") + ":" + String(o.now.getMinutes()).padStart(2, "0")
-    return { kind: "clock", time: time, showTime: showTime, showWeather: showWeather }
+    return { kind: "clock", time: time, showTime: showTime, showWeather: showWeather, showBattery: showBattery }
 }
 
 // "Ryzen HD Audio Controller Speaker" → "Speaker": the port name when the device name ends with it.

@@ -111,7 +111,10 @@ Item {
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
 
     readonly property var sizes: ({
-        idle: { w: (idleMode === "glances" && glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230) : idleWidth) + indicatorWidth, h: barHeight, r: cornerRadius },
+        idle: { w: (idleMode !== "glances" ? idleWidth
+                    : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
+                    : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200)
+                    : idleWidth) + indicatorWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: { w: 330, h: 60, r: 20 },
         open: { w: 860, h: 420, r: 30 }
@@ -266,7 +269,7 @@ Item {
             objectName: "glanceRow"
             visible: island.idleMode === "glances" && island.glance.kind !== "none"
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: -island.indicatorWidth / 2
+            anchors.horizontalCenterOffset: -island.indicatorWidth / 2 - (batteryRing.visible ? 10 : 0)
             spacing: 7
             readonly property string kind: island.glance.kind
             readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : "#ffffff"
@@ -362,6 +365,37 @@ Item {
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
+            }
+        }
+
+        // Battery level as a ring at the right end; green while plugged in.
+        Shape {
+            id: batteryRing
+            objectName: "batteryRing"
+            visible: island.idleMode === "glances" && island.glance.kind === "clock" && !!island.glance.showBattery
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            anchors.rightMargin: 12 + island.indicatorWidth
+            width: 14
+            height: 14
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: "#2b2f35"
+                strokeWidth: 2.2
+                PathAngleArc { centerX: 7; centerY: 7; radiusX: 5.5; radiusY: 5.5; startAngle: 0; sweepAngle: 360 }
+            }
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: island.charging ? "#30d158" : "#ffffff"
+                strokeWidth: 2.2
+                capStyle: ShapePath.RoundCap
+                PathAngleArc {
+                    centerX: 7; centerY: 7; radiusX: 5.5; radiusY: 5.5
+                    startAngle: -90
+                    sweepAngle: 360 * Math.max(0, Math.min(100, island.battery)) / 100
+                    Behavior on sweepAngle { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                }
             }
         }
 

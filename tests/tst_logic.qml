@@ -211,9 +211,11 @@ TestCase {
         compare(clock.time, "16:35")
         compare(clock.showTime, true)
         compare(clock.showWeather, true)
+        compare(clock.showBattery, true)
         compare(g({ temperature: NaN }).showWeather, false)
-        compare(g({ show: { events: true, battery: true, time: false, weather: false } }).kind, "none")
-    }
+        compare(g({ battery: -1 }).showBattery, false)
+        compare(g({ show: { events: true, battery: true, time: false, weather: false } }).kind, "clock")
+        compare(g({ show: { events: true, battery: false, time: false, weather: false } }).kind, "none")    }
 
     function test_device_label() {
         compare(L.deviceLabel("Ryzen HD Audio Controller Speaker", "Speaker"), "Speaker")

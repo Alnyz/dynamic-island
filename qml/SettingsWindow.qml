@@ -249,13 +249,13 @@ QQC.ApplicationWindow {
                     QQC.CheckBox {
                         visible: win.prefs.idle.mode === "glances"
                         Kirigami.FormData.label: "Glances:"
-                        text: "Events starting soon"
+                        text: "Events starting in 30 minutes or less"
                         checked: win.prefs.idle.events
                         onToggled: win.prefs.idle.events = checked
                     }
                     QQC.CheckBox {
                         visible: win.prefs.idle.mode === "glances"
-                        text: "Battery low or charging"
+                        text: "Battery (warns at 15% or less)"
                         checked: win.prefs.idle.battery
                         onToggled: win.prefs.idle.battery = checked
                     }

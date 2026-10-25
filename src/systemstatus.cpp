@@ -165,8 +165,12 @@ void SystemStatus::refresh()
 
 void SystemStatus::readBattery()
 {
-    const auto [capacity, charging] = parseBattery(readFile(kBattery + QStringLiteral("capacity")), readFile(kBattery + QStringLiteral("status")));
-    m_battery = capacity;
+    // DYNAMIC_ISLAND_BATTERY=12 pretends the battery is at 12% and unplugged, to preview the low-battery glance.
+    const QString fake = qEnvironmentVariable("DYNAMIC_ISLAND_BATTERY");
+    const auto [capacity, charging] = !fake.isEmpty() ? parseBattery(fake, QStringLiteral("Discharging"))
+                                                      : parseBattery(readFile(kBattery + QStringLiteral("capacity")), readFile(kBattery + QStringLiteral("status")));
+    // No battery (a desktop): -1 keeps it out of the pill instead of reading as 0%.
+    m_battery = fake.isEmpty() && !QFile::exists(kBattery + QStringLiteral("capacity")) ? -1 : capacity;
     m_charging = charging;
     Q_EMIT changed();
 }
