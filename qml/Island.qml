@@ -39,6 +39,8 @@ Item {
     readonly property real pillAmount: notch.p
     property bool openOnHover: false
     property var quickHidden: []
+    property bool panelTime: true
+    property bool panelDate: true
     property var now: () => new Date()
     property int battery: -1
     property bool charging: false
@@ -686,6 +688,8 @@ Item {
             calendar: island.calendar
             showQuickButtons: island.systemControls
             quickHidden: island.quickHidden
+            showTime: island.panelTime
+            showDate: island.panelDate
             sound: island.sound
             onSettingsRequested: {
                 island.open = false

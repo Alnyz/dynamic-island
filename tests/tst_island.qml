@@ -300,6 +300,12 @@ Item {
             panel.refreshClock()
             compare(findChild(island, "panelTime").text, "09:05")
             compare(findChild(island, "panelDate").text, Qt.formatDate(new Date(2026, 9, 23), "ddd d MMM"))
+
+            island.panelTime = false
+            compare(findChild(island, "panelTime").visible, false)
+            compare(findChild(island, "panelDate").visible, true)
+            island.panelDate = false
+            compare(findChild(island, "panelDate").visible, false)
         }
 
         function test_only_open_tab_shows_name() {

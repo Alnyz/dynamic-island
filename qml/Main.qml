@@ -143,6 +143,8 @@ Window {
         swipeHold: prefs.behaviour.swipeHoldSeconds * 1000
         openOnHover: prefs.behaviour.openOnHover
         quickHidden: L.toList(prefs.quickButtons.hidden)
+        panelTime: prefs.panel.time
+        panelDate: prefs.panel.date
         battery: SystemStatus.battery
         charging: SystemStatus.charging
         idleMode: prefs.idle.mode

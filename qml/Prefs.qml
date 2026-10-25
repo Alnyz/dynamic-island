@@ -13,6 +13,7 @@ QtObject {
         behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
+        panel: { time: true, date: true },
         show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true },
         idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true }
     })
@@ -105,6 +106,9 @@ QtObject {
         location: prefs.location
         category: "panel"
         property string extraTool: "clipboard"
+        // The clock and date at the top of the open panel.
+        property bool time: prefs.defaults.panel.time
+        property bool date: prefs.defaults.panel.date
     }
 
     function reset() {

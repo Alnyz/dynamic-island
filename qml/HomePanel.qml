@@ -14,6 +14,8 @@ Item {
     // Off in unit tests: the buttons talk to the real system.
     property bool showQuickButtons: true
     property var quickHidden: []
+    property bool showTime: true
+    property bool showDate: true
     property var sound: null
     property var clipboard: null
     property var notes: null
@@ -64,6 +66,7 @@ Item {
         spacing: 8
         Text {
             objectName: "panelTime"
+            visible: panel.showTime
             anchors.baseline: parent.children[1].baseline
             text: Qt.formatTime(panel.clock, "HH:mm")
             color: "#ffffff"
@@ -74,7 +77,7 @@ Item {
         Text {
             objectName: "panelDate"
             // Dropped when a wide open tab leaves no room beside the time.
-            visible: clockRow.gap >= parent.children[0].implicitWidth + implicitWidth + 8 + 24
+            visible: panel.showDate && clockRow.gap >= (panel.showTime ? parent.children[0].implicitWidth + 8 : 0) + implicitWidth + 24
             text: Qt.formatDate(panel.clock, "ddd d MMM")
             color: "#9aa3ad"
             font.pixelSize: 13

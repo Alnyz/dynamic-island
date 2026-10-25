@@ -161,6 +161,18 @@ QQC.ApplicationWindow {
                         value: win.prefs.shape.ears
                         onMoved: v => win.prefs.shape.ears = v
                     }
+                    Item { Kirigami.FormData.isSection: true }
+                    QQC.CheckBox {
+                        Kirigami.FormData.label: "Top of the open panel:"
+                        text: "Time"
+                        checked: win.prefs.panel.time
+                        onToggled: win.prefs.panel.time = checked
+                    }
+                    QQC.CheckBox {
+                        text: "Date"
+                        checked: win.prefs.panel.date
+                        onToggled: win.prefs.panel.date = checked
+                    }
                 }
             }
             Page {
