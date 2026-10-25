@@ -507,6 +507,55 @@ Item {
             tryVerify(() => island.width > 180)
         }
 
+        function fakeHistory(save) {
+            return { settings: { save: save }, groups: [], lastSeen: 0, markSeen() {}, remove() {}, clear() {} }
+        }
+
+        function test_notifications_tab_badge() {
+            const { island } = make(null)
+            island.history = fakeHistory(true)
+            island.newNotifications = 4
+            island.open = true
+            const badge = findChild(island, "notificationsBadge")
+            tryVerify(() => badge !== null && badge.visible)
+            compare(findChild(badge, "notificationsBadgeText").text, "4")
+        }
+
+        function test_notifications_tab_hidden_when_not_saving() {
+            const { island } = make(null)
+            island.history = fakeHistory(false)
+            island.open = true
+            tryCompare(island, "mode", "open")
+            verify(findChild(island, "tab-home") !== null)
+            compare(findChild(island, "tab-notifications"), null)
+        }
+
+        function test_close_on_notifications_tab_marks_seen() {
+            const { island } = make(null)
+            let left = 0
+            island.notificationsLeft.connect(() => left++)
+            island.history = fakeHistory(true)
+            island.requestedTab = "notifications"
+            island.open = true
+            tryCompare(findChild(island, "homePanel"), "tab", "notifications")
+            island.open = false
+            tryVerify(() => left === 1)
+            wait(100)
+            compare(left, 1)
+        }
+
+        function test_leaving_notifications_tab_marks_seen() {
+            const { island } = make(null)
+            let left = 0
+            island.notificationsLeft.connect(() => left++)
+            island.history = fakeHistory(true)
+            island.requestedTab = "notifications"
+            island.open = true
+            tryCompare(findChild(island, "homePanel"), "tab", "notifications")
+            mouseClick(findChild(island, "tab-music"))
+            compare(left, 1)
+        }
+
         function test_shelf_drop_opens_shelf() {
             const { island } = make(null)
             island.addToShelf(["file:///tmp/a.pdf", "file:///tmp/b.png"])

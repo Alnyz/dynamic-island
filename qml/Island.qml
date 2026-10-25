@@ -15,6 +15,10 @@ Item {
     property var sound: null
     property var clipboard: null
     property var notes: null
+    // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
+    property var history: null
+    property int newNotifications: 0
+    signal notificationsLeft()
     property string extraTool: "clipboard"
     // The clipboard and notes tabs need typing; the rest of the time the island never takes the keyboard.
     readonly property bool wantsKeyboard: open && panelLoader.item !== null && panelLoader.item.wantsKeyboard
@@ -888,6 +892,10 @@ Item {
             onCopyRequested: text => island.copyRequested(text)
             clipboard: island.clipboard
             notes: island.notes
+            history: island.history
+            newNotifications: island.newNotifications
+            onNotificationsLeft: island.notificationsLeft()
+            onNotificationClicked: entry => island.notificationClicked(entry)
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player

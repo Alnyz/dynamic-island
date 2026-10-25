@@ -182,6 +182,9 @@ Window {
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore
+        history: history
+        newNotifications: history.newCount
+        onNotificationsLeft: history.leave()
         links: L.parseLinks(prefs.tools.links)
         colors: L.toList(prefs.tools.colors)
         onColorPickRequested: SystemStatus.pickColor()

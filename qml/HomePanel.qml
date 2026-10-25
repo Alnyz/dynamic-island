@@ -23,6 +23,20 @@ Item {
     property bool showJoin: true
     property var links: []
     property var colors: []
+    // NotificationHistory; its tab is shown only while saving is on.
+    property var history: null
+    property int newNotifications: 0
+    signal notificationClicked(string desktopEntry)
+    // Leaving the Notifications tab marks everything in it seen. The panel is destroyed on close, so that counts too.
+    signal notificationsLeft()
+    property string shownTab
+    Component.onCompleted: shownTab = tab
+    onTabChanged: {
+        if (shownTab === "notifications")
+            notificationsLeft()
+        shownTab = tab
+    }
+    Component.onDestruction: if (tab === "notifications") notificationsLeft()
     signal colorPickRequested()
     signal copyRequested(string text)
     signal linkRequested(string url)
@@ -102,6 +116,7 @@ Item {
                     { key: "music", label: "Music", icon: "media-playback-start" },
                     { key: "timer", label: "Timer", icon: "chronometer" },
                     { key: "mixer", label: "Sound Mixer", icon: "view-media-equalizer" },
+                    ...(panel.history && panel.history.settings.save ? [{ key: "notifications", label: "Notifications", icon: "notifications" }] : []),
                     { divider: true },
                     { key: panel.extra.key, label: panel.extra.label, icon: panel.extra.icon, name: "extra" },
                     { key: "more", label: "More", icon: "overflow-menu" }
@@ -148,6 +163,25 @@ Item {
                             color: "#ffffff"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
+                        }
+                        Rectangle {
+                            objectName: modelData.key === "notifications" ? "notificationsBadge" : ""
+                            visible: modelData.key === "notifications" && panel.newNotifications > 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.max(16, badgeText.implicitWidth + 10)
+                            height: 16
+                            radius: 8
+                            color: "#ffb340"
+                            Text {
+                                id: badgeText
+                                objectName: modelData.key === "notifications" ? "notificationsBadgeText" : ""
+                                anchors.centerIn: parent
+                                text: panel.newNotifications
+                                color: "#1a1205"
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                font.features: { "tnum": 1 }
+                            }
                         }
                     }
                     MouseArea {
@@ -334,6 +368,22 @@ Item {
                 readNote: id => panel.notes.read(id)
                 writeNote: (id, text) => panel.notes.write(id, text)
                 newId: () => panel.notes.newId()
+            }
+        }
+        Loader {
+            objectName: "notificationsTab"
+            anchors.fill: parent
+            active: panel.tab === "notifications" && panel.history !== null
+            sourceComponent: NotificationsTab {
+                groups: panel.history.groups
+                lastSeen: panel.history.lastSeen
+                onOpenRequested: (id, entry) => {
+                    panel.history.markSeen(id)
+                    if (entry)
+                        panel.notificationClicked(entry)
+                }
+                onRemoveRequested: id => panel.history.remove(id)
+                onClearRequested: panel.history.clear()
             }
         }
         Loader {
