@@ -278,6 +278,10 @@ TestCase {
         compare(L.jobName({ title: "Copying" }), "Copying")
         compare(L.jobName({}), "File")
         compare(L.jobName({ title: "Extracting Files", descriptionValue1: "/home/alnyz/test-extract-3gb.zip", descriptionValue2: "/home/alnyz" }), "test-extract-3gb.zip")
+        compare(L.jobName({ descriptionValue2: "/home/alnyz/Downloads/50% off.pdf" }), "50% off.pdf")
+        compare(L.jobName({ descriptionValue2: "/home/alnyz/Music/Track #1.flac" }), "Track #1.flac")
+        compare(L.jobName({ descriptionValue1: "https://x.org/a%20b.zip#top" }), "a b.zip")
+        compare(L.jobName({ descriptionValue1: "https://x.org/100%.zip" }), "100%.zip")
     }
 
     function test_job_verb() {
@@ -321,8 +325,11 @@ TestCase {
         compare(L.jobFailTitle({ title: "Deleting" }), "Deleting failed")
     }
 
-    function test_format_gb() {
-        compare(L.formatGB(2.7e9), "2.7")
-        compare(L.formatGB(14.2e9), "14.2")
+    function test_format_size() {
+        compare(L.formatSize(2.7e9), "2.7 GB")
+        compare(L.formatSize(14.2e9), "14.2 GB")
+        compare(L.formatSize(40.4e6), "40 MB")
+        compare(L.formatSize(300e3), "300 KB")
+        compare(L.formatSize(0), "0 KB")
     }
 }

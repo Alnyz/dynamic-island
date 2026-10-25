@@ -305,9 +305,18 @@ function jobMerge(job, props, nowMs) {
     return next
 }
 
+// Local paths come in raw, so only URLs drop their query and get decoded.
 function lastSegment(s) {
-    const path = String(s || "").split(/[?#]/)[0].replace(/\/+$/, "")
-    return decodeURIComponent(path.split("/").pop() || "")
+    let path = String(s || "")
+    const url = /^[a-z]+:\/\//i.test(path)
+    if (url)
+        path = path.split(/[?#]/)[0]
+    const last = path.replace(/\/+$/, "").split("/").pop() || ""
+    try {
+        return url ? decodeURIComponent(last) : last
+    } catch (e) {
+        return last
+    }
 }
 
 // An extraction's destination is a folder, so it is named after its archive instead.
@@ -353,6 +362,8 @@ function jobFailTitle(job) {
     return JOB_FAIL[job.title] || (job.title || "Job") + " failed"
 }
 
-function formatGB(bytes) {
-    return (bytes / 1e9).toFixed(1)
+function formatSize(bytes) {
+    if (bytes >= 1e9)
+        return (bytes / 1e9).toFixed(1) + " GB"
+    return bytes >= 1e6 ? Math.round(bytes / 1e6) + " MB" : Math.round(bytes / 1e3) + " KB"
 }

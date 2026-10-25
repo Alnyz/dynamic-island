@@ -734,8 +734,8 @@ Item {
                             readonly property string timeLeft: L.jobTimeLeft(row.modelData)
                             width: parent.width
                             text: island.jobs.count === 1 && row.modelData.totalBytes > 0
-                                  ? L.formatGB(row.modelData.processedBytes || 0) + " of " + L.formatGB(row.modelData.totalBytes) + " GB"
-                                    + (row.modelData.speed > 0 ? " · " + Math.round(row.modelData.speed / 1e6) + " MB/s" : "") + (timeLeft ? " · " + timeLeft + " left" : "")
+                                  ? L.formatSize(row.modelData.processedBytes || 0) + " of " + L.formatSize(row.modelData.totalBytes)
+                                    + (row.modelData.speed > 0 ? " · " + L.formatSize(row.modelData.speed) + "/s" : "") + (timeLeft ? " · " + timeLeft + " left" : "")
                                   : L.jobVerb(row.modelData) + (timeLeft ? " · " + timeLeft + " left" : "")
                             color: "#9aa3ad"
                             font.pixelSize: 11
