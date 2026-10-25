@@ -51,6 +51,19 @@ private Q_SLOTS:
         QCOMPARE(f.readAll().trimmed(), QByteArray("[]"));
     }
 
+    void testSkipsNonObjectRows()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("notifications.json"));
+        QFile f(path);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("[null, 3, {\"id\": \"a\", \"time\": 1}]");
+        f.close();
+        NotificationLog log(path);
+        QCOMPARE(log.items().size(), 1);
+        QCOMPARE(log.items().at(0).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("a"));
+    }
+
     void testMissingDirIsCreated()
     {
         QTemporaryDir dir;

@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QStandardPaths>
 
 NotificationLog::NotificationLog(QObject *parent)
@@ -17,9 +18,14 @@ NotificationLog::NotificationLog(const QString &file, QObject *parent)
     , m_file(file)
 {
     QFile f(m_file);
-    // A broken file reads as an empty array, and the next save replaces it.
-    if (f.open(QIODevice::ReadOnly))
-        m_items = QJsonDocument::fromJson(f.readAll()).array().toVariantList();
+    // A broken file reads as an empty array, and the next save replaces it. Non-object rows would throw in QML.
+    if (f.open(QIODevice::ReadOnly)) {
+        const QJsonArray rows = QJsonDocument::fromJson(f.readAll()).array();
+        for (const QJsonValue &row : rows) {
+            if (row.isObject())
+                m_items.append(row.toObject().toVariantMap());
+        }
+    }
 }
 
 void NotificationLog::save(const QVariantList &items)

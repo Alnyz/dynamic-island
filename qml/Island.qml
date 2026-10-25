@@ -934,7 +934,10 @@ Item {
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
-            onNotificationClicked: entry => island.notificationClicked(entry)
+            onNotificationClicked: entry => {
+                island.open = false
+                island.notificationClicked(entry)
+            }
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player

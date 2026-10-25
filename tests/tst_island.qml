@@ -610,6 +610,20 @@ Item {
             compare(left, 1)
         }
 
+        function test_notification_row_click_closes_panel() {
+            const { island } = make(null)
+            let opened = ""
+            island.notificationClicked.connect(e => opened = e)
+            island.history = fakeHistory(true)
+            island.requestedTab = "notifications"
+            island.open = true
+            const tab = findChild(island, "notificationsTab")
+            tryVerify(() => tab.item !== null)
+            tab.item.openRequested("r1", "org.telegram.desktop")
+            compare(opened, "org.telegram.desktop")
+            compare(island.open, false)
+        }
+
         function test_shelf_drop_opens_shelf() {
             const { island } = make(null)
             island.addToShelf(["file:///tmp/a.pdf", "file:///tmp/b.png"])

@@ -396,7 +396,7 @@ function historyAdd(items, n, nowMs, days) {
     const at = n.replaces > 0 ? items.findIndex(r => r.key === key) : -1
     const row = at >= 0
         ? Object.assign({}, items[at], { title: n.title, body: n.body, icon: n.icon, time: nowMs, seen: false })
-        : { id: nowMs + "-" + items.length, key: key, app: n.app, desktopEntry: n.desktopEntry, icon: n.icon,
+        : { id: nowMs + "-" + Math.random().toString(36).slice(2, 8), key: key, app: n.app, desktopEntry: n.desktopEntry, icon: n.icon,
             title: n.title, body: n.body, time: nowMs, seen: false }
     return historyPrune([row].concat(items.filter((r, i) => i !== at)), nowMs, days)
 }

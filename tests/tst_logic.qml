@@ -367,6 +367,15 @@ TestCase {
         compare(two[0].title, "Budi")
     }
 
+    function test_history_ids_unique_at_cap() {
+        let items = []
+        for (let i = 0; i < L.HISTORY_MAX; i++)
+            items.push({ id: "old-" + i, key: "k", time: 1000, seen: false })
+        items = L.historyAdd(items, notif({ title: "a" }), 2000, 7)
+        items = L.historyAdd(items, notif({ title: "b" }), 2000, 7)
+        verify(items[0].id !== items[1].id)
+    }
+
     function test_history_add_replace() {
         let items = L.historyAdd([], notif({ body: "a" }), 1000, 7)
         items = L.historyAdd(items, notif({ body: "b" }), 2000, 7)
