@@ -367,3 +367,71 @@ function formatSize(bytes) {
         return (bytes / 1e9).toFixed(1) + " GB"
     return bytes >= 1e6 ? Math.round(bytes / 1e6) + " MB" : Math.round(bytes / 1e3) + " KB"
 }
+
+// Notification history. Plasma's own parts count as System; anything without a desktop entry
+// (notify-send, scripts) is Others and is told apart by its app name.
+var SYSTEM_ENTRIES = ["org.kde.plasmashell", "org.kde.kdeconnect.daemon", "org.kde.kdeconnect.app", "org.kde.discover",
+    "org.kde.discover.notifier", "org.kde.powerdevil", "org.kde.kded6", "org.kde.kwin", "org.kde.kscreen",
+    "org.kde.bluedevil", "org.kde.plasma.networkmanagement", "org.freedesktop.network-manager-applet"]
+var HISTORY_MAX = 200
+
+function notifKind(n) {
+    if (!n.desktopEntry)
+        return "others"
+    return SYSTEM_ENTRIES.includes(n.desktopEntry) ? "system" : "apps"
+}
+
+function notifKey(n) {
+    return n.desktopEntry || "app:" + n.app
+}
+
+// h: { save, system, apps, others, off: [keys] }
+function historyAllowed(n, h) {
+    return !!h.save && !!h[notifKind(n)] && !toList(h.off).includes(notifKey(n))
+}
+
+// Plasma's ids aren't tracked, so an update replaces the newest row from the same app.
+function historyAdd(items, n, nowMs, days) {
+    const key = notifKey(n)
+    const at = n.replaces > 0 ? items.findIndex(r => r.key === key) : -1
+    const row = at >= 0
+        ? Object.assign({}, items[at], { title: n.title, body: n.body, icon: n.icon, time: nowMs, seen: false })
+        : { id: nowMs + "-" + items.length, key: key, app: n.app, desktopEntry: n.desktopEntry, icon: n.icon,
+            title: n.title, body: n.body, time: nowMs, seen: false }
+    return historyPrune([row].concat(items.filter((r, i) => i !== at)), nowMs, days)
+}
+
+function historyPrune(items, nowMs, days) {
+    return items.filter(r => nowMs - r.time <= days * 86400000).slice(0, HISTORY_MAX)
+}
+
+function isNewItem(item, lastSeen) {
+    return !item.seen && item.time > lastSeen
+}
+
+function newCount(items, lastSeen) {
+    return items.filter(r => isNewItem(r, lastSeen)).length
+}
+
+// Items are newest first, so groups come out ordered by their newest row.
+function historyGroups(items) {
+    const groups = []
+    const byKey = {}
+    for (const r of items) {
+        if (!byKey[r.key]) {
+            byKey[r.key] = { key: r.key, app: r.app, icon: r.icon, rows: [] }
+            groups.push(byKey[r.key])
+        }
+        byKey[r.key].rows.push(r)
+    }
+    return groups
+}
+
+// The apps listed in Settings; Others have no desktop entry, so they get only the kind switch.
+function rememberApp(apps, n) {
+    const kind = notifKind(n)
+    const key = notifKey(n)
+    if (kind === "others" || apps.some(a => a.key === key))
+        return apps
+    return apps.concat([{ key: key, name: n.app, icon: n.icon, kind: kind }])
+}

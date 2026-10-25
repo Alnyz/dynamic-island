@@ -332,4 +332,96 @@ TestCase {
         compare(L.formatSize(300e3), "300 KB")
         compare(L.formatSize(0), "0 KB")
     }
+
+    readonly property var notif: o => Object.assign({ app: "Telegram", desktopEntry: "org.telegram.desktop", icon: "telegram", title: "Rina", body: "hi", replaces: 0 }, o)
+    readonly property var allOn: ({ save: true, system: true, apps: true, others: true, off: [] })
+
+    function test_notif_kind() {
+        compare(L.notifKind(notif()), "apps")
+        compare(L.notifKind(notif({ desktopEntry: "org.kde.kdeconnect.daemon" })), "system")
+        compare(L.notifKind(notif({ desktopEntry: "" })), "others")
+    }
+
+    function test_notif_key() {
+        compare(L.notifKey(notif()), "org.telegram.desktop")
+        compare(L.notifKey(notif({ desktopEntry: "", app: "foo" })), "app:foo")
+        verify(L.notifKey(notif({ desktopEntry: "", app: "foo" })) !== L.notifKey(notif({ desktopEntry: "", app: "bar" })))
+    }
+
+    function test_history_allowed() {
+        verify(L.historyAllowed(notif(), allOn))
+        verify(!L.historyAllowed(notif(), Object.assign({}, allOn, { save: false })))
+        verify(!L.historyAllowed(notif(), Object.assign({}, allOn, { apps: false })))
+        verify(!L.historyAllowed(notif(), Object.assign({}, allOn, { off: ["org.telegram.desktop"] })))
+        verify(!L.historyAllowed(notif({ desktopEntry: "" }), Object.assign({}, allOn, { others: false })))
+    }
+
+    function test_history_add() {
+        const one = L.historyAdd([], notif(), 1000, 7)
+        compare(one.length, 1)
+        compare(one[0].key, "org.telegram.desktop")
+        compare(one[0].time, 1000)
+        compare(one[0].seen, false)
+        const two = L.historyAdd(one, notif({ title: "Budi" }), 2000, 7)
+        compare(two.length, 2)
+        compare(two[0].title, "Budi")
+    }
+
+    function test_history_add_replace() {
+        let items = L.historyAdd([], notif({ body: "a" }), 1000, 7)
+        items = L.historyAdd(items, notif({ body: "b" }), 2000, 7)
+        items = L.historyAdd(items, notif({ replaces: 5, body: "edited" }), 3000, 7)
+        compare(items.length, 2)
+        compare(items[0].body, "edited")
+        compare(items[0].time, 3000)
+        compare(items[1].body, "a")
+        const fresh = L.historyAdd([], notif({ replaces: 5 }), 1000, 7)
+        compare(fresh.length, 1)
+    }
+
+    function test_history_prune() {
+        const day = 86400000
+        const now = 100 * day
+        const rows = [{ id: "a", time: now - 6 * day }, { id: "b", time: now - 8 * day }]
+        compare(L.historyPrune(rows, now, 7).map(r => r.id), ["a"])
+        const many = []
+        for (let i = 0; i < 205; i++)
+            many.push({ id: "r" + i, time: now - i })
+        const kept = L.historyPrune(many, now, 7)
+        compare(kept.length, 200)
+        compare(kept[0].id, "r0")
+    }
+
+    function test_new_count() {
+        const rows = [{ time: 4000, seen: false }, { time: 3000, seen: true }, { time: 1000, seen: false }]
+        compare(L.newCount(rows, 2000), 1)
+        verify(L.isNewItem(rows[0], 2000))
+        verify(!L.isNewItem(rows[1], 2000))
+    }
+
+    function test_history_groups() {
+        let items = L.historyAdd([], notif(), 1000, 7)
+        items = L.historyAdd(items, notif({ app: "Discord", desktopEntry: "discord" }), 2000, 7)
+        items = L.historyAdd(items, notif(), 3000, 7)
+        const groups = L.historyGroups(items)
+        compare(groups.map(g => g.app), ["Telegram", "Discord"])
+        compare(groups[0].rows.map(r => r.time), [3000, 1000])
+        compare(groups[0].icon, "telegram")
+    }
+
+    function test_time_ago() {
+        const now = new Date(2026, 9, 25, 15, 42).getTime()
+        compare(L.ago(now - 30000, now), "now")
+        compare(L.ago(now - 3 * 60000, now), "3 min")
+        compare(L.ago(now - 2 * 3600000, now), "2 h")
+        compare(L.ago(new Date(2026, 9, 24, 23, 0).getTime(), now), "Yesterday")
+        compare(L.ago(new Date(2026, 9, 23, 9, 0).getTime(), now), "23 Oct")
+    }
+
+    function test_remember_app() {
+        const apps = L.rememberApp([], notif())
+        compare(apps, [{ key: "org.telegram.desktop", name: "Telegram", icon: "telegram", kind: "apps" }])
+        compare(L.rememberApp(apps, notif()).length, 1)
+        verify(L.rememberApp(apps, notif({ desktopEntry: "" })) === apps)
+    }
 }
