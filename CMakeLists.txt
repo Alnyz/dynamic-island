@@ -30,6 +30,8 @@ install(TARGETS dynamic-island)
 enable_testing()
 find_program(QMLTESTRUNNER qmltestrunner HINTS ${QT6_INSTALL_PREFIX}/${QT6_INSTALL_BINS} /usr/lib/qt6/bin REQUIRED)
 add_test(NAME qml COMMAND ${QMLTESTRUNNER} -input ${CMAKE_SOURCE_DIR}/tests -import ${CMAKE_BINARY_DIR})
+# Hidden window: the tests simulate the mouse, and a visible one pops up on screen and catches the real pointer.
+set_tests_properties(qml PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
 
 configure_file(data/dynamic-island.desktop.in dynamic-island.desktop @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/dynamic-island.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
