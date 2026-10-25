@@ -464,6 +464,31 @@ Item {
             tryCompare(island, "mode", "idle")
         }
 
+        function test_job_alert_failed() {
+            const { island } = make(null)
+            island.showAlert({ kind: "job", ok: false, title: "Copy failed", body: "Photos 2026 · Not enough free space", folder: "" }, 4000)
+            tryCompare(island, "height", 64)
+            compare(island.width, 400)
+            verify(findChild(island, "jobAlert").visible)
+            const title = findChild(island, "jobAlertTitle")
+            compare(title.text, "Copy failed")
+            compare(title.color, Qt.color("#ff8a8a"))
+            compare(findChild(island, "jobAlertBody").text, "Photos 2026 · Not enough free space")
+        }
+
+        function test_job_alert_click_opens_folder() {
+            const { island } = make(null)
+            let opened = ""
+            island.linkRequested.connect(u => opened = u)
+            island.showAlert({ kind: "job", ok: true, title: "Downloaded", body: "a.iso", folder: "file:///home/alnyz/Downloads" }, 4000)
+            tryCompare(island, "height", 64)
+            compare(findChild(island, "jobAlertTitle").color, Qt.color("#ffffff"))
+            mouseClick(island, 40, 30)
+            compare(opened, "file:///home/alnyz/Downloads")
+            compare(island.mode, "idle")
+            compare(island.open, false)
+        }
+
         function test_device_alert() {
             const { island } = make(null)
             island.showAlert({ kind: "device", name: "Galaxy Buds2", icon: "audio-headset", connected: true, battery: 82 }, 5000)

@@ -14,7 +14,7 @@ QtObject {
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
-        show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true },
+        show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true, jobs: true },
         idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true }
     })
 
@@ -92,6 +92,7 @@ QtObject {
         property bool devices: prefs.defaults.show.devices
         property bool meetings: prefs.defaults.show.meetings
         property bool power: prefs.defaults.show.power
+        property bool jobs: prefs.defaults.show.jobs
     }
 
     // The user's own data, so reset leaves it alone. Links are JSON: [{ name, url }].

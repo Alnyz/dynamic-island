@@ -268,7 +268,7 @@ function clipRows(items, query, kind) {
 
 // The pill's size while it shows an alert.
 function alertSize(kind, barHeight, radius) {
-    if (kind === "notification")
+    if (kind === "notification" || kind === "job")
         return { w: 400, h: 64, r: 22 }
     if (kind === "device")
         return { w: 330, h: 72, r: 24 }
@@ -310,6 +310,7 @@ function lastSegment(s) {
     return decodeURIComponent(path.split("/").pop() || "")
 }
 
+// An extraction's destination is a folder, so it is named after its archive instead.
 function jobName(job) {
     return lastSegment(job.descriptionValue2) || lastSegment(job.descriptionValue1) || job.title || "File"
 }

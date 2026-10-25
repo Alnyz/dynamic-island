@@ -1,7 +1,7 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// What the closed pill shows for a moment: a volume or brightness level, a notification, a device, the charger, or a picked colour.
+// What the closed pill shows for a moment: a volume or brightness level, a notification, a device, the charger, a picked colour, or a finished job.
 Item {
     id: view
 
@@ -61,6 +61,47 @@ Item {
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
+        }
+    }
+
+    Item {
+        objectName: "jobAlert"
+        visible: view.a.kind === "job"
+        anchors.fill: parent
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        Kirigami.Icon {
+            id: jobIcon
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: view.a.ok ? "emblem-success" : "emblem-error"
+            color: view.a.ok ? "#30d158" : "#ff6b6b"
+            isMask: true
+        }
+        Column {
+            anchors.left: jobIcon.right
+            anchors.leftMargin: 12
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 3
+            Text {
+                objectName: "jobAlertTitle"
+                width: parent.width
+                text: view.a.title || ""
+                color: view.a.ok ? "#ffffff" : "#ff8a8a"
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+            }
+            Text {
+                objectName: "jobAlertBody"
+                width: parent.width
+                text: view.a.body || ""
+                color: "#9aa3ad"
+                font.pixelSize: 12
+                elide: Text.ElideRight
+            }
         }
     }
 

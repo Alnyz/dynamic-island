@@ -52,6 +52,43 @@ Window {
         }
     }
 
+    JobWatcher {
+        enabled: prefs.show.jobs
+        onUpdated: (key, props) => jobsModel.update(key, props)
+        onEnded: (key, code, error) => jobsModel.end(key, code, error)
+        onOwnerGone: sender => jobsModel.dropSender(sender)
+    }
+
+    JobsModel {
+        id: jobsModel
+        onFinished: job => {
+            if (!SystemStatus.dndActive())
+                root.queueJobAlert({ kind: "job", ok: true, title: L.jobDoneTitle(job), body: job.name, folder: job.folder })
+        }
+        onFailed: (job, error) => root.queueJobAlert({ kind: "job", ok: false, title: L.jobFailTitle(job), body: job.name + (error ? " · " + error : ""), folder: job.folder })
+    }
+    readonly property bool jobsOn: prefs.show.jobs
+    onJobsOnChanged: if (!jobsOn) jobsModel.clear()
+
+    // Job alerts wait while the panel is open or another alert is up, then play one by one.
+    property var jobAlerts: []
+    function queueJobAlert(a) {
+        jobAlerts = jobAlerts.concat([a])
+        flushJobAlerts()
+    }
+    function flushJobAlerts() {
+        if (!jobAlerts.length || island.open || island.alert !== null)
+            return
+        const next = jobAlerts[0]
+        jobAlerts = jobAlerts.slice(1)
+        island.showAlert(next, 4000)
+    }
+    Connections {
+        target: island
+        function onOpenChanged() { root.flushJobAlerts() }
+        function onAlertChanged() { root.flushJobAlerts() }
+    }
+
     CameraWatcher {
         id: cameraWatcher
         enabled: prefs.show.privacy
@@ -122,6 +159,7 @@ Window {
         calendar: calendarSource
         sound: soundSource
         micApps: prefs.show.privacy ? soundSource.recorders : []
+        jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
         onNotificationClicked: entry => notificationWatcher.openApp(entry)
         onLinkRequested: url => Qt.openUrlExternally(url)

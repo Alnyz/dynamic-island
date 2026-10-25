@@ -19,6 +19,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 - Cover art and a small level meter while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
 - When nothing is going on, it shows a glance (an event starting soon, low battery, the time, the weather) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
+- While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Point at it to see the song title. Click it to open the panel.
 - Choose between a notch joined to the top edge or a floating pill. Switching animates.
 
@@ -26,6 +27,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 - Volume and brightness levels, replacing Plasma's on-screen box.
 - Notifications, replacing Plasma's popups. Click one to open the app.
+- Downloads and copies finishing or failing. Click a finished one to open its folder.
 - A microphone or camera in use, Bluetooth devices connecting, and the charger being plugged in or out.
 
 ### Panel tabs
@@ -43,6 +45,7 @@ The panel has buttons for battery, volume, Wi-Fi, Bluetooth, do not disturb, kee
 ## Requirements
 
 - KDE Plasma 6 on Wayland. The island is a layer-shell surface and uses KWin and Plasma services, so it won't work on X11 or other desktops.
+- Browser downloads show only with Plasma's browser integration add-on installed in the browser.
 - It imports Plasma's private MPRIS and volume QML modules. A Plasma update can change those and break the music or mixer parts.
 
 Packages on Arch:

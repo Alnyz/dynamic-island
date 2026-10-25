@@ -224,7 +224,8 @@ QQC.ApplicationWindow {
                             { key: "privacy", label: "Microphone and camera in use" },
                             { key: "devices", label: "Bluetooth devices connecting" },
                             { key: "meetings", label: "Join button for meetings" },
-                            { key: "power", label: "Charger plugged in or out" }
+                            { key: "power", label: "Charger plugged in or out" },
+                            { key: "jobs", label: "Downloads and file copies" }
                         ]
                         delegate: QQC.CheckBox {
                             required property var modelData

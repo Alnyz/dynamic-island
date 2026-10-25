@@ -248,6 +248,12 @@ Item {
                 island.alert = null
                 return
             }
+            if (island.mode === "alert" && island.alert.kind === "job") {
+                if (island.alert.ok && island.alert.folder)
+                    island.linkRequested(island.alert.folder)
+                island.alert = null
+                return
+            }
             island.open = true
         }
         onWheel: wheel => {
