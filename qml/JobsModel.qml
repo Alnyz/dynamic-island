@@ -28,7 +28,8 @@ QtObject {
         if (!job)
             return
         remove(k => k === key)
-        if (now() - job.startMs < 2000)
+        // Code 1 is KDE's "killed": the user cancelled it, so no alert.
+        if (now() - job.startMs < 2000 || code === 1)
             return
         const out = { name: L.jobName(job), title: job.title || "", folder: folderOf(job) }
         if (code === 0)
@@ -48,12 +49,17 @@ QtObject {
         jobs = next
     }
 
-    // destUrl is the target folder when the app sends it; otherwise the folder holding descriptionValue2.
+    // destUrl is the target folder when the app sends it; otherwise the folder holding descriptionValue2,
+    // which for an extraction is the destination folder itself.
     function folderOf(job) {
         if (job.destUrl)
             return job.destUrl
-        const path = String(job.descriptionValue2 || "")
-        return path.startsWith("/") ? "file://" + path.substring(0, path.lastIndexOf("/")) : ""
+        let path = String(job.descriptionValue2 || "")
+        if (!path.startsWith("/"))
+            return ""
+        if (job.title !== "Extracting Files")
+            path = path.substring(0, path.lastIndexOf("/"))
+        return "file://" + path.split("/").map(encodeURIComponent).join("/")
     }
 
     property Timer ticker: Timer {
