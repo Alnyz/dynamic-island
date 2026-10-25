@@ -72,6 +72,66 @@ Item {
             mouseMove(stage, 1090, 510)
         }
 
+        function jobsOf(n, extra) {
+            const shown = []
+            for (let i = 0; i < n; ++i)
+                shown.push(Object.assign({ startMs: 0, title: "Copying", descriptionValue2: "/home/alnyz/Downloads/file" + i + ".bin", percent: 50 }, extra || {}))
+            return { shown: shown, count: n, percent: 57 }
+        }
+
+        function test_jobs_is_an_activity() {
+            const { island } = make(null)
+            island.jobs = jobsOf(1)
+            tryCompare(island, "mode", "compact")
+            compare(island.activity, "jobs")
+            island.player = stage.fakePlayer({})
+            compare(island.activities, ["music", "jobs"])
+        }
+
+        function test_jobs_compact_shows_summary() {
+            const { island } = make(null)
+            island.jobs = jobsOf(3)
+            tryCompare(island, "width", island.sizes.compact.w)
+            compare(findChild(island, "jobsTitle").text, "3 jobs")
+            compare(findChild(island, "jobsPercent").text, "57%")
+            const line = findChild(island, "jobsLine")
+            tryVerify(() => Math.abs(line.width - line.parent.width * 0.57) <= 1)
+        }
+
+        function test_jobs_compact_elides() {
+            const { island } = make(null)
+            island.jobs = jobsOf(1, { descriptionValue2: "/tmp/" + "x".repeat(120) + ".iso" })
+            tryCompare(island, "width", island.sizes.compact.w)
+            const title = findChild(island, "jobsTitle")
+            compare(title.text, "x".repeat(120) + ".iso")
+            verify(title.truncated)
+        }
+
+        function test_jobs_peek_caps_rows() {
+            const { island } = make(null)
+            island.jobs = jobsOf(6)
+            tryCompare(island, "mode", "compact")
+            mouseMove(island, 10, 10)
+            tryCompare(island, "height", 22 + 4 * 42)
+            compare(island.width, 360)
+            compare(findChild(island, "jobsMore").text, "+3 more")
+            verify(findChild(island, "jobsList").visible)
+        }
+
+        function test_job_chip_on_music_turn() {
+            const { island } = make({})
+            island.cycleInterval = 100000
+            island.jobs = jobsOf(3)
+            compare(island.activity, "music")
+            const chip = findChild(island, "jobChip")
+            tryCompare(chip, "visible", true)
+            compare(findChild(island, "jobChipText").text, "3 · 57%")
+            island.jobs = jobsOf(1)
+            compare(findChild(island, "jobChipText").text, "57%")
+            island.jobs = { shown: [], count: 0, percent: 0 }
+            tryCompare(chip, "visible", false)
+        }
+
         function test_input_rect_follows_position() {
             const holder = createTemporaryObject(centeredComp, stage)
             const island = holder.island

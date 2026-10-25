@@ -23,7 +23,7 @@ Item {
     readonly property bool hovered: hover.hovered
     // Not named `state`: Item already has a `state` property.
     readonly property bool timerActive: timer !== null && (timer.running || timer.paused)
-    readonly property var activities: L.activities(player !== null, timerActive, false)
+    readonly property var activities: L.activities(player !== null, timerActive, jobs.count > 0)
     property int current: 0
     readonly property string activity: activities.length > 0 ? activities[current % activities.length] : ""
     property int cycleInterval: 6000
@@ -39,6 +39,10 @@ Item {
     readonly property real pillAmount: notch.p
     property bool openOnHover: false
     property var quickHidden: []
+    // Running jobs as JobsModel.summary gives them: { shown, count, percent }.
+    property var jobs: ({ shown: [], count: 0, percent: 0 })
+    // At most 4 rows when pointed at; past that, 3 rows and a "+N more" row.
+    readonly property int jobRows: Math.min(jobs.count, 4)
     property bool panelTime: true
     property bool panelDate: true
     property var now: () => new Date()
@@ -118,7 +122,7 @@ Item {
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200)
                     : idleWidth) + indicatorWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
-        peek: { w: 330, h: 60, r: 20 },
+        peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
         open: { w: 860, h: 420, r: 30 }
     })
     readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius) : sizes[mode]
@@ -427,7 +431,59 @@ Item {
 
     readonly property bool showMusic: activity === "music" && (mode === "compact" || mode === "peek")
     readonly property bool showTimer: activity === "timer" && (mode === "compact" || mode === "peek")
+    readonly property bool showJobs: activity === "jobs" && (mode === "compact" || mode === "peek")
+    readonly property color jobInk: Qt.lighter(palette.accent, 1.45)
+    readonly property color jobTile: Qt.rgba(palette.accent.r, palette.accent.g, palette.accent.b, 0.22)
     readonly property string timerText: timerActive ? L.countdownText(timer.paused ? timer.pausedRemainingMs : timer.remainingMs) : ""
+
+    // Jobs never use a circle, so they can't be mistaken for the idle battery ring.
+    component JobTile: Rectangle {
+        width: 18
+        height: 18
+        radius: 6
+        color: island.jobTile
+        Kirigami.Icon {
+            anchors.centerIn: parent
+            width: 12
+            height: 12
+            source: "download-symbolic"
+            color: island.jobInk
+            isMask: true
+        }
+    }
+
+    // Shown on the music and timer turns while jobs run.
+    component JobChip: Rectangle {
+        objectName: "jobChip"
+        visible: island.jobs.count > 0 && island.mode === "compact"
+        anchors.verticalCenter: parent.verticalCenter
+        width: chipRow.implicitWidth + 12
+        height: 18
+        radius: 9
+        color: island.jobTile
+        Row {
+            id: chipRow
+            anchors.centerIn: parent
+            spacing: 4
+            Kirigami.Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 10
+                height: 10
+                source: "download-symbolic"
+                color: island.jobInk
+                isMask: true
+            }
+            Text {
+                objectName: "jobChipText"
+                anchors.verticalCenter: parent.verticalCenter
+                text: (island.jobs.count > 1 ? island.jobs.count + " · " : "") + island.jobs.percent + "%"
+                color: island.jobInk
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                font.features: { "tnum": 1 }
+            }
+        }
+    }
 
     component Slide: Item {
         id: slide
@@ -464,6 +520,7 @@ Item {
         }
 
         Bars {
+            id: musicBars
             objectName: "bars"
             visible: island.mode === "compact"
             running: island.playing
@@ -509,6 +566,11 @@ Item {
             iconName: island.playing ? "media-playback-pause" : "media-playback-start"
             onClicked: island.player.PlayPause()
         }
+
+        JobChip {
+            anchors.right: musicBars.left
+            anchors.rightMargin: 8
+        }
     }
 
     Slide {
@@ -527,6 +589,7 @@ Item {
         }
 
         Text {
+            id: timerCountdown
             objectName: "timerText"
             visible: island.mode === "compact"
             anchors.right: parent.right
@@ -567,6 +630,145 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             iconName: island.timerActive && island.timer.running ? "media-playback-pause" : "media-playback-start"
             onClicked: island.timer.running ? island.timer.pause() : island.timer.resume()
+        }
+
+        JobChip {
+            anchors.right: timerCountdown.left
+            anchors.rightMargin: 8
+        }
+    }
+
+    Slide {
+        shown: island.showJobs
+
+        JobTile {
+            id: jobsTile
+            visible: island.mode === "compact"
+            x: 8
+            anchors.verticalCenter: parent.verticalCenter
+        }
+        Text {
+            objectName: "jobsTitle"
+            visible: island.mode === "compact"
+            anchors.left: jobsTile.right
+            anchors.leftMargin: 8
+            anchors.right: jobsPercent.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            text: island.jobs.count === 1 ? L.jobName(island.jobs.shown[0]) : island.jobs.count + " jobs"
+            color: "#ffffff"
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
+        }
+        Text {
+            id: jobsPercent
+            objectName: "jobsPercent"
+            visible: island.mode === "compact"
+            anchors.right: parent.right
+            anchors.rightMargin: 12 + island.indicatorWidth
+            anchors.verticalCenter: parent.verticalCenter
+            text: island.jobs.percent + "%"
+            color: "#9aa3ad"
+            font.pixelSize: 12
+            font.features: { "tnum": 1 }
+        }
+        // Combined progress along the bottom edge.
+        Rectangle {
+            visible: island.mode === "compact"
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.bottomMargin: 1
+            height: 2
+            radius: 1
+            color: "#24282d"
+            Rectangle {
+                objectName: "jobsLine"
+                width: parent.width * island.jobs.percent / 100
+                height: parent.height
+                radius: 1
+                color: palette.accent
+                Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+            }
+        }
+
+        Column {
+            objectName: "jobsList"
+            visible: island.mode === "peek"
+            anchors.fill: parent
+            anchors.topMargin: 12
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            Repeater {
+                model: island.mode === "peek" ? island.jobs.shown.slice(0, island.jobs.count > 4 ? 3 : 4) : []
+                delegate: Item {
+                    id: row
+                    required property var modelData
+                    width: parent.width
+                    height: 42
+                    JobTile { id: rowTile; y: 2 }
+                    Column {
+                        anchors.left: rowTile.right
+                        anchors.leftMargin: 10
+                        anchors.right: rowPercent.left
+                        anchors.rightMargin: 10
+                        spacing: 3
+                        Text {
+                            width: parent.width
+                            text: L.jobName(row.modelData)
+                            color: "#ffffff"
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            readonly property string timeLeft: L.jobTimeLeft(row.modelData)
+                            width: parent.width
+                            text: island.jobs.count === 1 && row.modelData.totalBytes > 0
+                                  ? L.formatGB(row.modelData.processedBytes || 0) + " of " + L.formatGB(row.modelData.totalBytes) + " GB"
+                                    + (row.modelData.speed > 0 ? " · " + Math.round(row.modelData.speed / 1e6) + " MB/s" : "") + (timeLeft ? " · " + timeLeft + " left" : "")
+                                  : L.jobVerb(row.modelData) + (timeLeft ? " · " + timeLeft + " left" : "")
+                            color: "#9aa3ad"
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                        }
+                        Rectangle {
+                            width: parent.width
+                            height: 3
+                            radius: 1.5
+                            color: "#24282d"
+                            Rectangle {
+                                width: parent.width * (row.modelData.percent || 0) / 100
+                                height: parent.height
+                                radius: 1.5
+                                color: palette.accent
+                            }
+                        }
+                    }
+                    Text {
+                        id: rowPercent
+                        anchors.right: parent.right
+                        y: 4
+                        text: (row.modelData.percent || 0) + "%"
+                        color: "#9aa3ad"
+                        font.pixelSize: 12
+                        font.features: { "tnum": 1 }
+                    }
+                }
+            }
+            Text {
+                objectName: "jobsMore"
+                visible: island.jobs.count > 4
+                height: 30
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 28
+                text: "+" + (island.jobs.count - 3) + " more"
+                color: "#9aa3ad"
+                font.pixelSize: 12
+            }
         }
     }
 
