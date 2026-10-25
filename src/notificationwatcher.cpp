@@ -110,15 +110,20 @@ void NotificationWatcher::handle(DBusMessage *message)
     if (!dbus_message_iter_init(message, &it))
         return;
     const QString appName = readString(&it);
-    dbus_message_iter_next(&it); // replaces_id
+    dbus_uint32_t replaces = 0;
+    if (dbus_message_iter_get_arg_type(&it) == DBUS_TYPE_UINT32)
+        dbus_message_iter_get_basic(&it, &replaces);
+    dbus_message_iter_next(&it);
     const QString appIcon = readString(&it);
     const QString summary = readString(&it);
     const QString body = readString(&it);
     dbus_message_iter_next(&it); // actions
     const QVariantMap hints = readStringHints(&it);
-    const QVariantMap n = describe(appName, appIcon, summary, body, hints);
-    if (!n.isEmpty())
-        Q_EMIT notified(n);
+    QVariantMap n = describe(appName, appIcon, summary, body, hints);
+    if (n.isEmpty())
+        return;
+    n.insert(QStringLiteral("replaces"), static_cast<int>(replaces));
+    Q_EMIT notified(n);
 }
 
 QVariantMap NotificationWatcher::describe(const QString &appName, const QString &appIcon, const QString &summary, const QString &body, const QVariantMap &hints)

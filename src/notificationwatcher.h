@@ -25,9 +25,11 @@ public:
     Q_INVOKABLE void openApp(const QString &desktopEntry);
 
 Q_SIGNALS:
+    // describe()'s map plus replaces, the Notify replaces_id (0 for a new notification).
     void notified(const QVariantMap &notification);
 
 private:
+    friend class TestWatchers;
     void handle(DBusMessage *message);
     void dispatch();
 

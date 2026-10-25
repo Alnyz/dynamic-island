@@ -69,6 +69,33 @@ private Q_SLOTS:
         QVERIFY(NotificationWatcher::describe(QStringLiteral("x"), QString(), QStringLiteral(" "), QString(), {}).isEmpty());
     }
 
+    void testNotifyReplaces()
+    {
+        DBusMessage *m = dbus_message_new_method_call(nullptr, "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        const char *app = "Telegram", *icon = "", *summary = "Rina", *body = "hi";
+        const dbus_uint32_t replaces = 7;
+        const dbus_int32_t timeout = -1;
+        DBusMessageIter it, actions, hints;
+        dbus_message_iter_init_append(m, &it);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &app);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_UINT32, &replaces);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &icon);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &summary);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &body);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "s", &actions);
+        dbus_message_iter_close_container(&it, &actions);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &hints);
+        dbus_message_iter_close_container(&it, &hints);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_INT32, &timeout);
+
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        watcher.handle(m);
+        QCOMPARE(notified.count(), 1);
+        QCOMPARE(notified.first().first().toMap().value(QStringLiteral("replaces")).toInt(), 7);
+        dbus_message_unref(m);
+    }
+
     void testBluetoothDescribe()
     {
         const QVariantMap d = BluetoothWatcher::describe({{QStringLiteral("Alias"), QStringLiteral("Galaxy Buds2")}, {QStringLiteral("Icon"), QStringLiteral("audio-headset")}},
