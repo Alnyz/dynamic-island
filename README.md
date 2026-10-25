@@ -27,6 +27,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 - Volume and brightness levels, replacing Plasma's on-screen box.
 - Notifications, replacing Plasma's popups. Click one to open the app.
+- Every notification is also saved, even ones that never popped up (do not disturb, a locked screen, the panel open). On the idle pill, an amber bell chip counts the ones you haven't looked at yet.
 - Downloads and copies finishing or failing. Click a finished one to open its folder.
 - A microphone or camera in use, Bluetooth devices connecting, and the charger being plugged in or out.
 
@@ -36,6 +37,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume.
 - Timer: drag the minute tape or pick a preset.
 - Sound mixer: output and input devices, mic level, and per-app volume.
+- Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.
 - From the `⋯` menu: clipboard history, notes, a shelf for dragged files, quick links to sites and folders, and a colour picker.
 
 ### Quick buttons

@@ -18,6 +18,9 @@ Item {
     // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
     property var history: null
     property int newNotifications: 0
+    // The amber chip only joins the glances: an animation or an empty pill stays as it is.
+    readonly property bool showHistoryChip: mode === "idle" && idleMode === "glances" && newNotifications > 0
+    readonly property real historyChipWidth: showHistoryChip ? historyChip.width + 8 : 0
     signal notificationsLeft()
     property string extraTool: "clipboard"
     // The clipboard and notes tabs need typing; the rest of the time the island never takes the keyboard.
@@ -124,7 +127,7 @@ Item {
         idle: { w: (idleMode !== "glances" ? idleWidth
                     : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200)
-                    : idleWidth) + indicatorWidth, h: barHeight, r: cornerRadius },
+                    : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
         open: { w: 860, h: 420, r: 30 }
@@ -285,7 +288,7 @@ Item {
             objectName: "glanceRow"
             visible: island.idleMode === "glances" && island.glance.kind !== "none"
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: -island.indicatorWidth / 2 - (batteryRing.visible ? 10 : 0)
+            anchors.horizontalCenterOffset: -(island.indicatorWidth + island.historyChipWidth) / 2 - (batteryRing.visible ? 10 : 0)
             spacing: 7
             readonly property string kind: island.glance.kind
             readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : "#ffffff"
@@ -303,7 +306,7 @@ Item {
             Text {
                 objectName: "glanceTitle"
                 visible: parent.kind !== "clock"
-                width: Math.min(implicitWidth, island.width - 110)
+                width: Math.min(implicitWidth, island.width - 110 - island.historyChipWidth)
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.title || ""
                 color: parent.kind === "batteryLow" ? "#ff8a8a" : "#ffffff"
@@ -411,6 +414,42 @@ Item {
                     startAngle: -90
                     sweepAngle: 360 * Math.max(0, Math.min(100, island.battery)) / 100
                     Behavior on sweepAngle { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                }
+            }
+        }
+
+        // Same shape as the jobs chip, in amber, so new notifications never read as a download or the battery.
+        Rectangle {
+            id: historyChip
+            objectName: "historyChip"
+            visible: island.showHistoryChip
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: batteryRing.visible ? batteryRing.left : parent.right
+            anchors.rightMargin: batteryRing.visible ? 8 : 12 + island.indicatorWidth
+            width: historyRow.implicitWidth + 12
+            height: 18
+            radius: 9
+            color: "#33270f"
+            Row {
+                id: historyRow
+                anchors.centerIn: parent
+                spacing: 4
+                Kirigami.Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 11
+                    height: 11
+                    source: "notifications"
+                    color: "#ffb340"
+                    isMask: true
+                }
+                Text {
+                    objectName: "historyChipText"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: island.newNotifications
+                    color: "#ffb340"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
                 }
             }
         }

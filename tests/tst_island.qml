@@ -226,6 +226,60 @@ Item {
             compare(findChild(island, "glanceRow").visible, false)
         }
 
+        function test_history_chip_shows_count() {
+            const { island } = make(null)
+            island.newNotifications = 3
+            const chip = findChild(island, "historyChip")
+            tryCompare(chip, "visible", true)
+            compare(findChild(island, "historyChipText").text, "3")
+            island.newNotifications = 0
+            compare(chip.visible, false)
+        }
+
+        function test_history_chip_hidden_outside_glances() {
+            const { island } = make(null)
+            island.newNotifications = 3
+            island.idleMode = "animation"
+            compare(findChild(island, "historyChip").visible, false)
+            island.idleMode = "nothing"
+            compare(findChild(island, "historyChip").visible, false)
+        }
+
+        function test_history_chip_hidden_off_idle() {
+            const { island } = make({})
+            island.newNotifications = 3
+            compare(island.mode, "compact")
+            compare(findChild(island, "historyChip").visible, false)
+        }
+
+        function test_history_chip_widens_idle() {
+            const { island } = make(null)
+            island.now = () => new Date(2026, 9, 23, 16, 35)
+            island.calendar = { upNext: () => [{ title: "Quarterly planning review with the whole design team", start: new Date(2026, 9, 23, 17, 0), end: new Date(2026, 9, 23, 18, 0), allDay: false }] }
+            island.refreshGlance()
+            tryCompare(island, "width", 230)
+            island.newNotifications = 3
+            tryVerify(() => island.width > 230)
+            const chip = findChild(island, "historyChip")
+            const row = findChild(island, "glanceRow")
+            const chipX = chip.mapToItem(island, 0, 0).x
+            const rowEnd = row.mapToItem(island, row.width, 0).x
+            verify(chipX >= rowEnd, chipX + " >= " + rowEnd)
+        }
+
+        function test_history_chip_beside_battery_ring() {
+            const { island } = make(null)
+            island.battery = 60
+            island.now = () => new Date(2026, 9, 23, 16, 35)
+            island.refreshGlance()
+            island.newNotifications = 3
+            const ring = findChild(island, "batteryRing")
+            const chip = findChild(island, "historyChip")
+            tryCompare(chip, "visible", true)
+            verify(ring.visible)
+            verify(chip.mapToItem(island, chip.width, 0).x <= ring.mapToItem(island, 0, 0).x)
+        }
+
         function test_timer_only_is_compact() {
             const { island } = make(null, true)
             compare(island.mode, "compact")

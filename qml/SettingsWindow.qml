@@ -25,6 +25,8 @@ QQC.ApplicationWindow {
     readonly property var disabledUrls: L.toList(prefs.calendar.disabled)
     readonly property var hiddenButtons: L.toList(prefs.quickButtons.hidden)
     readonly property var links: L.parseLinks(prefs.tools.links)
+    readonly property var knownApps: L.parseKnownApps(prefs.history.known)
+    readonly property var offApps: L.toList(prefs.history.off)
 
     function saveLinks(list) { prefs.tools.links = JSON.stringify(list) }
     function moved(list, from, to) {
@@ -234,6 +236,79 @@ QQC.ApplicationWindow {
                             text: modelData.label
                             checked: win.prefs.show[modelData.key]
                             onToggled: win.prefs.show[modelData.key] = checked
+                        }
+                    }
+
+                    Item { Kirigami.FormData.isSection: true }
+                    QQC.CheckBox {
+                        objectName: "historySave"
+                        Kirigami.FormData.label: "History:"
+                        text: "Save notifications"
+                        checked: win.prefs.history.save
+                        onToggled: win.prefs.history.save = checked
+                    }
+                    QQC.ComboBox {
+                        objectName: "historyDays"
+                        Kirigami.FormData.label: "Keep them for:"
+                        enabled: win.prefs.history.save
+                        textRole: "label"
+                        valueRole: "days"
+                        readonly property var choices: [
+                            { days: 1, label: "1 day" },
+                            { days: 7, label: "7 days" },
+                            { days: 30, label: "30 days" }
+                        ]
+                        model: choices
+                        // indexOfValue() gives -1 before the model loads, so the index is found by hand.
+                        currentIndex: Math.max(0, choices.findIndex(c => c.days === win.prefs.history.days))
+                        onActivated: win.prefs.history.days = currentValue
+                    }
+                    // Switching a kind or an app off only stops new ones; what is saved stays.
+                    Repeater {
+                        model: [
+                            { key: "system", label: "System" },
+                            { key: "apps", label: "Apps" },
+                            { key: "others", label: "Others" }
+                        ]
+                        delegate: ColumnLayout {
+                            id: kind
+                            required property var modelData
+                            required property int index
+                            Kirigami.FormData.label: index === 0 ? "Save from:" : ""
+                            spacing: 0
+                            QQC.CheckBox {
+                                objectName: "historyKind-" + kind.modelData.key
+                                text: kind.modelData.label
+                                enabled: win.prefs.history.save
+                                checked: win.prefs.history[kind.modelData.key]
+                                onToggled: win.prefs.history[kind.modelData.key] = checked
+                            }
+                            Repeater {
+                                model: win.knownApps.filter(a => a.kind === kind.modelData.key)
+                                delegate: RowLayout {
+                                    id: app
+                                    required property var modelData
+                                    Layout.leftMargin: Kirigami.Units.gridUnit * 1.5
+                                    QQC.CheckBox {
+                                        id: appBox
+                                        objectName: "historyApp-" + app.modelData.key
+                                        enabled: win.prefs.history.save && win.prefs.history[kind.modelData.key]
+                                        checked: !win.offApps.includes(app.modelData.key)
+                                        onToggled: win.prefs.history.off = win.toggled(win.offApps, app.modelData.key, !checked)
+                                    }
+                                    Kirigami.Icon {
+                                        enabled: appBox.enabled
+                                        implicitWidth: Kirigami.Units.iconSizes.small
+                                        implicitHeight: Kirigami.Units.iconSizes.small
+                                        source: app.modelData.icon || "preferences-desktop-notification"
+                                        fallback: "preferences-desktop-notification"
+                                    }
+                                    QQC.Label {
+                                        enabled: appBox.enabled
+                                        text: app.modelData.name
+                                    }
+                                }
+                            }
                         }
                     }
                 }
