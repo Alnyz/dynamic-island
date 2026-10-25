@@ -1,12 +1,54 @@
 #include "bluetoothwatcher.h"
 #include "camerawatcher.h"
+#include "jobwatcher.h"
 #include "notificationwatcher.h"
 #include "plasmasettings.h"
 
 #include <QDir>
+#include <QSignalSpy>
+#include <dbus/dbus.h>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
+
+namespace
+{
+DBusMessage *jobUpdate()
+{
+    DBusMessage *m = dbus_message_new_method_call(nullptr, "/org/kde/notificationmanager/jobs/JobView_3", "org.kde.JobViewV3", "update");
+    dbus_message_set_sender(m, ":1.131");
+    DBusMessageIter it, dict;
+    dbus_message_iter_init_append(m, &it);
+    dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &dict);
+    auto add = [&](const char *key, int type, const char *sig, const void *value) {
+        DBusMessageIter entry, variant;
+        dbus_message_iter_open_container(&dict, DBUS_TYPE_DICT_ENTRY, nullptr, &entry);
+        dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
+        dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT, sig, &variant);
+        dbus_message_iter_append_basic(&variant, type, value);
+        dbus_message_iter_close_container(&entry, &variant);
+        dbus_message_iter_close_container(&dict, &entry);
+    };
+    const char *title = "Copying";
+    const char *dest = "/home/alnyz/Downloads/big.bin";
+    const dbus_uint32_t percent = 64;
+    const dbus_uint64_t total = 2147483648ULL;
+    add("title", DBUS_TYPE_STRING, "s", &title);
+    add("percent", DBUS_TYPE_UINT32, "u", &percent);
+    add("totalBytes", DBUS_TYPE_UINT64, "t", &total);
+    add("descriptionValue2", DBUS_TYPE_STRING, "s", &dest);
+    dbus_message_iter_close_container(&it, &dict);
+    return m;
+}
+
+DBusMessage *ownerChanged(const char *name, const char *newOwner)
+{
+    DBusMessage *m = dbus_message_new_signal("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged");
+    dbus_message_set_sender(m, "org.freedesktop.DBus");
+    dbus_message_append_args(m, DBUS_TYPE_STRING, &name, DBUS_TYPE_STRING, &name, DBUS_TYPE_STRING, &newOwner, DBUS_TYPE_INVALID);
+    return m;
+}
+}
 
 class TestWatchers : public QObject
 {
@@ -59,6 +101,38 @@ private Q_SLOTS:
         s.setPopupsEnabled(true);
         QCOMPARE(s.popupsEnabled(QStringLiteral("discord")), true);
         QCOMPARE(s.popupsEnabled(QStringLiteral("org.telegram.desktop")), true);
+    }
+
+    void testJobReadProps()
+    {
+        DBusMessage *m = jobUpdate();
+        const QVariantMap p = JobWatcher::readProps(m);
+        QCOMPARE(p.value(QStringLiteral("title")).toString(), QStringLiteral("Copying"));
+        QCOMPARE(p.value(QStringLiteral("percent")).toLongLong(), 64);
+        QCOMPARE(p.value(QStringLiteral("totalBytes")).toLongLong(), 2147483648LL);
+        QCOMPARE(p.value(QStringLiteral("descriptionValue2")).toString(), QStringLiteral("/home/alnyz/Downloads/big.bin"));
+        dbus_message_unref(m);
+    }
+
+    void testJobKey()
+    {
+        DBusMessage *m = jobUpdate();
+        QCOMPARE(JobWatcher::key(m), QStringLiteral(":1.131 /org/kde/notificationmanager/jobs/JobView_3"));
+        dbus_message_unref(m);
+    }
+
+    void testOwnerGone()
+    {
+        JobWatcher w;
+        QSignalSpy gone(&w, &JobWatcher::ownerGone);
+        DBusMessage *left = ownerChanged(":1.131", "");
+        DBusMessage *moved = ownerChanged(":1.140", ":1.140");
+        w.handle(left);
+        w.handle(moved);
+        QCOMPARE(gone.count(), 1);
+        QCOMPARE(gone.first().first().toString(), QStringLiteral(":1.131"));
+        dbus_message_unref(left);
+        dbus_message_unref(moved);
     }
 
     void testCameraScan()
