@@ -17,7 +17,8 @@ TestCase {
     }
     Component {
         id: winComp
-        SettingsWindow { page: 2; visible: true }
+        // Tall enough that the whole Alerts page fits without scrolling.
+        SettingsWindow { page: 2; visible: true; height: 1400 }
     }
 
     function make() {
@@ -54,6 +55,18 @@ TestCase {
         compare(prefs.history.save, false)
         verify(!box.enabled)
         verify(!findChild(win.contentItem, "historyKind-apps").enabled)
+    }
+
+    function test_urgent_app_switch() {
+        const { prefs, win } = make()
+        prefs.fullScreen.urgent = []
+        prefs.fullScreen.allNotifications = false
+        const box = findChild(win.contentItem, "urgentApp-org.telegram.desktop")
+        verify(!box.checked)
+        mouseClick(box)
+        compare(L.toList(prefs.fullScreen.urgent), ["org.telegram.desktop"])
+        prefs.fullScreen.allNotifications = true
+        verify(!box.enabled)
     }
 
     function test_keep_for_days() {

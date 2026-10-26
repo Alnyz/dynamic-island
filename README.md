@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Cover art and a small level meter while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
 - When nothing is going on, it shows a glance (an event starting soon, low battery, the time, the weather) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
-- Point at it to see the song title. Click it to open the panel.
+- Point at it to see the song title. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. The key can be changed in System Settings → Shortcuts.
 - Choose between a notch joined to the top edge or a floating pill. Switching animates.
 
 ### Short alerts in the pill
@@ -29,7 +29,8 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Notifications, replacing Plasma's popups. Click one to open the app.
 - Every notification is also saved, even ones that never popped up (do not disturb, a locked screen, the panel open). On the idle pill, an amber bell chip counts the ones you haven't looked at yet.
 - Downloads and copies finishing or failing. Click a finished one to open its folder.
-- A microphone or camera in use, Bluetooth devices connecting, and the charger being plugged in or out.
+- An app starting to use the microphone or camera, Bluetooth devices connecting, and the charger being plugged in or out.
+- Over a full-screen game or film, alerts still come to the front for a moment. Notifications only do when their app is on your urgent list (or marked critical), unless "Show all notifications" is on. Each kind can be turned off under Settings → Alerts → Over full-screen apps.
 
 ### Panel tabs
 
@@ -54,7 +55,7 @@ Packages on Arch:
 
 ```sh
 sudo pacman -S --needed cmake ninja qt6-base qt6-declarative qt6-shadertools \
-    layer-shell-qt kirigami kcalendarcore kguiaddons kconfig kidletime \
+    layer-shell-qt kirigami kcalendarcore kguiaddons kconfig kidletime kglobalaccel \
     plasma-workspace plasma-pa wireplumber networkmanager bluez-utils spectacle
 ```
 

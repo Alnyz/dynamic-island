@@ -27,6 +27,7 @@ QQC.ApplicationWindow {
     readonly property var links: L.parseLinks(prefs.tools.links)
     readonly property var knownApps: L.parseKnownApps(prefs.history.known)
     readonly property var offApps: L.toList(prefs.history.off)
+    readonly property var urgentApps: L.toList(prefs.fullScreen.urgent)
 
     function saveLinks(list) { prefs.tools.links = JSON.stringify(list) }
     function moved(list, from, to) {
@@ -236,6 +237,62 @@ QQC.ApplicationWindow {
                             text: modelData.label
                             checked: win.prefs.show[modelData.key]
                             onToggled: win.prefs.show[modelData.key] = checked
+                        }
+                    }
+
+                    // What still comes in front of a full-screen game or film.
+                    Item { Kirigami.FormData.isSection: true }
+                    Repeater {
+                        model: [
+                            { key: "levels", label: "Volume and brightness" },
+                            { key: "jobs", label: "Downloads and file copies" },
+                            { key: "privacy", label: "Microphone and camera in use" },
+                            { key: "devices", label: "Bluetooth devices connecting" },
+                            { key: "power", label: "Charger plugged in or out" },
+                            { key: "allNotifications", label: "Show all notifications" }
+                        ]
+                        delegate: QQC.CheckBox {
+                            required property var modelData
+                            required property int index
+                            objectName: "fullScreen-" + modelData.key
+                            Kirigami.FormData.label: index === 0 ? "Over full-screen apps:" : ""
+                            text: modelData.label
+                            checked: win.prefs.fullScreen[modelData.key]
+                            onToggled: win.prefs.fullScreen[modelData.key] = checked
+                        }
+                    }
+                    ColumnLayout {
+                        Kirigami.FormData.label: "Urgent apps:"
+                        spacing: 0
+                        QQC.Label {
+                            visible: win.knownApps.length === 0
+                            text: "Apps show up here once they send a notification."
+                            opacity: 0.7
+                        }
+                        Repeater {
+                            model: win.knownApps
+                            delegate: RowLayout {
+                                id: urgent
+                                required property var modelData
+                                QQC.CheckBox {
+                                    id: urgentBox
+                                    objectName: "urgentApp-" + urgent.modelData.key
+                                    enabled: !win.prefs.fullScreen.allNotifications
+                                    checked: win.urgentApps.includes(urgent.modelData.key)
+                                    onToggled: win.prefs.fullScreen.urgent = win.toggled(win.urgentApps, urgent.modelData.key, checked)
+                                }
+                                Kirigami.Icon {
+                                    enabled: urgentBox.enabled
+                                    implicitWidth: Kirigami.Units.iconSizes.small
+                                    implicitHeight: Kirigami.Units.iconSizes.small
+                                    source: urgent.modelData.icon || "preferences-desktop-notification"
+                                    fallback: "preferences-desktop-notification"
+                                }
+                                QQC.Label {
+                                    enabled: urgentBox.enabled
+                                    text: urgent.modelData.name
+                                }
+                            }
                         }
                     }
 
