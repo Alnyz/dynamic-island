@@ -52,6 +52,8 @@ Item {
     readonly property var extra: tools.find(t => t.key === extraTool) || tools[0]
     property bool menuOpen: false
     readonly property bool wantsKeyboard: tab === "clipboard" || tab === "notes"
+    // Home is shorter than the other tabs; the island shrinks to it. 0 means use the full height.
+    readonly property real fitHeight: tab === "home" ? tabContent.y + homeTab.implicitHeight : 0
     readonly property bool typing: (clipboardTab.item && clipboardTab.item.typing) || (notesTab.item && notesTab.item.typing) || false
 
     function pickTool(key) {
@@ -248,6 +250,7 @@ Item {
     }
 
     Item {
+        id: tabContent
         objectName: "tabContent"
         anchors.top: tabs.bottom
         anchors.topMargin: 16
@@ -256,6 +259,7 @@ Item {
         anchors.bottom: parent.bottom
 
         Row {
+            id: homeTab
             objectName: "homeTab"
             anchors.fill: parent
             visible: panel.tab === "home"

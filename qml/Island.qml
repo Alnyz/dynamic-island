@@ -130,7 +130,8 @@ Item {
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
-        open: { w: 860, h: 420, r: 30 }
+        // 14 + 18: panelLoader's top and bottom margins.
+        open: { w: 860, h: panelLoader.item && panelLoader.item.fitHeight > 0 ? panelLoader.item.fitHeight + 14 + 18 : 420, r: 30 }
     })
     readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius) : sizes[mode]
     // Where the island sits in its parent; the window's input region must track position too, not just size.
