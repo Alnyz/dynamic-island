@@ -35,13 +35,21 @@ public:
     static bool parseBluetoothPowered(const QString &output);
     static std::pair<int, bool> parseBattery(const QString &capacity, const QString &status);
     static bool dndUntilActive(const QString &until, const QDateTime &now);
+    // ownDnd: the island's button; trayDnd: Plasma's tray switch; inhibited: holds from apps,
+    // including Plasma's own while a full-screen app is active, which ignoreHolds looks past.
+    static bool silenced(bool ownDnd, bool trayDnd, bool inhibited, bool ignoreHolds);
 
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void refreshBattery() { readBattery(); }
     // Plasma announces no change to its edit mode, so it has to be asked.
     Q_INVOKABLE void refreshEditMode();
-    // Reads do-not-disturb now; notifications arrive between panel opens.
-    Q_INVOKABLE bool dndActive() { readDnd(); return m_dnd; }
+    // Reads do-not-disturb now; notifications arrive between panel opens. Over a full-screen app
+    // pass ignoreHolds: Plasma then holds every notification, and the island filters its own.
+    Q_INVOKABLE bool dndActive(bool ignoreHolds = false)
+    {
+        readDnd();
+        return silenced(m_dndCookie, m_trayDnd, m_inhibited, ignoreHolds);
+    }
     Q_INVOKABLE void toggleMute();
     Q_INVOKABLE void changeVolume(int deltaPercent);
     Q_INVOKABLE void setWifi(bool on);
@@ -75,6 +83,8 @@ private:
     bool m_wifi = false;
     bool m_bluetooth = false;
     bool m_dnd = false;
+    bool m_trayDnd = false;
+    bool m_inhibited = false;
     bool m_keepAwake = false;
     bool m_editMode = false;
     bool m_userIdle = false;

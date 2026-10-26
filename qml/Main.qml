@@ -57,7 +57,7 @@ Window {
             if (!prefs.show.notifications)
                 return
             PlasmaSettings.hidePopupsFor(n.desktopEntry)
-            if (!island.open && !SystemStatus.dndActive())
+            if (!island.open && !SystemStatus.dndActive(fullScreen.active))
                 root.alert(Object.assign({ kind: "notification" }, n), 5000)
         }
     }
@@ -79,7 +79,7 @@ Window {
     JobsModel {
         id: jobsModel
         onFinished: job => {
-            if (!SystemStatus.dndActive())
+            if (!SystemStatus.dndActive(fullScreen.active))
                 root.queueAlert({ kind: "job", ok: true, title: L.jobDoneTitle(job), body: job.name, folder: job.folder }, 4000)
         }
         onFailed: (job, error) => root.queueAlert({ kind: "job", ok: false, title: L.jobFailTitle(job), body: job.name + (error ? " · " + error : ""), folder: job.folder }, 4000)

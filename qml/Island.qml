@@ -165,6 +165,8 @@ Item {
 
     width: size.w
     height: size.h
+    // Tucked behind a full-screen app the pill is a zero-height sliver; its contents mustn't spill out.
+    clip: tucked
 
     // Folding away uses no spring, so it never dips below the top edge.
     Behavior on width { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }

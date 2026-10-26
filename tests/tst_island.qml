@@ -549,6 +549,14 @@ Item {
             tryCompare(island, "wantsFront", false)
         }
 
+        function test_tucked_pill_shows_nothing() {
+            const { island } = make(null)
+            island.coveredByFullScreen = true
+            verify(island.clip)
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 1000)
+            verify(!island.clip)
+        }
+
         function test_repeated_levels_stay_in_front() {
             const { island } = make(null)
             island.coveredByFullScreen = true

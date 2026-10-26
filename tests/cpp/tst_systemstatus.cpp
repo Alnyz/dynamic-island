@@ -37,6 +37,17 @@ private Q_SLOTS:
         QCOMPARE(SystemStatus::parseBattery(QStringLiteral("80\n"), QStringLiteral("Not charging\n")), (std::pair{80, true}));
     }
 
+    void testSilenced()
+    {
+        // Plasma holds notifications while a full-screen app is active; the island can look past
+        // those holds, never past do not disturb the user switched on.
+        QVERIFY(SystemStatus::silenced(false, false, true, false));
+        QVERIFY(!SystemStatus::silenced(false, false, true, true));
+        QVERIFY(SystemStatus::silenced(false, true, false, true));
+        QVERIFY(SystemStatus::silenced(true, false, false, true));
+        QVERIFY(!SystemStatus::silenced(false, false, false, false));
+    }
+
     void testDndUntil()
     {
         const QDateTime now(QDate(2026, 10, 23), QTime(15, 0));

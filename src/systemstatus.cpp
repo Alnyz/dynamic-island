@@ -175,18 +175,23 @@ void SystemStatus::readBattery()
     Q_EMIT changed();
 }
 
+bool SystemStatus::silenced(bool ownDnd, bool trayDnd, bool inhibited, bool ignoreHolds)
+{
+    return ownDnd || trayDnd || (inhibited && !ignoreHolds);
+}
+
 void SystemStatus::readDnd()
 {
     // Plasma's own DND (tray) lives in plasmanotifyrc; other apps' holds show up as Inhibited.
     const QSettings rc(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/plasmanotifyrc"),
                        QSettings::IniFormat);
-    const bool trayDnd = dndUntilActive(rc.value(QStringLiteral("DoNotDisturb/Until")).toString(), QDateTime::currentDateTime());
+    m_trayDnd = dndUntilActive(rc.value(QStringLiteral("DoNotDisturb/Until")).toString(), QDateTime::currentDateTime());
     auto get = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.Notifications"), QStringLiteral("/org/freedesktop/Notifications"),
                                               QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
     get << QStringLiteral("org.freedesktop.Notifications") << QStringLiteral("Inhibited");
-    callAsync(this, get, [this, trayDnd](const QDBusMessage &reply) {
-        const bool inhibited = !reply.arguments().isEmpty() && reply.arguments().first().value<QDBusVariant>().variant().toBool();
-        m_dnd = m_dndCookie || trayDnd || inhibited;
+    callAsync(this, get, [this](const QDBusMessage &reply) {
+        m_inhibited = !reply.arguments().isEmpty() && reply.arguments().first().value<QDBusVariant>().variant().toBool();
+        m_dnd = silenced(m_dndCookie, m_trayDnd, m_inhibited, false);
         Q_EMIT changed();
     });
 }
