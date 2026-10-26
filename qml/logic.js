@@ -272,7 +272,29 @@ function alertSize(kind, barHeight, radius) {
         return { w: 400, h: 64, r: 22 }
     if (kind === "device")
         return { w: 330, h: 72, r: 24 }
+    if (kind === "privacy")
+        return { w: 330, h: barHeight, r: radius }
     return { w: 300, h: barHeight, r: radius }
+}
+
+// Whether an alert may come in front of a full-screen app.
+// f: { levels, jobs, privacy, devices, power, allNotifications, urgent: [keys] }
+function fullScreenAllowed(a, f) {
+    switch (a.kind) {
+    case "volume":
+    case "brightness": return !!f.levels
+    case "job": return !!f.jobs
+    case "privacy": return !!f.privacy
+    case "device": return !!f.devices
+    case "power": return !!f.power
+    case "notification": return !!f.allNotifications || a.urgency === 2 || toList(f.urgent).includes(notifKey(a))
+    default: return true
+    }
+}
+
+// Apps in after that weren't in before, e.g. ones that just started recording.
+function newApps(before, after) {
+    return after.filter(name => !before.includes(name))
 }
 
 // Apps recording from a microphone, leaving out the island's own level meter and Plasma's.

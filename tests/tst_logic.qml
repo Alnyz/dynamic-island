@@ -438,4 +438,29 @@ TestCase {
         compare(L.rememberApp(apps, notif()).length, 1)
         verify(L.rememberApp(apps, notif({ desktopEntry: "" })) === apps)
     }
+
+    function test_full_screen_allowed() {
+        const f = { levels: true, jobs: true, privacy: false, devices: true, power: false, allNotifications: false, urgent: ["org.telegram.desktop", "app:Steam"] }
+        verify(L.fullScreenAllowed({ kind: "volume" }, f))
+        verify(L.fullScreenAllowed({ kind: "brightness" }, f))
+        verify(!L.fullScreenAllowed({ kind: "privacy" }, f))
+        verify(!L.fullScreenAllowed({ kind: "power" }, f))
+        verify(L.fullScreenAllowed({ kind: "color" }, f))
+        verify(L.fullScreenAllowed({ kind: "notification", desktopEntry: "org.telegram.desktop", app: "Telegram", urgency: 1 }, f))
+        verify(L.fullScreenAllowed({ kind: "notification", desktopEntry: "", app: "Steam", urgency: 1 }, f))
+        verify(!L.fullScreenAllowed({ kind: "notification", desktopEntry: "discord", app: "Discord", urgency: 1 }, f))
+        verify(L.fullScreenAllowed({ kind: "notification", desktopEntry: "discord", app: "Discord", urgency: 2 }, f))
+        verify(L.fullScreenAllowed({ kind: "notification", desktopEntry: "discord", app: "Discord" }, Object.assign({}, f, { allNotifications: true })))
+    }
+
+    function test_new_apps() {
+        compare(L.newApps([], ["Zoom"]), ["Zoom"])
+        compare(L.newApps(["Zoom"], ["Zoom", "OBS"]), ["OBS"])
+        compare(L.newApps(["Zoom", "OBS"], ["Zoom"]), [])
+        compare(L.newApps(["Zoom"], ["Zoom"]), [])
+    }
+
+    function test_privacy_alert_size() {
+        compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
+    }
 }
