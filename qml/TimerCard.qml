@@ -56,6 +56,8 @@ Column {
             model: card.active ? [] : [5, 15, 25, 60]
             delegate: Pill {
                 required property int modelData
+                // Two equal columns, so the presets line up as a 2x2 grid.
+                width: (card.width - parent.spacing) / 2
                 height: 30
                 text: modelData + " min"
                 onClicked: card.timer.start(modelData)
