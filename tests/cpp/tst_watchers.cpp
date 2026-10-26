@@ -1,6 +1,8 @@
 #include "bluetoothwatcher.h"
 #include "camerawatcher.h"
 #include "fullscreenwatcher.h"
+#include "inputregion.h"
+#include <QDBusConnection>
 #include "jobwatcher.h"
 #include "notificationwatcher.h"
 #include "plasmasettings.h"
@@ -128,6 +130,28 @@ private Q_SLOTS:
         w.reportActivated(QStringLiteral("HDMI-A-1"), true, QStringLiteral("mpv"));
         QVERIFY(!w.active());
         QCOMPARE(switched.count(), 2);
+    }
+
+    void emptyInputRegionStaysSmall()
+    {
+        // An empty mask means "no mask" on Wayland: the whole window would take clicks.
+        QCOMPARE(InputRegion::maskRect(QRectF(380, 0, 120, 0)), QRect(380, 0, 1, 1));
+        QCOMPARE(InputRegion::maskRect(QRectF(300, 0, 300.4, 32)), QRect(300, 0, 301, 32));
+    }
+
+    void fullScreenWatcherWithoutServiceLoadsNothing()
+    {
+        // Another instance (here: the test) already owns the name, so this one must neither load
+        // nor, on destruction, unload the other instance's KWin script.
+        auto bus = QDBusConnection::sessionBus();
+        const bool mine = bus.registerService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+        {
+            FullScreenWatcher w;
+            w.setEnabled(true);
+            QVERIFY(!w.loaded());
+        }
+        if (mine)
+            bus.unregisterService(QStringLiteral("io.github.alnyz.DynamicIsland"));
     }
 
     void notificationUrgency()

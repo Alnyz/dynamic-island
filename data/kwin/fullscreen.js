@@ -15,15 +15,23 @@ function reportFullScreen() {
         callDBus(SERVICE, PATH, IFACE, "reportFullScreen", outputOf(watched), !!watched.fullScreen);
 }
 
+// A full-screen game that closes may leave no window active, so its closing clears the state.
+function onClosed() {
+    watched = null;
+    callDBus(SERVICE, PATH, IFACE, "reportFullScreen", "", false);
+}
+
 function onActivated(w) {
     if (watched) {
         watched.fullScreenChanged.disconnect(reportFullScreen);
         watched.outputChanged.disconnect(reportFullScreen);
+        watched.closed.disconnect(onClosed);
     }
     watched = w;
     if (w) {
         w.fullScreenChanged.connect(reportFullScreen);
         w.outputChanged.connect(reportFullScreen);
+        w.closed.connect(onClosed);
     }
     callDBus(SERVICE, PATH, IFACE, "reportActivated", outputOf(w), !!(w && w.fullScreen), w ? String(w.resourceClass) : "");
 }

@@ -25,6 +25,8 @@ public:
     QString screenName() const { return m_screen; }
     void setScreenName(const QString &name);
     bool active() const { return m_active; }
+    // Whether this instance owns the D-Bus name and its script is loaded into KWin.
+    bool loaded() const { return m_loaded; }
 
 public Q_SLOTS:
     // Another window became active. No window, or the island's own surface taking the
@@ -46,6 +48,7 @@ private:
     void unloadScript();
 
     bool m_enabled = false;
+    bool m_loaded = false;
     QString m_screen;
     QString m_output;
     bool m_fullScreen = false;

@@ -70,8 +70,8 @@ target_link_libraries(tst_history PRIVATE Qt6::Test Qt6::Qml)
 add_test(NAME cpp_history COMMAND tst_history)
 
 qt_add_executable(tst_watchers tests/cpp/tst_watchers.cpp src/notificationwatcher.cpp src/notificationwatcher.h src/jobwatcher.cpp src/jobwatcher.h src/bluetoothwatcher.cpp src/bluetoothwatcher.h
-    src/plasmasettings.cpp src/plasmasettings.h src/camerawatcher.cpp src/camerawatcher.h src/fullscreenwatcher.cpp src/fullscreenwatcher.h)
+    src/plasmasettings.cpp src/plasmasettings.h src/camerawatcher.cpp src/camerawatcher.h src/fullscreenwatcher.cpp src/fullscreenwatcher.h src/inputregion.cpp src/inputregion.h)
 target_include_directories(tst_watchers PRIVATE src)
-target_link_libraries(tst_watchers PRIVATE Qt6::Test Qt6::Gui Qt6::DBus Qt6::Qml KF6::ConfigCore PkgConfig::DBUS1)
+target_link_libraries(tst_watchers PRIVATE Qt6::Test Qt6::Gui Qt6::DBus Qt6::Qml KF6::ConfigCore PkgConfig::DBUS1 LayerShellQt::Interface)
 add_test(NAME cpp_watchers COMMAND tst_watchers)
 set_tests_properties(cpp_watchers PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)

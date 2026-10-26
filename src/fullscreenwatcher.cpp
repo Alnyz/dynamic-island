@@ -26,8 +26,7 @@ FullScreenWatcher::FullScreenWatcher(QObject *parent)
 
 FullScreenWatcher::~FullScreenWatcher()
 {
-    if (m_enabled)
-        unloadScript();
+    unloadScript();
 }
 
 void FullScreenWatcher::setEnabled(bool on)
@@ -80,10 +79,16 @@ void FullScreenWatcher::update()
 void FullScreenWatcher::loadScript()
 {
     auto bus = QDBusConnection::sessionBus();
-    if (!bus.registerService(kService) || !bus.registerObject(kPath, this, QDBusConnection::ExportScriptableSlots)) {
+    // Another running island owns the name; its script must stay loaded.
+    if (!bus.registerService(kService)) {
         qWarning("FullScreenWatcher: could not take %s on the session bus", qPrintable(kService));
         return;
     }
+    if (!bus.registerObject(kPath, this, QDBusConnection::ExportScriptableSlots)) {
+        bus.unregisterService(kService);
+        return;
+    }
+    m_loaded = true;
     // KWin loads scripts from a file, so the bundled one is copied out first.
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     QDir().mkpath(dir);
@@ -106,6 +111,9 @@ void FullScreenWatcher::loadScript()
 
 void FullScreenWatcher::unloadScript()
 {
+    if (!m_loaded)
+        return;
+    m_loaded = false;
     auto bus = QDBusConnection::sessionBus();
     bus.call(scripting(QStringLiteral("unloadScript")) << kScriptName);
     bus.unregisterObject(kPath);

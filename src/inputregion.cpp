@@ -3,10 +3,16 @@
 #include <LayerShellQt/Window>
 #include <QRegion>
 
+QRect InputRegion::maskRect(const QRectF &rect)
+{
+    const QRect r = rect.toAlignedRect();
+    return r.isEmpty() ? QRect(r.topLeft(), QSize(1, 1)) : r;
+}
+
 void InputRegion::set(QWindow *window, const QRectF &rect)
 {
     if (window)
-        window->setMask(QRegion(rect.toAlignedRect()));
+        window->setMask(QRegion(maskRect(rect)));
 }
 
 void InputRegion::setKeyboard(QWindow *window, bool on, bool exclusive)
