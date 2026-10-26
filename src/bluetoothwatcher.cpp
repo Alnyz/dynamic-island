@@ -31,7 +31,8 @@ void BluetoothWatcher::onPropertiesChanged(const QString &interface, const QVari
 
 void BluetoothWatcher::report(const QString &path, bool connected)
 {
-    auto getAll = [&](const QString &iface) {
+    // By value: the battery lookup runs after this call (and the timer that made it) is gone.
+    auto getAll = [path](const QString &iface) {
         auto msg = QDBusMessage::createMethodCall(kBluez, path, kProps, QStringLiteral("GetAll"));
         msg << iface;
         return QDBusConnection::systemBus().asyncCall(msg);
