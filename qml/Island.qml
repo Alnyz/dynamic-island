@@ -24,7 +24,7 @@ Item {
     signal notificationsLeft()
     property string extraTool: "clipboard"
     // The clipboard and notes tabs need typing; the rest of the time the island never takes the keyboard.
-    readonly property bool wantsKeyboard: open && panelLoader.item !== null && panelLoader.item.wantsKeyboard
+    readonly property bool wantsKeyboard: open && panelLoader.item !== null && (panelLoader.item.wantsKeyboard || openedByKeyboard)
     property bool systemControls: true
     property bool open: false
     readonly property bool hovered: hover.hovered
@@ -87,7 +87,24 @@ Item {
         alertTimer.interval = ms
         alertTimer.restart()
     }
+    // Opened with Meta+N: the pointer is usually elsewhere, so hover-out only closes it once
+    // the pointer has been on the panel (touched).
+    property bool openedByKeyboard: false
+    property bool touched: false
+    function toggleFromKeyboard() {
+        if (open) {
+            open = false
+            return
+        }
+        openedByKeyboard = true
+        open = true
+    }
+    onHoveredChanged: if (open && hovered) touched = true
     onOpenChanged: {
+        if (!open) {
+            openedByKeyboard = false
+            touched = false
+        }
         if (open)
             alert = null
         else
@@ -212,6 +229,7 @@ Item {
         interval: 600
         // Stays open while typing a note or a search, even with the pointer elsewhere.
         running: island.open && !island.hovered && !(panelLoader.item && panelLoader.item.typing)
+                 && (!island.openedByKeyboard || island.touched)
         onTriggered: island.open = false
     }
 
@@ -921,11 +939,13 @@ Item {
     Loader {
         id: panelLoader
         active: island.open
+        focus: true
         anchors.fill: parent
         anchors.margins: 18
         anchors.topMargin: 14
         sourceComponent: HomePanel {
             tab: island.requestedTab || "home"
+            onCloseRequested: island.open = false
             showJoin: island.glances.meetings !== false
             onLinkRequested: url => {
                 island.open = false

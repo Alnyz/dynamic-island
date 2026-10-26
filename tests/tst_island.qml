@@ -512,6 +512,31 @@ Item {
             tryCompare(island, "mode", "idle")
         }
 
+        function test_keyboard_open_ignores_far_pointer() {
+            const { island } = make(null)
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            wait(1000)
+            compare(island.open, true)
+            mouseMove(island, 20, 20)
+            mouseMove(stage, 1090, 510)
+            tryCompare(island, "open", false, 1500)
+        }
+
+        function test_keyboard_toggle_and_escape() {
+            const { island } = make(null)
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            island.toggleFromKeyboard()
+            compare(island.open, false)
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            findChild(island, "homePanel").forceActiveFocus()
+            keyClick(Qt.Key_Escape)
+            compare(island.open, false)
+            compare(island.openedByKeyboard, false)
+        }
+
         function test_hides_behind_full_screen() {
             const { island } = make(null)
             island.coveredByFullScreen = true
@@ -528,7 +553,8 @@ Item {
             const { island } = make(null)
             island.coveredByFullScreen = true
             tryCompare(island, "height", 0)
-            island.showAlert({ kind: "volume", value: 40, muted: false }, 300)
+            // Long enough to finish growing; the repeats below each keep it up for 300 ms.
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 1500)
             tryCompare(island, "height", 32)
             for (let i = 0; i < 4; ++i) {
                 wait(150)

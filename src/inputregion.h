@@ -18,7 +18,8 @@ public:
     // outside the visible pill fall through to the panel underneath.
     Q_INVOKABLE void set(QWindow *window, const QRectF &rect);
     // Lets the layer-shell surface take keyboard focus when clicked (OnDemand), or never.
-    Q_INVOKABLE void setKeyboard(QWindow *window, bool on);
+    // Exclusive takes it straight away, for the panel opened with the shortcut.
+    Q_INVOKABLE void setKeyboard(QWindow *window, bool on, bool exclusive = false);
     // Overlay sits above full-screen windows; Top, the usual layer, sits below them.
     Q_INVOKABLE void setLayer(QWindow *window, bool overlay);
 };

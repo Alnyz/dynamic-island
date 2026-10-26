@@ -11,6 +11,10 @@ Item {
     property var weather: null
     property var calendar: null
     property string tab: "home"
+    // Esc closes the panel. A focused search box handles its own Esc first.
+    signal closeRequested()
+    focus: true
+    Keys.onEscapePressed: closeRequested()
     // Off in unit tests: the buttons talk to the real system.
     property bool showQuickButtons: true
     property var quickHidden: []

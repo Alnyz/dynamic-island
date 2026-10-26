@@ -93,6 +93,13 @@ Window {
         enabled: true
         screenName: root.screen ? root.screen.name : ""
     }
+    // Clicking into another app closes the panel; the pointer may never have touched it.
+    Connections {
+        target: fullScreen
+        function onSwitched() { island.open = false }
+    }
+    PanelShortcut { onActivated: island.toggleFromKeyboard() }
+
     function alert(a, ms) {
         const f = prefs.fullScreen
         if (fullScreen.active && !L.fullScreenAllowed(a, { levels: f.levels, jobs: f.jobs, privacy: f.privacy, devices: f.devices, power: f.power,
@@ -227,7 +234,9 @@ Window {
         onCopyRequested: text => clipboardHistory.copyText(text)
         extraTool: prefs.panel.extraTool
         onExtraToolChanged: prefs.panel.extraTool = extraTool
-        onWantsKeyboardChanged: InputRegion.setKeyboard(root, wantsKeyboard)
+        focus: true
+        onWantsKeyboardChanged: InputRegion.setKeyboard(root, wantsKeyboard, openedByKeyboard)
+        onOpenedByKeyboardChanged: InputRegion.setKeyboard(root, wantsKeyboard, openedByKeyboard)
         barHeight: prefs.shape.height
         idleWidth: prefs.shape.idleWidth
         compactWidth: prefs.shape.compactWidth

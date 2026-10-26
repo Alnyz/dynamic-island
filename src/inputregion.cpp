@@ -9,11 +9,12 @@ void InputRegion::set(QWindow *window, const QRectF &rect)
         window->setMask(QRegion(rect.toAlignedRect()));
 }
 
-void InputRegion::setKeyboard(QWindow *window, bool on)
+void InputRegion::setKeyboard(QWindow *window, bool on, bool exclusive)
 {
     if (window)
-        LayerShellQt::Window::get(window)->setKeyboardInteractivity(on ? LayerShellQt::Window::KeyboardInteractivityOnDemand
-                                                                       : LayerShellQt::Window::KeyboardInteractivityNone);
+        LayerShellQt::Window::get(window)->setKeyboardInteractivity(!on      ? LayerShellQt::Window::KeyboardInteractivityNone
+                                                                     : exclusive ? LayerShellQt::Window::KeyboardInteractivityExclusive
+                                                                                 : LayerShellQt::Window::KeyboardInteractivityOnDemand);
 }
 
 void InputRegion::setLayer(QWindow *window, bool overlay)

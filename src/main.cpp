@@ -7,6 +7,9 @@ int main(int argc, char *argv[])
 {
     // QApplication, not QGuiApplication: the settings window uses the desktop style, which needs QtWidgets.
     QApplication app(argc, argv);
+    // KGlobalAccel files the shortcut under this app in System Settings → Shortcuts.
+    app.setDesktopFileName(QStringLiteral("dynamic-island"));
+    app.setApplicationDisplayName(QStringLiteral("Dynamic Island"));
 
     // Closing the settings window must not quit the island.
     app.setQuitOnLastWindowClosed(false);
