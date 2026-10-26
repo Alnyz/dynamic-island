@@ -85,6 +85,17 @@ private Q_SLOTS:
         dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "s", &actions);
         dbus_message_iter_close_container(&it, &actions);
         dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &hints);
+        {
+            DBusMessageIter entry, variant;
+            const char *key = "urgency";
+            const unsigned char critical = 2;
+            dbus_message_iter_open_container(&hints, DBUS_TYPE_DICT_ENTRY, nullptr, &entry);
+            dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
+            dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT, "y", &variant);
+            dbus_message_iter_append_basic(&variant, DBUS_TYPE_BYTE, &critical);
+            dbus_message_iter_close_container(&entry, &variant);
+            dbus_message_iter_close_container(&hints, &entry);
+        }
         dbus_message_iter_close_container(&it, &hints);
         dbus_message_iter_append_basic(&it, DBUS_TYPE_INT32, &timeout);
 
@@ -93,7 +104,16 @@ private Q_SLOTS:
         watcher.handle(m);
         QCOMPARE(notified.count(), 1);
         QCOMPARE(notified.first().first().toMap().value(QStringLiteral("replaces")).toInt(), 7);
+        QCOMPARE(notified.first().first().toMap().value(QStringLiteral("urgency")).toInt(), 2);
         dbus_message_unref(m);
+    }
+
+    void notificationUrgency()
+    {
+        const QVariantMap critical = NotificationWatcher::describe(QStringLiteral("x"), QString(), QStringLiteral("t"), QString(), {{QStringLiteral("urgency"), 2}});
+        QCOMPARE(critical.value(QStringLiteral("urgency")).toInt(), 2);
+        const QVariantMap plain = NotificationWatcher::describe(QStringLiteral("x"), QString(), QStringLiteral("t"), QString(), {});
+        QCOMPARE(plain.value(QStringLiteral("urgency")).toInt(), 1);
     }
 
     void testBluetoothDescribe()

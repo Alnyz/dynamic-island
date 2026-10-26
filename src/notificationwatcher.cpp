@@ -17,8 +17,8 @@ QString readString(DBusMessageIter *it)
     return QString::fromUtf8(s ? s : "");
 }
 
-// Only the string hints matter here (desktop-entry, image-path); image-data is skipped.
-QVariantMap readStringHints(DBusMessageIter *it)
+// String hints (desktop-entry, image-path) and byte ones (urgency) are kept; image-data is skipped.
+QVariantMap readHints(DBusMessageIter *it)
 {
     QVariantMap hints;
     if (dbus_message_iter_get_arg_type(it) != DBUS_TYPE_ARRAY)
@@ -34,6 +34,10 @@ QVariantMap readStringHints(DBusMessageIter *it)
             const char *v = nullptr;
             dbus_message_iter_get_basic(&variant, &v);
             hints.insert(key, QString::fromUtf8(v));
+        } else if (dbus_message_iter_get_arg_type(&variant) == DBUS_TYPE_BYTE) {
+            unsigned char v = 0;
+            dbus_message_iter_get_basic(&variant, &v);
+            hints.insert(key, int(v));
         }
         dbus_message_iter_next(&dict);
     }
@@ -118,7 +122,7 @@ void NotificationWatcher::handle(DBusMessage *message)
     const QString summary = readString(&it);
     const QString body = readString(&it);
     dbus_message_iter_next(&it); // actions
-    const QVariantMap hints = readStringHints(&it);
+    const QVariantMap hints = readHints(&it);
     QVariantMap n = describe(appName, appIcon, summary, body, hints);
     if (n.isEmpty())
         return;
@@ -144,6 +148,7 @@ QVariantMap NotificationWatcher::describe(const QString &appName, const QString 
         {QStringLiteral("icon"), icon},
         {QStringLiteral("title"), title.isEmpty() ? appName : title},
         {QStringLiteral("body"), text},
+        {QStringLiteral("urgency"), hints.value(QStringLiteral("urgency"), 1).toInt()},
     };
 }
 
