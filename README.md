@@ -95,6 +95,7 @@ Weather comes from [Open-Meteo](https://open-meteo.com). The location is found f
 - Settings: `~/.config/dynamic-island.conf` (only readable by you, since it can hold calendar addresses)
 - Clipboard history: `~/.local/share/dynamic-island/clipboard`
 - Notes: `~/.local/share/dynamic-island/notes`, one text file per note
+- Saved notifications: `~/.local/share/dynamic-island/notifications.json` (only readable by you, since it holds message text)
 
 ## License
 
