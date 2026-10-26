@@ -15,3 +15,9 @@ void InputRegion::setKeyboard(QWindow *window, bool on)
         LayerShellQt::Window::get(window)->setKeyboardInteractivity(on ? LayerShellQt::Window::KeyboardInteractivityOnDemand
                                                                        : LayerShellQt::Window::KeyboardInteractivityNone);
 }
+
+void InputRegion::setLayer(QWindow *window, bool overlay)
+{
+    if (window)
+        LayerShellQt::Window::get(window)->setLayer(overlay ? LayerShellQt::Window::LayerOverlay : LayerShellQt::Window::LayerTop);
+}

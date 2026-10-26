@@ -28,6 +28,17 @@ TestCase {
         compare(L.toList(b.quickButtons.hidden), ["lock"])
     }
 
+    function test_full_screen_defaults() {
+        const p = createTemporaryObject(prefsComp, tc, { location: tc.file + "-fs" })
+        verify(p.fullScreen.levels)
+        verify(p.fullScreen.jobs)
+        verify(p.fullScreen.privacy)
+        verify(p.fullScreen.devices)
+        verify(p.fullScreen.power)
+        verify(!p.fullScreen.allNotifications)
+        compare(L.toList(p.fullScreen.urgent), [])
+    }
+
     function test_reset_keeps_calendars() {
         const p = createTemporaryObject(prefsComp, tc)
         p.calendar.icsUrls = ["https://a.example/x.ics"]

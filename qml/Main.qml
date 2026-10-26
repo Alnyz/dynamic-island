@@ -58,14 +58,14 @@ Window {
                 return
             PlasmaSettings.hidePopupsFor(n.desktopEntry)
             if (!island.open && !SystemStatus.dndActive())
-                island.showAlert(Object.assign({ kind: "notification" }, n), 5000)
+                root.alert(Object.assign({ kind: "notification" }, n), 5000)
         }
     }
 
     BluetoothWatcher {
         onDeviceChanged: d => {
             if (prefs.show.devices && !island.open)
-                island.showAlert(Object.assign({ kind: "device" }, d), 4000)
+                root.alert(Object.assign({ kind: "device" }, d), 4000)
         }
     }
 
@@ -87,6 +87,21 @@ Window {
     readonly property bool jobsOn: prefs.show.jobs
     onJobsOnChanged: if (!jobsOn) jobsModel.clear()
 
+    // Every alert goes through here. Over a full-screen app only the kinds chosen in Settings show.
+    FullScreenWatcher {
+        id: fullScreen
+        enabled: true
+        screenName: root.screen ? root.screen.name : ""
+    }
+    function alert(a, ms) {
+        const f = prefs.fullScreen
+        if (fullScreen.active && !L.fullScreenAllowed(a, { levels: f.levels, jobs: f.jobs, privacy: f.privacy, devices: f.devices, power: f.power,
+                                                            allNotifications: f.allNotifications, urgent: L.toList(f.urgent) }))
+            return false
+        island.showAlert(a, ms)
+        return true
+    }
+
     // Job and privacy alerts wait while the panel is open or another alert is up, then play one by one.
     property var queuedAlerts: []
     function queueAlert(a, ms) {
@@ -98,7 +113,9 @@ Window {
             return
         const next = queuedAlerts[0]
         queuedAlerts = queuedAlerts.slice(1)
-        island.showAlert(next.alert, next.ms)
+        // A dropped one changes nothing that would flush the rest, so move on now.
+        if (!root.alert(next.alert, next.ms))
+            flushAlerts()
     }
     Connections {
         target: island
@@ -146,10 +163,10 @@ Window {
     // Not shown for the first reading at startup, only for a real plug or unplug.
     readonly property bool plugged: SystemStatus.charging
     onPluggedChanged: if (levelsReady && prefs.show.power && !island.open)
-        island.showAlert({ kind: "power", value: SystemStatus.battery, plugged: plugged }, 3000)
+        root.alert({ kind: "power", value: SystemStatus.battery, plugged: plugged }, 3000)
     function showLevel(kind, value, muted) {
         if (levelsReady && prefs.show.levels && !island.open)
-            island.showAlert({ kind: kind, value: value, muted: muted }, 1500)
+            root.alert({ kind: kind, value: value, muted: muted }, 1500)
     }
     Connections {
         target: soundSource.defaultOutput
@@ -239,6 +256,8 @@ Window {
             calendarSource.refreshIfStale()
         }
         onInputRectChanged: root.updateInputRegion()
+        coveredByFullScreen: fullScreen.active
+        onWantsFrontChanged: InputRegion.setLayer(root, wantsFront)
     }
 
     // Two small file reads; frequent enough to catch a plugged-in charger within a few seconds.
@@ -271,7 +290,7 @@ Window {
         function onColorPicked(hex) {
             prefs.tools.colors = L.pushColor(L.toList(prefs.tools.colors), hex)
             clipboardHistory.copyText(L.colorFormats(hex).hex)
-            island.showAlert({ kind: "color", value: hex }, 2500)
+            root.alert({ kind: "color", value: hex }, 2500)
         }
         function onBrightnessChanged(percent) { root.showLevel("brightness", percent, false) }
     }

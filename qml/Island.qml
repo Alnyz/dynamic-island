@@ -82,6 +82,7 @@ Item {
     // A short alert (volume, notification, device, charger, colour) that takes over the closed pill.
     property var alert: null
     function showAlert(a, ms) {
+        sliverWidth = L.alertSize(a.kind, barHeight, cornerRadius).w * 0.4
         alert = a
         alertTimer.interval = ms
         alertTimer.restart()
@@ -133,15 +134,24 @@ Item {
         // 14 + 18: panelLoader's top and bottom margins.
         open: { w: 860, h: panelLoader.item && panelLoader.item.fitHeight > 0 ? panelLoader.item.fitHeight + 14 + 18 : 420, r: 30 }
     })
-    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius) : sizes[mode]
+    // Behind a full-screen app the pill folds into a sliver at the top edge; an alert grows out of it.
+    property bool coveredByFullScreen: false
+    property real sliverWidth: 120
+    readonly property bool tucked: coveredByFullScreen && (mode === "idle" || mode === "compact" || mode === "peek")
+    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius)
+                              : tucked ? { w: sliverWidth, h: 0, r: 6 }
+                              : sizes[mode]
+    // In front of the full-screen app while it has something to show, until it has folded away.
+    readonly property bool wantsFront: coveredByFullScreen && (open || alert !== null || height > 0.5)
     // Where the island sits in its parent; the window's input region must track position too, not just size.
     readonly property rect inputRect: Qt.rect(x, y, width, height)
 
     width: size.w
     height: size.h
 
-    Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
-    Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+    // Folding away uses no spring, so it never dips below the top edge.
+    Behavior on width { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
+    Behavior on height { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
 
     // The position timer only runs while playing, so fetch once on open.
     onModeChanged: if (mode === "open" && player) player.updatePosition()

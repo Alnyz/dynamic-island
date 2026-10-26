@@ -512,6 +512,49 @@ Item {
             tryCompare(island, "mode", "idle")
         }
 
+        function test_hides_behind_full_screen() {
+            const { island } = make(null)
+            island.coveredByFullScreen = true
+            tryCompare(island, "height", 0)
+            verify(!island.wantsFront)
+            island.showAlert({ kind: "notification", title: "Rina", body: "hi", icon: "", desktopEntry: "" }, 400)
+            verify(island.wantsFront)
+            tryCompare(island, "height", 64)
+            tryCompare(island, "height", 0, 2000)
+            tryCompare(island, "wantsFront", false)
+        }
+
+        function test_repeated_levels_stay_in_front() {
+            const { island } = make(null)
+            island.coveredByFullScreen = true
+            tryCompare(island, "height", 0)
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 300)
+            tryCompare(island, "height", 32)
+            for (let i = 0; i < 4; ++i) {
+                wait(150)
+                island.showAlert({ kind: "volume", value: 45 + i * 5, muted: false }, 300)
+                verify(island.wantsFront)
+                verify(island.height > 20)
+            }
+        }
+
+        function test_full_screen_ends_during_alert() {
+            const { island } = make(null)
+            island.coveredByFullScreen = true
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 2000)
+            tryCompare(island, "height", 32)
+            island.coveredByFullScreen = false
+            verify(!island.wantsFront)
+            island.alert = null
+            tryCompare(island, "height", island.barHeight)
+        }
+
+        function test_never_in_front_without_full_screen() {
+            const { island } = make(null)
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 300)
+            verify(!island.wantsFront)
+        }
+
         function test_privacy_alert() {
             const { island } = make(null)
             island.showAlert({ kind: "privacy", app: "Zoom", device: "microphone" }, 3000)

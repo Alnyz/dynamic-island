@@ -16,7 +16,8 @@ QtObject {
         panel: { time: true, date: true },
         show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true, jobs: true },
         idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true },
-        history: { save: true, days: 7, system: true, apps: true, others: true, off: [] }
+        history: { save: true, days: 7, system: true, apps: true, others: true, off: [] },
+        fullScreen: { levels: true, jobs: true, privacy: true, devices: true, power: true, allNotifications: false, urgent: [] }
     })
 
     // look: "notch" (joined to the top edge) or "pill" (floating below it).
@@ -109,6 +110,19 @@ QtObject {
         property var off: prefs.defaults.history.off
         property string known: "[]"
         property real lastSeen: 0
+    }
+
+    // What comes in front of a full-screen app. urgent holds notification keys (L.notifKey).
+    property Settings fullScreen: Settings {
+        location: prefs.location
+        category: "fullScreen"
+        property bool levels: prefs.defaults.fullScreen.levels
+        property bool jobs: prefs.defaults.fullScreen.jobs
+        property bool privacy: prefs.defaults.fullScreen.privacy
+        property bool devices: prefs.defaults.fullScreen.devices
+        property bool power: prefs.defaults.fullScreen.power
+        property bool allNotifications: prefs.defaults.fullScreen.allNotifications
+        property var urgent: prefs.defaults.fullScreen.urgent
     }
 
     // The user's own data, so reset leaves it alone. Links are JSON: [{ name, url }].
