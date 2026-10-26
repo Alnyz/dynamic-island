@@ -1,5 +1,6 @@
 #include "bluetoothwatcher.h"
 #include "camerawatcher.h"
+#include "fullscreenwatcher.h"
 #include "jobwatcher.h"
 #include "notificationwatcher.h"
 #include "plasmasettings.h"
@@ -106,6 +107,27 @@ private Q_SLOTS:
         QCOMPARE(notified.first().first().toMap().value(QStringLiteral("replaces")).toInt(), 7);
         QCOMPARE(notified.first().first().toMap().value(QStringLiteral("urgency")).toInt(), 2);
         dbus_message_unref(m);
+    }
+
+    void fullScreenWatcher()
+    {
+        FullScreenWatcher w;
+        w.setScreenName(QStringLiteral("eDP-1"));
+        QSignalSpy switched(&w, &FullScreenWatcher::switched);
+        w.reportActivated(QStringLiteral("eDP-1"), true, QStringLiteral("steam_app_1"));
+        QVERIFY(w.active());
+        QCOMPARE(switched.count(), 1);
+        w.reportActivated(QString(), false, QString());
+        QVERIFY(w.active());
+        w.reportActivated(QStringLiteral("eDP-1"), false, QStringLiteral("dynamic-island"));
+        QVERIFY(w.active());
+        QCOMPARE(switched.count(), 1);
+        w.reportFullScreen(QStringLiteral("eDP-1"), false);
+        QVERIFY(!w.active());
+        QCOMPARE(switched.count(), 1);
+        w.reportActivated(QStringLiteral("HDMI-A-1"), true, QStringLiteral("mpv"));
+        QVERIFY(!w.active());
+        QCOMPARE(switched.count(), 2);
     }
 
     void notificationUrgency()
