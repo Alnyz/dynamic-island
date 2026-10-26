@@ -80,30 +80,49 @@ Window {
         id: jobsModel
         onFinished: job => {
             if (!SystemStatus.dndActive())
-                root.queueJobAlert({ kind: "job", ok: true, title: L.jobDoneTitle(job), body: job.name, folder: job.folder })
+                root.queueAlert({ kind: "job", ok: true, title: L.jobDoneTitle(job), body: job.name, folder: job.folder }, 4000)
         }
-        onFailed: (job, error) => root.queueJobAlert({ kind: "job", ok: false, title: L.jobFailTitle(job), body: job.name + (error ? " · " + error : ""), folder: job.folder })
+        onFailed: (job, error) => root.queueAlert({ kind: "job", ok: false, title: L.jobFailTitle(job), body: job.name + (error ? " · " + error : ""), folder: job.folder }, 4000)
     }
     readonly property bool jobsOn: prefs.show.jobs
     onJobsOnChanged: if (!jobsOn) jobsModel.clear()
 
-    // Job alerts wait while the panel is open or another alert is up, then play one by one.
-    property var jobAlerts: []
-    function queueJobAlert(a) {
-        jobAlerts = jobAlerts.concat([a])
-        flushJobAlerts()
+    // Job and privacy alerts wait while the panel is open or another alert is up, then play one by one.
+    property var queuedAlerts: []
+    function queueAlert(a, ms) {
+        queuedAlerts = queuedAlerts.concat([{ alert: a, ms: ms }])
+        flushAlerts()
     }
-    function flushJobAlerts() {
-        if (!jobAlerts.length || island.open || island.alert !== null)
+    function flushAlerts() {
+        if (!queuedAlerts.length || island.open || island.alert !== null)
             return
-        const next = jobAlerts[0]
-        jobAlerts = jobAlerts.slice(1)
-        island.showAlert(next, 4000)
+        const next = queuedAlerts[0]
+        queuedAlerts = queuedAlerts.slice(1)
+        island.showAlert(next.alert, next.ms)
     }
     Connections {
         target: island
-        function onOpenChanged() { root.flushJobAlerts() }
-        function onAlertChanged() { root.flushJobAlerts() }
+        function onOpenChanged() { root.flushAlerts() }
+        function onAlertChanged() { root.flushAlerts() }
+    }
+
+    // An alert per app that starts using the mic or camera. Before levelsReady, apps already
+    // recording at startup are only remembered.
+    property var lastMic: []
+    property var lastCamera: []
+    function privacyAlerts(now, last, device) {
+        if (levelsReady && prefs.show.privacy && !island.open)
+            for (const app of L.newApps(last, now))
+                queueAlert({ kind: "privacy", app: app, device: device }, 3000)
+        return now
+    }
+    Connections {
+        target: soundSource
+        function onRecordersChanged() { root.lastMic = root.privacyAlerts(soundSource.recorders, root.lastMic, "microphone") }
+    }
+    Connections {
+        target: cameraWatcher
+        function onAppsChanged() { root.lastCamera = root.privacyAlerts(cameraWatcher.apps, root.lastCamera, "camera") }
     }
 
     CameraWatcher {

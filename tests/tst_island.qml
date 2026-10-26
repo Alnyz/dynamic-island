@@ -512,6 +512,16 @@ Item {
             tryCompare(island, "mode", "idle")
         }
 
+        function test_privacy_alert() {
+            const { island } = make(null)
+            island.showAlert({ kind: "privacy", app: "Zoom", device: "microphone" }, 3000)
+            tryCompare(island, "width", 330)
+            compare(findChild(island, "privacyAlertApp").text, "Zoom")
+            compare(findChild(island, "privacyAlertText").text, "is using the microphone")
+            island.showAlert({ kind: "privacy", app: "Firefox", device: "camera" }, 3000)
+            compare(findChild(island, "privacyAlertText").text, "is using the camera")
+        }
+
         function test_notification_click_opens_app() {
             const { island } = make(null)
             let opened = ""

@@ -212,6 +212,38 @@ Item {
         }
     }
 
+    Row {
+        objectName: "privacyAlert"
+        visible: view.a.kind === "privacy"
+        anchors.centerIn: parent
+        spacing: 8
+        Kirigami.Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: view.a.device === "camera" ? "camera-web-symbolic" : "audio-input-microphone-symbolic"
+            color: "#ff9f0a"
+            isMask: true
+        }
+        Text {
+            objectName: "privacyAlertApp"
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, 140)
+            text: view.a.app || ""
+            color: "#ffffff"
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
+        }
+        Text {
+            objectName: "privacyAlertText"
+            anchors.verticalCenter: parent.verticalCenter
+            text: view.a.device === "camera" ? "is using the camera" : "is using the microphone"
+            color: "#9aa3ad"
+            font.pixelSize: 12
+        }
+    }
+
     Item {
         visible: view.a.kind === "device"
         anchors.fill: parent
