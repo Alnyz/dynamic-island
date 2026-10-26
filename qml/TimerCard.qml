@@ -19,7 +19,7 @@ Column {
     }
 
     Text {
-        text: card.active ? L.countdownText(card.leftMs) : "--:--"
+        text: card.active ? L.countdownText(card.leftMs) : "0:00"
         color: card.active ? "#ffffff" : "#8a929c"
         font.pixelSize: 40
         font.weight: Font.ExtraLight

@@ -25,6 +25,7 @@ Column {
         }
         Column {
             anchors.bottom: deg.baseline
+            width: card.width - deg.width - parent.spacing
             spacing: 2
             Row {
                 spacing: 6
@@ -44,6 +45,8 @@ Column {
                 }
             }
             Text {
+                width: parent.width
+                elide: Text.ElideRight
                 text: card.hasData ? (card.weather.city ? card.weather.city + " · " : "") + "H " + card.weather.high + "° L " + card.weather.low + "°" : ""
                 color: "#9aa3ad"
                 font.pixelSize: 12
@@ -61,7 +64,7 @@ Column {
                 spacing: 4
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: modelData.hour
+                    text: modelData.hour + ":00"
                     color: "#9aa3ad"
                     font.pixelSize: 11
                     font.features: { "tnum": 1 }
