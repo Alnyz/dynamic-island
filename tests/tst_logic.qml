@@ -443,6 +443,7 @@ TestCase {
         const f = { levels: true, jobs: true, privacy: false, devices: true, power: false, allNotifications: false, urgent: ["org.telegram.desktop", "app:Steam"] }
         verify(L.fullScreenAllowed({ kind: "volume" }, f))
         verify(L.fullScreenAllowed({ kind: "brightness" }, f))
+        verify(L.fullScreenAllowed({ kind: "capslock" }, f))
         verify(!L.fullScreenAllowed({ kind: "privacy" }, f))
         verify(!L.fullScreenAllowed({ kind: "power" }, f))
         verify(L.fullScreenAllowed({ kind: "color" }, f))

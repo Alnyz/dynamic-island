@@ -282,7 +282,8 @@ function alertSize(kind, barHeight, radius) {
 function fullScreenAllowed(a, f) {
     switch (a.kind) {
     case "volume":
-    case "brightness": return !!f.levels
+    case "brightness":
+    case "capslock": return !!f.levels
     case "job": return !!f.jobs
     case "privacy": return !!f.privacy
     case "device": return !!f.devices

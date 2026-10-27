@@ -1,5 +1,6 @@
 #include "bluetoothwatcher.h"
 #include "camerawatcher.h"
+#include "capslockwatcher.h"
 #include "fullscreenwatcher.h"
 #include "inputregion.h"
 #include <QDBusConnection>
@@ -242,6 +243,23 @@ private Q_SLOTS:
         fakeProcess(QStringLiteral("100"), QStringLiteral("brave"), QStringLiteral("/dev/video0"));
         fakeProcess(QStringLiteral("200"), QStringLiteral("konsole"), QStringLiteral("/dev/pts/1"));
         QCOMPARE(CameraWatcher::scan(proc.path()), QStringList{QStringLiteral("brave")});
+    }
+
+    void testCapsLockRead()
+    {
+        QTemporaryDir leds;
+        auto fakeLed = [&](const QString &name, const QString &value) {
+            QDir(leds.path()).mkpath(name);
+            QFile f(leds.filePath(name + QStringLiteral("/brightness")));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(value.toUtf8() + "\n");
+        };
+        fakeLed(QStringLiteral("input2::numlock"), QStringLiteral("1"));
+        fakeLed(QStringLiteral("input2::capslock"), QStringLiteral("0"));
+        QVERIFY(!CapsLockWatcher::read(leds.path()));
+        fakeLed(QStringLiteral("input11::capslock"), QStringLiteral("1"));
+        QVERIFY(CapsLockWatcher::read(leds.path()));
+        QVERIFY(!CapsLockWatcher::read(leds.filePath(QStringLiteral("missing"))));
     }
 };
 

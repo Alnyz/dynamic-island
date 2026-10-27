@@ -589,6 +589,14 @@ Item {
             verify(!island.wantsFront)
         }
 
+        function test_capslock_alert() {
+            const { island } = make(null)
+            island.showAlert({ kind: "capslock", on: true }, 3000)
+            compare(findChild(island, "capsLockAlertText").text, "Caps Lock on")
+            island.showAlert({ kind: "capslock", on: false }, 3000)
+            compare(findChild(island, "capsLockAlertText").text, "Caps Lock off")
+        }
+
         function test_privacy_alert() {
             const { island } = make(null)
             island.showAlert({ kind: "privacy", app: "Zoom", device: "microphone" }, 3000)

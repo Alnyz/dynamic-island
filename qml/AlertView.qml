@@ -213,6 +213,30 @@ Item {
     }
 
     Row {
+        objectName: "capsLockAlert"
+        visible: view.a.kind === "capslock"
+        anchors.centerIn: parent
+        spacing: 8
+        Kirigami.Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: view.a.on ? "caps-on" : "caps-off"
+            fallback: "input-keyboard-symbolic"
+            color: view.a.on ? "#ff9f0a" : "#ffffff"
+            isMask: true
+        }
+        Text {
+            objectName: "capsLockAlertText"
+            anchors.verticalCenter: parent.verticalCenter
+            text: view.a.on ? "Caps Lock on" : "Caps Lock off"
+            color: "#ffffff"
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+        }
+    }
+
+    Row {
         objectName: "privacyAlert"
         visible: view.a.kind === "privacy"
         anchors.centerIn: parent
