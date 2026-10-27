@@ -57,7 +57,9 @@ Item {
     property bool charging: false
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
-    property var glances: ({ events: true, battery: true, time: true, weather: true })
+    property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false })
+    // Repo packages waiting for an update; -1 while unknown.
+    property int updates: -1
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
     property string idleAnimation: "builtin:aurora"
     property bool animateOnHoverOnly: true
@@ -71,7 +73,7 @@ Item {
         return L.idleGlance({
             now: now(), show: glances, event: next.length ? next[0] : null,
             battery: battery, charging: charging,
-            temperature: weather ? weather.temperature : NaN
+            temperature: weather ? weather.temperature : NaN, updates: updates
         })
     }
     function refreshGlance() { glanceTick++ }
@@ -144,7 +146,8 @@ Item {
     readonly property var sizes: ({
         idle: { w: (idleMode !== "glances" ? idleWidth
                     : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
-                    : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200)
+                    : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200) + (glance.updates > 0 ? 44 : 0)
+                    : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
@@ -411,6 +414,33 @@ Item {
                 visible: parent.kind === "clock" && island.glance.showWeather
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.weather ? island.weather.temperature + "°" : ""
+                color: "#ffffff"
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.features: { "tnum": 1 }
+            }
+            Rectangle {
+                visible: parent.kind === "clock" && island.glance.updates > 0 && (island.glance.showTime || island.glance.showWeather)
+                anchors.verticalCenter: parent.verticalCenter
+                width: 1
+                height: 12
+                color: "#333333"
+            }
+            Kirigami.Icon {
+                visible: parent.kind === "clock" && island.glance.updates > 0
+                anchors.verticalCenter: parent.verticalCenter
+                width: 14
+                height: 14
+                source: "update-none"
+                fallback: "view-refresh"
+                color: "#ffffff"
+                isMask: true
+            }
+            Text {
+                objectName: "glanceUpdates"
+                visible: parent.kind === "clock" && island.glance.updates > 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: island.glance.updates || ""
                 color: "#ffffff"
                 font.pixelSize: 12
                 font.weight: Font.DemiBold

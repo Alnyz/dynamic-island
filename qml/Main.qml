@@ -149,6 +149,11 @@ Window {
         function onAppsChanged() { root.lastCamera = root.privacyAlerts(cameraWatcher.apps, root.lastCamera, "camera") }
     }
 
+    UpdatesWatcher {
+        id: updatesWatcher
+        enabled: prefs.idle.mode === "glances" && prefs.idle.updates
+    }
+
     CameraWatcher {
         id: cameraWatcher
         enabled: prefs.show.privacy
@@ -259,7 +264,8 @@ Window {
         battery: SystemStatus.battery
         charging: SystemStatus.charging
         idleMode: prefs.idle.mode
-        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, meetings: prefs.show.meetings })
+        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, meetings: prefs.show.meetings })
+        updates: updatesWatcher.count
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
         userIdle: SystemStatus.userIdle

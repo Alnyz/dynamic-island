@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Closed pill
 
 - Cover art and a small level meter while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
-- When nothing is going on, it shows a glance (an event starting soon, low battery, the time, the weather) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
+- When nothing is going on, it shows a glance (an event starting soon, low battery, the time, the weather, how many system updates are waiting, off by default) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Point at it to see the song title. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. The key can be changed in System Settings → Shortcuts.
 - Choose between a notch joined to the top edge or a floating pill. Switching animates.

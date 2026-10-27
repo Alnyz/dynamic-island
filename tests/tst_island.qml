@@ -181,6 +181,19 @@ Item {
             compare(findChild(island, "glanceWeather").text, "32°")
         }
 
+        function test_idle_shows_pending_updates() {
+            const { island } = make(null)
+            island.now = () => new Date(2026, 9, 23, 16, 35)
+            island.glances = { events: true, battery: true, time: true, weather: true, updates: true }
+            island.updates = 12
+            island.refreshGlance()
+            compare(findChild(island, "glanceUpdates").visible, true)
+            compare(findChild(island, "glanceUpdates").text, "12")
+            island.updates = 0
+            island.refreshGlance()
+            compare(findChild(island, "glanceUpdates").visible, false)
+        }
+
         function test_idle_shows_event_soon() {
             const { island } = make(null)
             island.now = () => new Date(2026, 9, 23, 16, 35)

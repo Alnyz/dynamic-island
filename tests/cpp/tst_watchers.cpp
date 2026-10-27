@@ -7,6 +7,7 @@
 #include "jobwatcher.h"
 #include "notificationwatcher.h"
 #include "plasmasettings.h"
+#include "updateswatcher.h"
 
 #include <QDir>
 #include <QSignalSpy>
@@ -260,6 +261,13 @@ private Q_SLOTS:
         fakeLed(QStringLiteral("input11::capslock"), QStringLiteral("1"));
         QVERIFY(CapsLockWatcher::read(leds.path()));
         QVERIFY(!CapsLockWatcher::read(leds.filePath(QStringLiteral("missing"))));
+    }
+
+    void testUpdatesParse()
+    {
+        QCOMPARE(UpdatesWatcher::parse(0, "linux 6.1-1 -> 6.2-1\nfoo 1-1 -> 1-2\n"), 2);
+        QCOMPARE(UpdatesWatcher::parse(2, ""), 0);
+        QCOMPARE(UpdatesWatcher::parse(1, "boom"), -1);
     }
 };
 

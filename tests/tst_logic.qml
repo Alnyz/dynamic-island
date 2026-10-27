@@ -217,6 +217,10 @@ TestCase {
         compare(clock.showBattery, true)
         compare(g({ temperature: NaN }).showWeather, false)
         compare(g({ battery: -1 }).showBattery, false)
+        compare(clock.updates, 0)
+        compare(g({ updates: 7 }).updates, 0)
+        compare(g({ updates: 7, show: Object.assign({}, all, { updates: true }) }).updates, 7)
+        compare(g({ updates: -1, show: Object.assign({}, all, { updates: true }) }).updates, 0)
         compare(g({ show: { events: true, battery: true, time: false, weather: false } }).kind, "clock")
         compare(g({ show: { events: true, battery: false, time: false, weather: false } }).kind, "none")    }
 

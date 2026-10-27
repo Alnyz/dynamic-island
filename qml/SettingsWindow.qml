@@ -416,6 +416,12 @@ QQC.ApplicationWindow {
                         checked: win.prefs.idle.weather
                         onToggled: win.prefs.idle.weather = checked
                     }
+                    QQC.CheckBox {
+                        visible: win.prefs.idle.mode === "glances"
+                        text: "Pending system updates"
+                        checked: win.prefs.idle.updates
+                        onToggled: win.prefs.idle.updates = checked
+                    }
                     QQC.ComboBox {
                         id: artPicker
                         visible: win.prefs.idle.mode === "animation"

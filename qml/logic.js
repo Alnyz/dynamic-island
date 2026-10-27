@@ -182,7 +182,7 @@ function toList(value) {
 }
 
 // What the idle pill shows, most urgent first: an event starting within 30 minutes,
-// low battery, then the time and weather the user chose.
+// low battery, then the time and weather the user chose, plus the pending update count when there is one.
 function idleGlance(o) {
     const ev = o.event
     if (o.show.events && ev && !ev.allDay) {
@@ -199,7 +199,8 @@ function idleGlance(o) {
     if (!showTime && !showWeather && !showBattery)
         return { kind: "none" }
     const time = String(o.now.getHours()).padStart(2, "0") + ":" + String(o.now.getMinutes()).padStart(2, "0")
-    return { kind: "clock", time: time, showTime: showTime, showWeather: showWeather, showBattery: showBattery }
+    const updates = o.show.updates && o.updates > 0 ? o.updates : 0
+    return { kind: "clock", time: time, showTime: showTime, showWeather: showWeather, showBattery: showBattery, updates: updates }
 }
 
 // "Ryzen HD Audio Controller Speaker" → "Speaker": the port name when the device name ends with it.

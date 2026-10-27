@@ -15,7 +15,7 @@ QtObject {
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
         show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true, jobs: true },
-        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, animateOnHoverOnly: true },
+        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, updates: false, animateOnHoverOnly: true },
         history: { save: true, days: 7, system: true, apps: true, others: true, off: [] },
         fullScreen: { levels: true, jobs: true, privacy: true, devices: true, power: true, allNotifications: false, urgent: [] }
     })
@@ -81,6 +81,7 @@ QtObject {
         property bool battery: prefs.defaults.idle.battery
         property bool time: prefs.defaults.idle.time
         property bool weather: prefs.defaults.idle.weather
+        property bool updates: prefs.defaults.idle.updates
         property bool animateOnHoverOnly: prefs.defaults.idle.animateOnHoverOnly
         property string animation: ""
     }
