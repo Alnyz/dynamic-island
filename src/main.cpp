@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
     layer->setScope(QStringLiteral("dock"));
     layer->setLayer(LayerShellQt::Window::LayerTop);
     layer->setAnchors(LayerShellQt::Window::AnchorTop);
-    layer->setExclusiveZone(0);
+    // -1 ignores other docks' reserved space, so a top panel doesn't push the island below it.
+    layer->setExclusiveZone(-1);
     layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
     layer->setMargins({0, 0, 0, 0});
     window->show();
