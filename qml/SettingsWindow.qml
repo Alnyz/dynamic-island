@@ -200,6 +200,12 @@ QQC.ApplicationWindow {
                         value: win.prefs.behaviour.pausedMinutes
                         onMoved: v => win.prefs.behaviour.pausedMinutes = v
                     }
+                    QQC.CheckBox {
+                        Kirigami.FormData.label: "Missing song covers:"
+                        text: "Look up on iTunes (sends the artist and title to Apple)"
+                        checked: win.prefs.behaviour.coverLookup
+                        onToggled: win.prefs.behaviour.coverLookup = checked
+                    }
                     QQC.ButtonGroup { id: openGroup }
                     QQC.RadioButton {
                         Kirigami.FormData.label: "Open the panel:"

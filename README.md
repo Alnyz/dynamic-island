@@ -89,6 +89,8 @@ Open Settings with the gear button in the panel. It covers the style and accent 
 
 For calendar events, paste a calendar's secret iCal address (Google Calendar → Settings → your calendar → Integrate calendar → Secret address in iCal format). The address is kept in the config file and never shown or logged.
 
+Browsers often leave out the cover of a song you skip to. When one is missing, the island looks the song up on the iTunes Search API, sending only the artist and title. Turn this off in Settings → Behaviour.
+
 Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings.
 
 ## Where things are stored

@@ -10,7 +10,7 @@ QtObject {
     readonly property var defaults: ({
         style: { look: "notch", accent: "#0a84ff" },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
-        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false },
+        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
@@ -45,6 +45,7 @@ QtObject {
         property int swipeHoldSeconds: prefs.defaults.behaviour.swipeHoldSeconds
         property int pausedMinutes: prefs.defaults.behaviour.pausedMinutes
         property bool openOnHover: prefs.defaults.behaviour.openOnHover
+        property bool coverLookup: prefs.defaults.behaviour.coverLookup
     }
 
     // Calendar links are not part of reset: they are the user's data, not a look.
