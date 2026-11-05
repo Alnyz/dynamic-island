@@ -823,24 +823,6 @@ Item {
         }
     }
 
-    component Slide: Item {
-        id: slide
-        property bool shown
-        anchors.fill: parent
-        opacity: shown ? 1 : 0
-        visible: opacity > 0
-        // Old content leaves fast and the new one fades in after it, so they never overlap visibly.
-        Behavior on opacity {
-            SequentialAnimation {
-                PauseAnimation { duration: slide.shown ? 90 : 0 }
-                NumberAnimation { duration: slide.shown ? 180 : 90 }
-            }
-        }
-        transform: Translate {
-            x: slide.shown ? 0 : 12
-            Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        }
-    }
 
     Slide {
         shown: island.showMusic
@@ -896,63 +878,14 @@ Item {
             }
         }
 
-        // A thin seek bar along the bottom of the music peek; drag or click to jump.
-        Item {
-            id: peekSeek
-            objectName: "peekSeek"
+        PeekSeekBar {
+            island: island
             visible: island.mode === "peek" && island.player !== null && island.player.length > 0
             anchors.left: art.left
             anchors.right: peekPlayPause.right
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 1
             height: 10
-            // While dragging, the bar follows the pointer; the player seeks on release.
-            property real dragFraction: -1
-            readonly property real fraction: dragFraction >= 0 ? dragFraction
-                : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.player.position / island.player.length)) : 0
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: seekArea.containsMouse || seekArea.pressed ? 4 : 2
-                radius: height / 2
-                color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.18)
-                Behavior on height { NumberAnimation { duration: 120 } }
-                Rectangle {
-                    objectName: "peekSeekFill"
-                    width: parent.width * peekSeek.fraction
-                    height: parent.height
-                    radius: parent.radius
-                    color: island.coverTinted ? island.coverTint : palette.windowText
-                }
-            }
-            Rectangle {
-                visible: seekArea.containsMouse || seekArea.pressed
-                width: 9
-                height: 9
-                radius: 4.5
-                x: peekSeek.fraction * peekSeek.width - width / 2
-                anchors.verticalCenter: parent.verticalCenter
-                color: palette.windowText
-            }
-            MouseArea {
-                id: seekArea
-                objectName: "peekSeekArea"
-                anchors.fill: parent
-                anchors.topMargin: -3
-                hoverEnabled: true
-                enabled: island.player !== null && island.player.canSeek !== false
-                cursorShape: Qt.PointingHandCursor
-                preventStealing: true
-                function fractionAt(x) { return Math.max(0, Math.min(1, x / width)) }
-                onPressed: mouse => peekSeek.dragFraction = fractionAt(mouse.x)
-                onPositionChanged: mouse => { if (pressed) peekSeek.dragFraction = fractionAt(mouse.x) }
-                onReleased: mouse => {
-                    island.player.position = Math.round(fractionAt(mouse.x) * island.player.length)
-                    peekSeek.dragFraction = -1
-                }
-                onCanceled: peekSeek.dragFraction = -1
-            }
         }
 
         ControlButton {
@@ -1191,204 +1124,10 @@ Item {
         }
     }
 
-    Slide {
-        shown: island.mode === "tour"
-        readonly property var step: L.TOUR[Math.min(island.tourStep, L.TOUR.length - 1)]
-        Kirigami.Icon {
-            id: tourIcon
-            x: 18
-            y: 18
-            width: 28
-            height: 28
-            source: parent.step.icon
-            color: palette.accent
-            isMask: true
-        }
-        Column {
-            anchors.left: tourIcon.right
-            anchors.leftMargin: 14
-            anchors.right: parent.right
-            anchors.rightMargin: 18
-            y: 14
-            spacing: 3
-            Text {
-                objectName: "tourTitle"
-                width: parent.width
-                text: parent.parent.step.title
-                color: palette.windowText
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-            }
-            Text {
-                objectName: "tourBody"
-                width: parent.width
-                text: parent.parent.step.body
-                color: palette.text
-                font.pixelSize: 12
-                wrapMode: Text.WordWrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
-            }
-        }
-        Row {
-            x: 18 + 28 + 14
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 12
-            spacing: 5
-            Repeater {
-                model: L.TOUR.length
-                delegate: Rectangle {
-                    required property int index
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: index === island.tourStep ? 14 : 6
-                    height: 6
-                    radius: 3
-                    color: index === island.tourStep ? palette.windowText : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.3)
-                    Behavior on width { NumberAnimation { duration: 150 } }
-                }
-            }
-        }
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 14
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 8
-            spacing: 6
-            Rectangle {
-                objectName: "tourSkip"
-                visible: island.tourStep + 1 < L.TOUR.length
-                width: skipText.implicitWidth + 22
-                height: 26
-                radius: 13
-                color: skipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
-                Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: palette.placeholderText; font.pixelSize: 12 }
-                MouseArea { id: skipArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.skipTour() }
-            }
-            Rectangle {
-                objectName: "tourNext"
-                width: nextText.implicitWidth + 26
-                height: 26
-                radius: 13
-                color: nextArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
-                Text {
-                    id: nextText
-                    anchors.centerIn: parent
-                    text: island.tourStep + 1 < L.TOUR.length ? "Next" : "Got it"
-                    color: "#ffffff"
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                }
-                MouseArea { id: nextArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.nextTourStep() }
-            }
-        }
-    }
+    TourCard { island: island }
 
-    component MenuRow: Rectangle {
-        id: row
-        property string icon
-        property string label
-        signal picked()
-        width: parent ? parent.width : 0
-        height: 32
-        radius: 10
-        color: rowArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
-        Kirigami.Icon {
-            id: rowIcon
-            x: 10
-            anchors.verticalCenter: parent.verticalCenter
-            width: 16
-            height: 16
-            source: row.icon
-            color: palette.windowText
-            isMask: true
-        }
-        Text {
-            anchors.left: rowIcon.right
-            anchors.leftMargin: 10
-            anchors.right: parent.right
-            anchors.rightMargin: 10
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.label
-            color: palette.windowText
-            font.pixelSize: 13
-            elide: Text.ElideRight
-        }
-        MouseArea {
-            id: rowArea
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: row.picked()
-        }
-    }
 
-    Slide {
-        shown: island.mode === "menu"
-        Column {
-            objectName: "pillMenu"
-            anchors.fill: parent
-            anchors.margins: 8
-            spacing: 4
-            Repeater {
-                model: island.mode === "menu" ? island.menuRows : []
-                delegate: Item {
-                    id: entry
-                    required property var modelData
-                    width: parent.width
-                    height: 32
-                    MenuRow {
-                        visible: !entry.modelData.minutes
-                        objectName: "menu-" + entry.modelData.key
-                        icon: entry.modelData.icon
-                        label: entry.modelData.label
-                        onPicked: island.pickMenu(entry.modelData.key)
-                    }
-                    // Timer presets sit side by side on one row.
-                    Row {
-                        visible: !!entry.modelData.minutes
-                        anchors.fill: parent
-                        spacing: 6
-                        Kirigami.Icon {
-                            x: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 16
-                            height: 16
-                            source: entry.modelData.icon
-                            color: palette.windowText
-                            isMask: true
-                        }
-                        Item { width: 4; height: 1 }
-                        Repeater {
-                            model: entry.modelData.minutes || []
-                            delegate: Rectangle {
-                                required property int modelData
-                                objectName: "menu-timer-" + modelData
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 64
-                                height: 26
-                                radius: 13
-                                color: chipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.22) : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.1)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: parent.modelData + " min"
-                                    color: palette.windowText
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                }
-                                MouseArea {
-                                    id: chipArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: island.pickMenu("timers", parent.modelData)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    PillMenu { island: island }
 
     AlertView {
         alert: island.alert
@@ -1462,79 +1201,21 @@ Item {
     }
 
     // Opening from the music turn: the pill's cover flies to its place in the panel while the
-    // island grows. It lives on the window, so the centred island's growth doesn't drag it.
+    // island grows.
     property bool animateOpen: true
-    Item {
+    CoverFlyer {
         id: flyer
-        objectName: "coverFlyer"
-        parent: island.parent
-        z: 1000
-        visible: false
-        property real progress: 0
-        property int frame: 0
-        property rect from: Qt.rect(0, 0, 0, 0)
-        property var target: null
-        // Re-read every frame: the panel's layout keeps moving while the island grows.
-        readonly property rect to: {
-            progress
-            frame
-            if (!target || !target.width)
-                return from
-            const p = target.mapToItem(flyer.parent, 0, 0)
-            return Qt.rect(p.x, p.y, target.width, target.height)
-        }
-        x: from.x + (to.x - from.x) * progress
-        y: from.y + (to.y - from.y) * progress
-        width: from.width + (to.width - from.width) * progress
-        height: width
-        CoverArt {
-            anchors.fill: parent
-            radius: Math.round(width * 0.2)
-            source: island.player ? island.artUrl : ""
-            fallbackIcon: island.player ? island.player.iconName || island.player.desktopEntry || "" : ""
-        }
-        NumberAnimation on progress {
-            id: flight
-            running: false
-            from: 0
-            to: 1
-            duration: 380
-            easing.type: Easing.OutCubic
-        }
-        FrameAnimation {
-            running: flyer.visible
-            onTriggered: {
-                flyer.frame++
-                // Lands once it has arrived and the island has stopped growing.
-                if (!flight.running && island.width === island.size.w && island.height === island.size.h)
-                    island.landCover()
-            }
-        }
+        island: island
     }
-    function landCover() {
-        // Freeze where it landed, letting go of the panel's cover (it goes when the panel closes).
-        flyer.from = flyer.to
-        flyer.progress = 0
-        flyer.target = null
-        flyer.visible = false
-        if (panelLoader.item)
-            panelLoader.item.coverHidden = false
-    }
+    function landCover() { flyer.land() }
     property bool musicWasShown: false
     onMusicShownChanged: if (musicShown) musicWasShown = true
     function flyCoverIn() {
         if (!animateOpen || !musicWasShown || !panelLoader.item || !island.parent)
             return
         const target = panelLoader.item.coverTarget()
-        if (!target)
-            return
-        const p = art.mapToItem(island.parent, 0, 0)
-        flyer.from = Qt.rect(p.x, p.y, art.width, art.height)
-        flyer.target = target
-        flyer.progress = 0
-        panelLoader.item.coverHidden = true
-        flyer.visible = true
-        flight.restart()
+        if (target)
+            flyer.fly(art, target, panelLoader.item)
     }
 
     Loader {
