@@ -90,6 +90,18 @@ Column {
                 width: parent.cellW
                 height: parent.sixWeeks ? 23 : 24
 
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        const year = modelData.y
+                        const month = modelData.m + 1 // Convert 0-indexed month to 1-12
+                        const day = modelData.d
+                        const targetUrl = "https://calendar.google.com/calendar/u/0/r/day/" + year + "/" + month + "/" + day
+                        Qt.openUrlExternally(targetUrl)
+                    }
+                }
+
                 Rectangle {
                     anchors.centerIn: parent
                     width: 22
