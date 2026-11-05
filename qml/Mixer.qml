@@ -34,7 +34,7 @@ Item {
             width: parent.width
             spacing: 6
             Repeater {
-                model: mixer.outputs
+                model: mixer.outputs.filter(d => !d.description.includes("HDMI") && !d.description.includes("DisplayPort"))
                 delegate: Pill {
                     required property var modelData
                     required property int index
