@@ -261,6 +261,8 @@ function idleGlance(o) {
     }
     if (o.show.battery && o.battery >= 0 && o.battery <= 15 && !o.charging)
         return { kind: "batteryLow", title: o.battery + "%", detail: "plug in" }
+    if (o.show.todo !== false && o.todo && o.todo.text)
+        return { kind: "todo", id: o.todo.id, title: o.todo.text, detail: "" }
     const showTime = !!o.show.time
     const showWeather = !!o.show.weather && !isNaN(o.temperature)
     const showBattery = !!o.show.battery && o.battery >= 0

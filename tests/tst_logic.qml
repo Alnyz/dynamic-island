@@ -214,6 +214,16 @@ TestCase {
         compare(g({ battery: 12, charging: true }).kind, "clock")
         compare(g({ event: soon, battery: 12 }).kind, "event")
 
+        // The next task comes after events and low battery, before the clock.
+        const task = { id: "t1", text: "Send invoice", done: false }
+        compare(g({ todo: task }).kind, "todo")
+        compare(g({ todo: task }).title, "Send invoice")
+        compare(g({ todo: task }).id, "t1")
+        compare(g({ todo: task, event: soon }).kind, "event")
+        compare(g({ todo: task, battery: 12 }).kind, "batteryLow")
+        compare(g({ todo: task, show: Object.assign({}, all, { todo: false }) }).kind, "clock")
+        compare(g({ todo: null }).kind, "clock")
+
         const clock = g({})
         compare(clock.time, "16:35")
         compare(clock.showTime, true)

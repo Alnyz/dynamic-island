@@ -209,6 +209,32 @@ Item {
             compare(findChild(island, "glanceDetail").text, "in 25 min")
         }
 
+        Component {
+            id: todoFake
+            QtObject {
+                property var nextOpen: ({ id: "t1", text: "Send invoice", done: false })
+            }
+        }
+
+        function test_idle_shows_next_task_and_ticks_it() {
+            const { island } = make(null)
+            const todos = createTemporaryObject(todoFake, stage)
+            island.todos = todos
+            island.refreshGlance()
+            compare(island.glance.kind, "todo")
+            compare(findChild(island, "glanceTitle").text, "Send invoice")
+            tryCompare(island, "width", 250)
+            let ticked = ""
+            island.todoDone.connect(id => ticked = id)
+            mouseClick(findChild(island, "glanceTodoCheck"))
+            compare(ticked, "t1")
+            // Ticking never opens the panel.
+            compare(island.open, false)
+            todos.nextOpen = ({})
+            island.refreshGlance()
+            compare(island.glance.kind, "clock")
+        }
+
         function test_join_button_opens_link() {
             const { island } = make(null)
             let link = ""

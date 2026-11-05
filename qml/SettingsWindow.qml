@@ -430,6 +430,12 @@ QQC.ApplicationWindow {
                         checked: win.prefs.idle.updates
                         onToggled: win.prefs.idle.updates = checked
                     }
+                    QQC.CheckBox {
+                        visible: win.prefs.idle.mode === "glances"
+                        text: "Next task from the To-Do list"
+                        checked: win.prefs.idle.todo
+                        onToggled: win.prefs.idle.todo = checked
+                    }
                     QQC.ComboBox {
                         id: artPicker
                         visible: win.prefs.idle.mode === "animation"

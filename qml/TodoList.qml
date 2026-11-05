@@ -1,44 +1,28 @@
 import QtQuick
-import QtCore
 import org.kde.kirigami as Kirigami
 
+// The To-Do tab. The list and its changes come from outside (TodoStore in the app).
 Column {
-    id: todoRoot
-    width: parent.width
+    id: todo
+
+    // [{id, text, done}]
+    property var items: []
+    property var addItem: text => {}
+    property var setDone: (id, done) => {}
+    property var removeItem: id => {}
+    property var clearDone: () => {}
+    // Typing a task keeps the panel open with the pointer elsewhere.
+    readonly property bool typing: taskInput.activeFocus && taskInput.text !== ""
+    readonly property int doneCount: items.filter(t => t.done).length
+
     spacing: 10
 
-    Settings {
-        id: todoSettings
-        category: "TodoList"
-        property string tasksJson: "[]"
+    function submit() {
+        if (taskInput.text.trim() === "")
+            return
+        todo.addItem(taskInput.text)
+        taskInput.text = ""
     }
-
-    ListModel {
-        id: todoModel
-    }
-
-    function saveTasks() {
-        var list = []
-        for (var i = 0; i < todoModel.count; i++) {
-            var item = todoModel.get(i)
-            list.push({ text: item.text, done: item.done })
-        }
-        todoSettings.tasksJson = JSON.stringify(list)
-    }
-
-    function loadTasks() {
-        todoModel.clear()
-        try {
-            var list = JSON.parse(todoSettings.tasksJson)
-            for (var i = 0; i < list.length; i++) {
-                todoModel.append(list[i])
-            }
-        } catch(e) {
-            console.log("Failed to load tasks:", e)
-        }
-    }
-
-    Component.onCompleted: loadTasks()
 
     Row {
         width: parent.width
@@ -47,32 +31,36 @@ Column {
 
         TextInput {
             id: taskInput
+            objectName: "todoInput"
             width: parent.width - 70
             height: 32
             color: "#ffffff"
-            padding: 6
+            leftPadding: 10
+            rightPadding: 10
             clip: true
             font.pixelSize: 12
             verticalAlignment: TextInput.AlignVCenter
+            onAccepted: todo.submit()
 
             Rectangle {
                 anchors.fill: parent
                 color: "#1a1a1a"
                 radius: 6
-                border.color: "#333333"
+                border.color: taskInput.activeFocus ? palette.accent : "#333333"
                 z: -1
             }
-
-            onAccepted: {
-                if (text.trim() !== "") {
-                    todoModel.append({ text: text.trim(), done: false })
-                    saveTasks()
-                    text = ""
-                }
+            Text {
+                visible: taskInput.text === ""
+                anchors.verticalCenter: parent.verticalCenter
+                x: 10
+                text: "Add a task"
+                color: "#6b737d"
+                font.pixelSize: 12
             }
         }
 
         Rectangle {
+            objectName: "todoAdd"
             width: 62
             height: 32
             radius: 6
@@ -89,34 +77,41 @@ Column {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (taskInput.text.trim() !== "") {
-                        todoModel.append({ text: taskInput.text.trim(), done: false })
-                        saveTasks()
-                        taskInput.text = ""
-                    }
-                }
+                onClicked: todo.submit()
             }
         }
     }
 
+    Text {
+        visible: todo.items.length === 0
+        text: "Nothing to do. Add a task above; the next one shows on the idle pill."
+        color: "#9aa3ad"
+        font.pixelSize: 12
+    }
+
     ListView {
+        objectName: "todoList"
         width: parent.width
-        height: 180
-        model: todoModel
+        height: Math.min(contentHeight, 220)
+        model: todo.items
         spacing: 6
         clip: true
 
         delegate: Row {
-            width: parent.width
+            id: row
+            required property var modelData
+            required property int index
+            objectName: "todoRow" + index
+            width: ListView.view.width
             height: 28
             spacing: 10
 
             Rectangle {
+                objectName: "todoCheck" + row.index
                 width: 18
                 height: 18
                 radius: 4
-                color: done ? palette.accent : "transparent"
+                color: row.modelData.done ? palette.accent : "transparent"
                 border.color: palette.accent
                 anchors.verticalCenter: parent.verticalCenter
 
@@ -125,30 +120,30 @@ Column {
                     text: "✓"
                     color: "#ffffff"
                     font.pixelSize: 11
-                    visible: done
+                    visible: row.modelData.done
                 }
 
                 MouseArea {
                     anchors.fill: parent
+                    anchors.margins: -4
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        todoModel.setProperty(index, "done", !done)
-                        saveTasks()
-                    }
+                    onClicked: todo.setDone(row.modelData.id, !row.modelData.done)
                 }
             }
 
             Text {
-                width: parent.width - 18 - 28 - 3 * parent.spacing
-                text: model.text
-                color: done ? "#8a929c" : "#ffffff"
-                font.strikeout: done
+                objectName: "todoText" + row.index
+                width: parent.width - 18 - 24 - 2 * parent.spacing
+                text: row.modelData.text
+                color: row.modelData.done ? "#8a929c" : "#ffffff"
+                font.strikeout: row.modelData.done
                 font.pixelSize: 12
                 elide: Text.ElideRight
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Rectangle {
+                objectName: "todoDelete" + row.index
                 width: 24
                 height: 24
                 radius: 12
@@ -167,12 +162,25 @@ Column {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        todoModel.remove(index)
-                        saveTasks()
-                    }
+                    onClicked: todo.removeItem(row.modelData.id)
                 }
             }
+        }
+    }
+
+    Text {
+        objectName: "todoClearDone"
+        visible: todo.doneCount > 0
+        text: "Clear " + todo.doneCount + " done"
+        color: clearArea.containsMouse ? "#ffffff" : "#9aa3ad"
+        font.pixelSize: 12
+        MouseArea {
+            id: clearArea
+            anchors.fill: parent
+            anchors.margins: -4
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: todo.clearDone()
         }
     }
 }

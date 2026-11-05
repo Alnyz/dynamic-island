@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Closed pill
 
 - Cover art and a small level meter while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
-- When nothing is going on, it shows a glance (an event starting soon, low battery, the time, the weather, how many system updates are waiting, off by default) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
+- When nothing is going on, it shows a glance (an event starting soon, low battery, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Scroll up or down on it to change the volume, or the minutes left while the timer shows. Middle-click plays or pauses, and double-clicking the music turn skips the song.
 - Point at it to see the song title and a seek bar you can drag. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. The key can be changed in System Settings → Shortcuts.
@@ -41,6 +41,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Timer: drag the minute tape or pick a preset.
 - Sound mixer: output and input devices, mic level, and per-app volume.
 - Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.
+- To-Do: add tasks, tick them off and clear the done ones.
 - From the `⋯` menu: clipboard history, notes, a shelf for dragged files, quick links to sites and folders, and a colour picker.
 
 ### Quick buttons
@@ -100,6 +101,7 @@ Weather comes from [Open-Meteo](https://open-meteo.com). The location is found f
 - Settings: `~/.config/dynamic-island.conf` (only readable by you, since it can hold calendar addresses)
 - Clipboard history: `~/.local/share/dynamic-island/clipboard`
 - Notes: `~/.local/share/dynamic-island/notes`, one text file per note
+- To-Do list: `~/.local/share/dynamic-island/todo.json`
 - Saved notifications: `~/.local/share/dynamic-island/notifications.json` (only readable by you, since it holds message text)
 
 ## License

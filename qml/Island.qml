@@ -17,6 +17,9 @@ Item {
     property var sound: null
     property var clipboard: null
     property var notes: null
+    property var todos: null
+    // Ticks a task off from the idle pill.
+    signal todoDone(string id)
     // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
     property var history: null
     property int newNotifications: 0
@@ -59,7 +62,7 @@ Item {
     property bool charging: false
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
-    property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false })
+    property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false, todo: true })
     // Repo packages waiting for an update; -1 while unknown.
     property int updates: -1
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
@@ -75,7 +78,8 @@ Item {
         return L.idleGlance({
             now: now(), show: glances, event: next.length ? next[0] : null,
             battery: battery, charging: charging,
-            temperature: weather ? weather.temperature : NaN, updates: updates
+            temperature: weather ? weather.temperature : NaN, updates: updates,
+            todo: todos && todos.nextOpen && todos.nextOpen.id ? todos.nextOpen : null
         })
     }
     function refreshGlance() { glanceTick++ }
@@ -170,6 +174,7 @@ Item {
     readonly property var sizes: ({
         idle: { w: (idleMode !== "glances" ? idleWidth
                     : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
+                    : glance.kind === "todo" ? Math.max(idleWidth, 250)
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200) + (glance.updates > 0 ? 44 : 0)
                     : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
@@ -418,8 +423,35 @@ Item {
             readonly property string kind: island.glance.kind
             readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : "#ffffff"
 
+            // The next task: tick the circle to mark it done.
+            Rectangle {
+                objectName: "glanceTodoCheck"
+                visible: parent.kind === "todo"
+                anchors.verticalCenter: parent.verticalCenter
+                width: 14
+                height: 14
+                radius: 7
+                color: todoCheckArea.containsMouse ? palette.accent : "transparent"
+                border.color: palette.accent
+                border.width: 1.5
+                Text {
+                    anchors.centerIn: parent
+                    visible: todoCheckArea.containsMouse
+                    text: "✓"
+                    color: "#ffffff"
+                    font.pixelSize: 9
+                }
+                MouseArea {
+                    id: todoCheckArea
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: island.todoDone(island.glance.id)
+                }
+            }
             Kirigami.Icon {
-                visible: parent.kind !== "clock"
+                visible: parent.kind !== "clock" && parent.kind !== "todo"
                 anchors.verticalCenter: parent.verticalCenter
                 width: 14
                 height: 14
@@ -1256,6 +1288,7 @@ Item {
             onCopyRequested: text => island.copyRequested(text)
             clipboard: island.clipboard
             notes: island.notes
+            todos: island.todos
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()

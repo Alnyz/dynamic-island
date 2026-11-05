@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import Island
 import "logic.js" as L
 
@@ -34,6 +35,19 @@ Window {
     ClipboardHistory { id: clipboardHistory }
 
     NotesStore { id: notesStore }
+
+    TodoStore { id: todoStore }
+    // The first To-Do version kept its list in QSettings' default file; move it over once.
+    Settings {
+        id: oldTodos
+        category: "TodoList"
+        property string tasksJson: ""
+    }
+    function importOldTodos() {
+        if (oldTodos.tasksJson && oldTodos.tasksJson !== "[]" && todoStore.items.length === 0)
+            todoStore.importJson(oldTodos.tasksJson)
+        oldTodos.tasksJson = ""
+    }
 
     NotificationLog { id: notificationLog }
 
@@ -250,6 +264,8 @@ Window {
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore
+        todos: todoStore
+        onTodoDone: id => todoStore.setDone(id, true)
         history: history
         newNotifications: history.newCount
         onNotificationsLeft: history.leave()
@@ -276,7 +292,7 @@ Window {
         battery: SystemStatus.battery
         charging: SystemStatus.charging
         idleMode: prefs.idle.mode
-        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, meetings: prefs.show.meetings })
+        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
@@ -363,6 +379,7 @@ Window {
     }
 
     Component.onCompleted: {
+        importOldTodos()
         updateInputRegion()
         PlasmaSettings.setOsdEnabled(!islandLevels)
         PlasmaSettings.setPopupsEnabled(!islandNotifications)

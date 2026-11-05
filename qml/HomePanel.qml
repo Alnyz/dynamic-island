@@ -24,6 +24,8 @@ Item {
     property var sound: null
     property var clipboard: null
     property var notes: null
+    // TodoStore for the To-Do tab.
+    property var todos: null
     property var shelf: []
     property bool showJoin: true
     property var links: []
@@ -59,7 +61,8 @@ Item {
     readonly property bool wantsKeyboard: tab === "clipboard" || tab === "notes" || tab === "todo"
     // Home is shorter than the other tabs; the island shrinks to it. 0 means use the full height.
     readonly property real fitHeight: tab === "home" ? tabContent.y + homeTab.implicitHeight : 0
-    readonly property bool typing: (clipboardTab.item && clipboardTab.item.typing) || (notesTab.item && notesTab.item.typing) || false
+    readonly property bool typing: (clipboardTab.item && clipboardTab.item.typing) || (notesTab.item && notesTab.item.typing)
+                                   || (todoTab.item && todoTab.item.typing) || false
 
     function pickTool(key) {
         extraTool = key
@@ -407,10 +410,17 @@ Item {
             }
         }
         Loader {
+            id: todoTab
             objectName: "todoTab"
             anchors.fill: parent
-            active: panel.tab === "todo"
-            sourceComponent: TodoList {}
+            active: panel.tab === "todo" && panel.todos !== null
+            sourceComponent: TodoList {
+                items: panel.todos.items
+                addItem: text => panel.todos.add(text)
+                setDone: (id, done) => panel.todos.setDone(id, done)
+                removeItem: id => panel.todos.remove(id)
+                clearDone: () => panel.todos.clearDone()
+            }
         }
     }
 
