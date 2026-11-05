@@ -76,5 +76,24 @@ Item {
             compare(t.currentId, "n1")
             compare(findChild(t, "noteEditor").text, "")
         }
+
+        function test_delete_offers_text_and_opens_next() {
+            const t = make()
+            compare(t.currentId, "g")
+            let deleted = null
+            t.deleteRequested.connect((id, text) => deleted = { id: id, text: text })
+            mouseClick(findChild(t, "noteDelete"))
+            compare(deleted.id, "g")
+            compare(deleted.text, "Groceries\n- eggs")
+            compare(t.currentId, "w")
+        }
+
+        function test_delete_last_note_starts_a_new_one() {
+            const t = make([{ id: "g", title: "Groceries", preview: "- eggs", modified: Date.now() }])
+            mouseClick(findChild(t, "noteDelete"))
+            compare(t.currentId, "n1")
+            compare(findChild(t, "noteEditor").text, "")
+            compare(findChild(t, "noteDelete").visible, false)
+        }
     }
 }

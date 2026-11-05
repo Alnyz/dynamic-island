@@ -4,6 +4,8 @@
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
+#include <QSet>
 #include <QFile>
 #include <QImage>
 #include <QJsonArray>
@@ -168,6 +170,38 @@ void ClipboardHistory::remove(const QString &id)
     save();
 }
 
+QVariantMap ClipboardHistory::take(const QString &id)
+{
+    const int i = indexOf(id);
+    if (i < 0)
+        return {};
+    const QVariantMap taken{{QStringLiteral("item"), m_items.takeAt(i)}, {QStringLiteral("index"), i}};
+    save();
+    return taken;
+}
+
+void ClipboardHistory::restore(const QVariantMap &taken)
+{
+    const QVariantMap item = taken.value(QStringLiteral("item")).toMap();
+    const QString id = item.value(QStringLiteral("id")).toString();
+    if (id.isEmpty() || indexOf(id) >= 0)
+        return;
+    m_items.insert(qBound(0, taken.value(QStringLiteral("index")).toInt(), int(m_items.size())), item);
+    save();
+}
+
+void ClipboardHistory::discard(const QVariantMap &taken)
+{
+    const QVariantMap item = taken.value(QStringLiteral("item")).toMap();
+    // Restored, or the same image copied again since: the file is in use.
+    if (indexOf(item.value(QStringLiteral("id")).toString()) >= 0)
+        return;
+    for (const QVariant &v : std::as_const(m_items))
+        if (item.contains(QStringLiteral("image")) && v.toMap().value(QStringLiteral("image")) == item.value(QStringLiteral("image")))
+            return;
+    dropFiles(item);
+}
+
 void ClipboardHistory::clear()
 {
     for (int i = m_items.size() - 1; i >= 0; --i) {
@@ -191,6 +225,18 @@ void ClipboardHistory::load()
     QFile file(m_dir + QStringLiteral("/history.json"));
     if (file.open(QIODevice::ReadOnly))
         m_items = QJsonDocument::fromJson(file.readAll()).array().toVariantList();
+    dropOrphans();
+}
+
+void ClipboardHistory::dropOrphans()
+{
+    QSet<QString> used;
+    for (const QVariant &v : std::as_const(m_items))
+        used.insert(QUrl(v.toMap().value(QStringLiteral("image")).toString()).toLocalFile());
+    const QFileInfoList pngs = QDir(m_dir).entryInfoList({QStringLiteral("*.png")}, QDir::Files);
+    for (const QFileInfo &f : pngs)
+        if (!used.contains(f.absoluteFilePath()))
+            QFile::remove(f.absoluteFilePath());
 }
 
 void ClipboardHistory::save()

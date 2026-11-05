@@ -42,6 +42,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Sound mixer: output and input devices, mic level, and per-app volume.
 - Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.
 - To-Do: add tasks, tick them off and clear the done ones.
+- Deleting a note, clipboard item or task shows Undo for a few seconds.
 - From the `⋯` menu: clipboard history, notes, a shelf for dragged files, quick links to sites and folders, and a colour picker.
 
 ### Quick buttons

@@ -210,6 +210,85 @@ Item {
         }
 
         Component {
+            id: undoStoreFake
+            QtObject {
+                property var items: [{ id: "a", text: "Buy milk", done: false }]
+                property var nextOpen: ({})
+                property var log: []
+                // TodoStore's API
+                function add(t) {}
+                function setDone(id, d) {}
+                function remove(id) { log.push("remove:" + id); return { item: items[0], index: 0 } }
+                function restore(r) { log.push("restore:" + r.item.id) }
+                function clearDone() {}
+                // ClipboardHistory's API
+                function take(id) { log.push("take:" + id); return { item: { id: id }, index: 0 } }
+                function discard(t) { log.push("discard:" + t.item.id) }
+                function copy(id) {}
+                function pin(id, on) {}
+                function clear() {}
+            }
+        }
+
+        // Opens the panel on a tab with the pointer resting on it, so it doesn't close by itself.
+        function openTab(island, tab) {
+            island.open = true
+            const panel = findChild(island, "homePanel")
+            panel.tab = tab
+            tryCompare(island, "height", 420)
+            mouseMove(island, island.width - 20, island.height - 20)
+            return panel
+        }
+
+        function test_undo_deleted_task() {
+            const { island } = make(null)
+            const store = createTemporaryObject(undoStoreFake, stage)
+            island.todos = store
+            const panel = openTab(island, "todo")
+            tryCompare(island, "height", 420)
+            mouseClick(findChild(island, "todoDelete0"))
+            compare(store.log, ["remove:a"])
+            const bar = findChild(island, "undoBar")
+            tryCompare(bar, "opacity", 1)
+            compare(findChild(island, "undoText").text, "Task deleted")
+            mouseClick(findChild(island, "undoButton"))
+            compare(store.log, ["remove:a", "restore:a"])
+            tryCompare(bar, "visible", false)
+            compare(island.open, true)
+        }
+
+        function test_undo_runs_out_and_discards_clipboard_image() {
+            const { island } = make(null)
+            const store = createTemporaryObject(undoStoreFake, stage)
+            store.items = [{ id: "c1", kind: "text", text: "hello", time: Date.now(), pinned: false }]
+            island.clipboard = store
+            const panel = openTab(island, "clipboard")
+            panel.undoMs = 150
+            tryCompare(island, "height", 420)
+            const del = findChild(island, "clipDelete")
+            verify(del)
+            mouseClick(del)
+            compare(store.log, ["take:c1"])
+            compare(findChild(island, "undoText").text, "Clipboard item deleted")
+            tryCompare(store, "log", ["take:c1", "discard:c1"], 2000)
+            // It ran out while the panel stayed open.
+            compare(island.open, true)
+            tryCompare(findChild(island, "undoBar"), "visible", false)
+        }
+
+        function test_closing_panel_ends_undo() {
+            const { island } = make(null)
+            const store = createTemporaryObject(undoStoreFake, stage)
+            store.items = [{ id: "c1", kind: "text", text: "hello", time: Date.now(), pinned: false }]
+            island.clipboard = store
+            openTab(island, "clipboard")
+            tryCompare(island, "height", 420)
+            mouseClick(findChild(island, "clipDelete"))
+            island.open = false
+            tryCompare(store, "log", ["take:c1", "discard:c1"])
+        }
+
+        Component {
             id: todoStoreFake
             QtObject {
                 property var items: []

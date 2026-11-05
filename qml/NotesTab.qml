@@ -10,6 +10,8 @@ Item {
     property var readNote: id => ""
     property var writeNote: (id, text) => {}
     property var newId: () => ""
+    // Deleting a note: the panel removes it and offers undo with the text given here.
+    signal deleteRequested(string id, string text)
     property var now: () => Date.now()
     property string currentId: ""
     readonly property bool typing: editor.activeFocus
@@ -30,6 +32,16 @@ Item {
         currentId = newId()
         editor.text = ""
         editor.forceActiveFocus()
+    }
+
+    function deleteCurrent() {
+        saveTimer.stop()
+        const id = currentId
+        const text = editor.text
+        const next = notes.find(n => n.id !== id)
+        if (text.trim() !== "")
+            deleteRequested(id, text)
+        next ? open(next.id) : createNote()
     }
 
     Component.onCompleted: notes.length ? open(notes[0].id) : createNote()
@@ -162,6 +174,24 @@ Item {
                 font.pixelSize: 12
             }
             Text {
+                objectName: "noteDelete"
+                visible: editor.text.trim() !== ""
+                anchors.right: noteStatusText.left
+                anchors.rightMargin: 14
+                text: "Delete"
+                color: deleteArea.containsMouse ? "#ff8a8a" : "#9aa3ad"
+                font.pixelSize: 12
+                MouseArea {
+                    id: deleteArea
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: tab.deleteCurrent()
+                }
+            }
+            Text {
+                id: noteStatusText
                 objectName: "noteStatus"
                 anchors.right: parent.right
                 text: saveTimer.running ? "Saving…" : "Saved"

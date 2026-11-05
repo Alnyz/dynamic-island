@@ -65,7 +65,12 @@ Item {
             notificationsLeft()
         shownTab = tab
     }
-    Component.onDestruction: if (tab === "notifications") notificationsLeft()
+    Component.onDestruction: {
+        if (tab === "notifications")
+            notificationsLeft()
+        // Closing the panel ends any undo offer; its image file (if any) can go.
+        finishUndo()
+    }
     signal colorPickRequested()
     signal copyRequested(string text)
     signal linkRequested(string url)
@@ -98,6 +103,35 @@ Item {
     readonly property real fitHeight: tab === "home" ? tabContent.y + homeTab.implicitHeight : 0
     readonly property bool typing: (clipboardTab.item && clipboardTab.item.typing) || (notesTab.item && notesTab.item.typing)
                                    || (todoTab.item && todoTab.item.typing) || false
+
+    // "Deleted · Undo" for a few seconds after removing a note, clipboard item or task.
+    // undo() puts it back; expire(), if given, runs once undo is no longer offered.
+    property var pendingUndo: null
+    function offerUndo(text, undo, expire) {
+        finishUndo()
+        pendingUndo = { text: text, undo: undo, expire: expire || null }
+        undoTimer.restart()
+    }
+    function finishUndo() {
+        const p = pendingUndo
+        pendingUndo = null
+        undoTimer.stop()
+        if (p && p.expire)
+            p.expire()
+    }
+    function runUndo() {
+        const p = pendingUndo
+        pendingUndo = null
+        undoTimer.stop()
+        if (p)
+            p.undo()
+    }
+    property int undoMs: 6000
+    Timer {
+        id: undoTimer
+        interval: panel.undoMs
+        onTriggered: panel.finishUndo()
+    }
 
     function pickTool(key) {
         extraTool = key
@@ -365,7 +399,11 @@ Item {
                 items: panel.clipboard.items
                 onCopyRequested: id => panel.clipboard.copy(id)
                 onPinRequested: (id, on) => panel.clipboard.pin(id, on)
-                onRemoveRequested: id => panel.clipboard.remove(id)
+                onRemoveRequested: id => {
+                    const taken = panel.clipboard.take(id)
+                    if (taken.item)
+                        panel.offerUndo("Clipboard item deleted", () => panel.clipboard.restore(taken), () => panel.clipboard.discard(taken))
+                }
                 onClearRequested: panel.clipboard.clear()
             }
         }
@@ -408,6 +446,14 @@ Item {
                 readNote: id => panel.notes.read(id)
                 writeNote: (id, text) => panel.notes.write(id, text)
                 newId: () => panel.notes.newId()
+                onDeleteRequested: (id, text) => {
+                    panel.notes.write(id, "")
+                    panel.offerUndo("Note deleted", () => {
+                        panel.notes.write(id, text)
+                        if (notesTab.item)
+                            notesTab.item.open(id)
+                    })
+                }
             }
         }
         Loader {
@@ -443,8 +489,56 @@ Item {
                 items: panel.todos.items
                 addItem: text => panel.todos.add(text)
                 setDone: (id, done) => panel.todos.setDone(id, done)
-                removeItem: id => panel.todos.remove(id)
+                removeItem: id => {
+                    const removed = panel.todos.remove(id)
+                    if (removed.item)
+                        panel.offerUndo("Task deleted", () => panel.todos.restore(removed))
+                }
                 clearDone: () => panel.todos.clearDone()
+            }
+        }
+    }
+
+    Rectangle {
+        objectName: "undoBar"
+        visible: opacity > 0
+        opacity: panel.pendingUndo ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+        z: 20
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 4
+        width: undoRow.implicitWidth + 28
+        height: 34
+        radius: 17
+        color: "#262626"
+        border.color: "#3a3a3a"
+        Row {
+            id: undoRow
+            anchors.centerIn: parent
+            spacing: 14
+            Text {
+                objectName: "undoText"
+                anchors.verticalCenter: parent.verticalCenter
+                text: panel.pendingUndo ? panel.pendingUndo.text : ""
+                color: "#ffffff"
+                font.pixelSize: 12
+            }
+            Text {
+                objectName: "undoButton"
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Undo"
+                color: undoArea.containsMouse ? Qt.lighter(palette.accent, 1.2) : palette.accent
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                MouseArea {
+                    id: undoArea
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: panel.runUndo()
+                }
             }
         }
     }

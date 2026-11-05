@@ -27,6 +27,11 @@ public:
     Q_INVOKABLE void copyText(const QString &text);
     Q_INVOKABLE void pin(const QString &id, bool on);
     Q_INVOKABLE void remove(const QString &id);
+    // Undoable removal: take() drops the item from the list but keeps its image file and returns
+    // {item, index}; restore() puts it back, discard() deletes the file once undo is no longer offered.
+    Q_INVOKABLE QVariantMap take(const QString &id);
+    Q_INVOKABLE void restore(const QVariantMap &taken);
+    Q_INVOKABLE void discard(const QVariantMap &taken);
     // Removes everything except pinned items.
     Q_INVOKABLE void clear();
 
@@ -40,6 +45,8 @@ private:
     void prepend(QVariantMap item, const QString &matchKey, const QString &matchValue);
     void dropFiles(const QVariantMap &item);
     void load();
+    // Image files no item points at, left by a take() that was never restored or discarded.
+    void dropOrphans();
     void save();
 
     QString m_dir;
