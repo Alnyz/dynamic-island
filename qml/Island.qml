@@ -160,6 +160,9 @@ Item {
     property bool hiddenByUser: false
     readonly property var menuRows: L.pillMenu({ dnd: dnd, hidden: hiddenByUser })
     signal menuAction(string key)
+    // For `--trace`: a press on the pill, and the panel finished building.
+    signal pressedForTrace()
+    signal panelReady()
     function pickMenu(key, minutes) {
         menuOpen = false
         if (key === "timers") {
@@ -428,6 +431,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+        onPressed: island.pressedForTrace()
         onDoubleClicked: mouse => {
             if (mouse.button === Qt.LeftButton && clickDelay.running) {
                 clickDelay.stop()
@@ -1257,7 +1261,10 @@ Item {
     Loader {
         id: panelLoader
         active: island.open
-        onLoaded: island.flyCoverIn()
+        onLoaded: {
+            island.panelReady()
+            island.flyCoverIn()
+        }
         focus: true
         anchors.fill: parent
         anchors.margins: 18

@@ -3,7 +3,9 @@
 #include <KCalendarCore/ICalFormat>
 #include <KCalendarCore/MemoryCalendar>
 #include <KCalendarCore/OccurrenceIterator>
+#include <QFutureWatcher>
 #include <QNetworkAccessManager>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QNetworkReply>
 #include <QRegularExpression>
 #include <QTimeZone>
@@ -32,13 +34,26 @@ CalendarSource::CalendarSource(QObject *parent)
     m_timer.start();
 }
 
+CalendarSource::Parsed CalendarSource::parse(const QByteArray &icsDoc)
+{
+    auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
+    KCalendarCore::ICalFormat format;
+    return format.fromRawString(calendar, icsDoc) ? calendar : Parsed();
+}
+
 QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to)
 {
+    QList<Parsed> calendars;
+    for (const auto &doc : icsDocs)
+        calendars.append(parse(doc));
+    return expand(calendars, from, to);
+}
+
+QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<Parsed> &calendars, const QDateTime &from, const QDateTime &to)
+{
     QList<Occurrence> out;
-    for (const auto &doc : icsDocs) {
-        auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
-        KCalendarCore::ICalFormat format;
-        if (!format.fromRawString(calendar, doc))
+    for (const auto &calendar : calendars) {
+        if (!calendar)
             continue;
         KCalendarCore::OccurrenceIterator it(*calendar, from, to);
         while (it.hasNext()) {
@@ -59,7 +74,15 @@ QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray>
 
 QList<CalendarSource::Occurrence> CalendarSource::upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count)
 {
-    auto occ = expand(icsDocs, now.date().startOfDay(), now.date().addDays(2).startOfDay());
+    QList<Parsed> calendars;
+    for (const auto &doc : icsDocs)
+        calendars.append(parse(doc));
+    return upcoming(calendars, now, count);
+}
+
+QList<CalendarSource::Occurrence> CalendarSource::upcoming(const QList<Parsed> &calendars, const QDateTime &now, int count)
+{
+    auto occ = expand(calendars, now.date().startOfDay(), now.date().addDays(2).startOfDay());
     occ.erase(std::remove_if(occ.begin(), occ.end(),
                              [&now](const Occurrence &o) {
                                  // All-day events end at 00:00 of their last day; they last until the next midnight.
@@ -89,6 +112,8 @@ void CalendarSource::setUrls(const QStringList &urls)
         return;
     m_urls = urls;
     m_docs.clear();
+    m_parsed.clear();
+    ++m_generation;
     Q_EMIT changed();
     refresh();
 }
@@ -105,19 +130,17 @@ void CalendarSource::refresh()
         connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
             reply->deleteLater();
             // Never log the URL: it is a secret link.
-            if (reply->error() == QNetworkReply::NoError)
-                m_docs.insert(url, reply->readAll());
-            else
+            if (reply->error() == QNetworkReply::NoError) {
+                const QByteArray doc = reply->readAll();
+                // The same file as last time (the usual case) needs no new parse.
+                if (doc != m_docs.value(url) || !m_parsed.contains(url)) {
+                    m_docs.insert(url, doc);
+                    parseLater(url, doc);
+                }
+            } else
                 m_roundFailed = true;
-            if (--m_pending > 0)
-                return;
-            m_ok = !m_roundFailed;
-            m_loaded = true;
-            if (m_ok)
-                m_lastSuccess = QDateTime::currentDateTime();
-            else if (!m_retry.isActive())
-                m_retry.start();
-            Q_EMIT changed();
+            --m_pending;
+            finishRound();
         });
     }
 }
@@ -150,12 +173,40 @@ QVariantList CalendarSource::toVariant(const QList<Occurrence> &occ) const
     return out;
 }
 
+void CalendarSource::finishRound()
+{
+    if (m_pending > 0 || m_parsing > 0)
+        return;
+    m_ok = !m_roundFailed;
+    m_loaded = true;
+    if (m_ok)
+        m_lastSuccess = QDateTime::currentDateTime();
+    else if (!m_retry.isActive())
+        m_retry.start();
+    Q_EMIT changed();
+}
+
+void CalendarSource::parseLater(const QString &url, const QByteArray &doc)
+{
+    const int generation = m_generation;
+    ++m_parsing;
+    auto *watcher = new QFutureWatcher<Parsed>(this);
+    connect(watcher, &QFutureWatcher<Parsed>::finished, this, [this, watcher, url, generation] {
+        watcher->deleteLater();
+        --m_parsing;
+        if (generation == m_generation && m_urls.contains(url))
+            m_parsed.insert(url, watcher->result());
+        finishRound();
+    });
+    watcher->setFuture(QtConcurrent::run(&CalendarSource::parse, doc));
+}
+
 QVariantList CalendarSource::occurrences(QDate from, QDate to) const
 {
-    return toVariant(expand(m_docs.values(), from.startOfDay(), to.addDays(1).startOfDay()));
+    return toVariant(expand(m_parsed.values(), from.startOfDay(), to.addDays(1).startOfDay()));
 }
 
 QVariantList CalendarSource::upNext(int count) const
 {
-    return toVariant(upcoming(m_docs.values(), QDateTime::currentDateTime(), count));
+    return toVariant(upcoming(m_parsed.values(), QDateTime::currentDateTime(), count));
 }

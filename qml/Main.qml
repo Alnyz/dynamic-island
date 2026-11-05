@@ -1,5 +1,4 @@
 import QtQuick
-import QtCore
 import org.kde.kirigami as Kirigami
 import Island
 import "logic.js" as L
@@ -12,6 +11,22 @@ Window {
     visible: false
     color: "transparent"
     flags: Qt.FramelessWindowHint
+
+    // `dynamic-island --trace` logs how long opening the panel takes, step by step.
+    readonly property bool trace: Qt.application.arguments.indexOf("--trace") >= 0
+    property real traceStart: 0
+    function traceStep(what) {
+        if (!trace)
+            return
+        if (what === "click")
+            traceStart = Date.now()
+        console.log("trace", new Date().toISOString().slice(11, 23), "+" + (traceStart ? Date.now() - traceStart : 0) + " ms", what)
+    }
+    property bool traceFrame: false
+    onFrameSwapped: if (traceFrame) {
+        traceFrame = false
+        traceStep("first frame drawn")
+    }
 
     function updateInputRegion() {
         InputRegion.set(root, island.inputRect)
@@ -52,17 +67,6 @@ Window {
     NotesStore { id: notesStore }
 
     TodoStore { id: todoStore }
-    // The first To-Do version kept its list in QSettings' default file; move it over once.
-    Settings {
-        id: oldTodos
-        category: "TodoList"
-        property string tasksJson: ""
-    }
-    function importOldTodos() {
-        if (oldTodos.tasksJson && oldTodos.tasksJson !== "[]" && todoStore.items.length === 0)
-            todoStore.importJson(oldTodos.tasksJson)
-        oldTodos.tasksJson = ""
-    }
 
     NotificationLog { id: notificationLog }
 
@@ -381,7 +385,13 @@ Window {
                 root.showSettings()
             }
         }
+        onPressedForTrace: root.traceStep("click")
+        onPanelReady: {
+            root.traceStep("panel built")
+            root.traceFrame = root.trace
+        }
         onOpenChanged: if (open) {
+            root.traceStep("open")
             // Opening the panel (Meta+N) brings a hidden island back.
             hiddenByUser = false
             SystemStatus.refresh()
@@ -452,7 +462,8 @@ Window {
     }
 
     Component.onCompleted: {
-        importOldTodos()
+        // The first To-Do version's list, moved over once.
+        todoStore.importLegacy()
         updateInputRegion()
         PlasmaSettings.setOsdEnabled(!islandLevels)
         PlasmaSettings.setPopupsEnabled(!islandNotifications)

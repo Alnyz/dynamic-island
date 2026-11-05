@@ -330,6 +330,11 @@ Item {
         value: panel.quickHidden
         when: quickSlot.item !== null
     }
+    Connections {
+        target: quickSlot.item
+        ignoreUnknownSignals: true
+        function onTabRequested(tab) { panel.tab = tab }
+    }
     Binding {
         target: quickSlot.item
         property: "devices"

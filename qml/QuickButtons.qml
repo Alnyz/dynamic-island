@@ -13,6 +13,8 @@ Row {
     // Connected Bluetooth devices: the emptiest battery shows as a badge on the Bluetooth button.
     property var devices: []
     readonly property var btSummary: L.bluetoothSummary(devices)
+    // A tab the panel should switch to (the volume button opens the mixer).
+    signal tabRequested(string tab)
 
     Rectangle {
         visible: SystemStatus.battery >= 0 && !quick.hidden.includes("battery")
@@ -46,9 +48,10 @@ Row {
 
     QuickButton {
         objectName: "qb-volume"
-        label: SystemStatus.muted ? "Unmute" : "Mute (scroll to change volume, " + SystemStatus.volume + "%)"
+        label: "Sound mixer · " + (SystemStatus.muted ? "muted" : SystemStatus.volume + "%") + " (scroll to change, right-click to " + (SystemStatus.muted ? "unmute" : "mute") + ")"
         iconName: SystemStatus.muted ? "audio-volume-muted" : "audio-volume-high"
-        onClicked: SystemStatus.toggleMute()
+        onClicked: quick.tabRequested("mixer")
+        onRightClicked: SystemStatus.toggleMute()
         property int wheelAccum: 0
         onScrolled: delta => {
             const r = L.wheelSteps(wheelAccum, delta)
@@ -66,8 +69,16 @@ Row {
     }
     QuickButton {
         objectName: "qb-bluetooth"
-        label: quick.btSummary.label
+        label: quick.btSummary.label + " (right-click for connected devices)"
         badge: quick.btSummary.badge
+        onRightClicked: btPopup.open()
+        BluetoothDevices {
+            id: btPopup
+            objectName: "btPopup"
+            devices: quick.devices
+            y: parent.height + 8
+            x: parent.width - width
+        }
         on: SystemStatus.bluetooth
         iconName: "network-bluetooth-activated"
         onClicked: SystemStatus.setBluetooth(!SystemStatus.bluetooth)
@@ -106,6 +117,7 @@ Row {
         property bool on: false
         property string badge: ""
         signal clicked()
+        signal rightClicked()
         signal scrolled(int delta)
 
         visible: !quick.hidden.includes(objectName.slice(3))
@@ -147,7 +159,8 @@ Row {
             id: area
             anchors.fill: parent
             hoverEnabled: true
-            onClicked: button.clicked()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: mouse => mouse.button === Qt.RightButton ? button.rightClicked() : button.clicked()
             onWheel: wheel => button.scrolled(wheel.angleDelta.y)
         }
         QQC.ToolTip.visible: area.containsMouse

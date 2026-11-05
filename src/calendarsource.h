@@ -1,5 +1,6 @@
 #pragma once
 
+#include <KCalendarCore/MemoryCalendar>
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
@@ -38,8 +39,14 @@ public:
     explicit CalendarSource(QObject *parent = nullptr);
 
     static QString meetingLink(const QString &text);
+    using Parsed = KCalendarCore::MemoryCalendar::Ptr;
+    // One iCal document, parsed (null when it isn't valid iCal). The slow part: done once per
+    // download, off the main thread, never on a lookup.
+    static Parsed parse(const QByteArray &icsDoc);
+    static QList<Occurrence> expand(const QList<Parsed> &calendars, const QDateTime &from, const QDateTime &to);
     static QList<Occurrence> expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to);
     // Not-yet-ended events from the start of today to the end of tomorrow.
+    static QList<Occurrence> upcoming(const QList<Parsed> &calendars, const QDateTime &now, int count);
     static QList<Occurrence> upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count);
 
     QStringList urls() const { return m_urls; }
@@ -65,8 +72,15 @@ private:
 
     QNetworkAccessManager *m_net;
     QStringList m_urls;
-    // Last good download per link, kept when a later fetch fails.
+    // Last good download per link, kept when a later fetch fails, and its parsed form.
     QHash<QString, QByteArray> m_docs;
+    QHash<QString, Parsed> m_parsed;
+    // Bumped when the links change, so a parse of an old link that finishes late is dropped.
+    int m_generation = 0;
+    void parseLater(const QString &url, const QByteArray &doc);
+    // A round ends once every download and every parse it started has finished.
+    int m_parsing = 0;
+    void finishRound();
     bool m_ok = false;
     bool m_loaded = false;
     int m_pending = 0;
