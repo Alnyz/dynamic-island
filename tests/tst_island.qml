@@ -210,6 +210,18 @@ Item {
         }
 
         Component {
+            id: todoStoreFake
+            QtObject {
+                property var items: []
+                property var nextOpen: ({})
+                function add(t) {}
+                function setDone(id, d) {}
+                function remove(id) {}
+                function clearDone() {}
+            }
+        }
+
+        Component {
             id: todoFake
             QtObject {
                 property var nextOpen: ({ id: "t1", text: "Send invoice", done: false })
@@ -611,6 +623,60 @@ Item {
             island.startTour()
             compare(island.open, false)
             compare(island.mode, "tour")
+        }
+
+        function test_keyboard_switches_tabs() {
+            const { island } = make({})
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            const panel = findChild(island, "homePanel")
+            panel.forceActiveFocus()
+            compare(panel.tab, "home")
+            keyClick(Qt.Key_2)
+            compare(panel.tab, "music")
+            keyClick(Qt.Key_Tab)
+            compare(panel.tab, "timer")
+            keyClick(Qt.Key_Backtab, Qt.ShiftModifier)
+            compare(panel.tab, "music")
+            // Past the last tab number nothing happens.
+            keyClick(Qt.Key_9)
+            compare(panel.tab, "music")
+            keyClick(Qt.Key_1)
+            keyClick(Qt.Key_Backtab, Qt.ShiftModifier)
+            compare(panel.tab, panel.tabKeys[panel.tabKeys.length - 1])
+        }
+
+        function test_keyboard_plays_and_seeks() {
+            const { island } = make({ position: 60000000, length: 200000000 })
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            const panel = findChild(island, "homePanel")
+            panel.forceActiveFocus()
+            keyClick(Qt.Key_Space)
+            compare(stage.calls.playPause, 1)
+            // Fakes are copied into the panel, so read its copy.
+            keyClick(Qt.Key_Right)
+            compare(panel.player.position, 65000000)
+            keyClick(Qt.Key_Left)
+            keyClick(Qt.Key_Left)
+            compare(panel.player.position, 55000000)
+        }
+
+        function test_typing_in_a_tab_keeps_its_keys() {
+            const { island } = make({})
+            island.todos = createTemporaryObject(todoStoreFake, stage)
+            island.toggleFromKeyboard()
+            tryCompare(island, "mode", "open")
+            const panel = findChild(island, "homePanel")
+            panel.tab = "todo"
+            const input = findChild(island, "todoInput")
+            verify(input)
+            input.forceActiveFocus()
+            keyClick(Qt.Key_2)
+            keyClick(Qt.Key_Space)
+            compare(panel.tab, "todo")
+            compare(input.text, "2 ")
+            compare(stage.calls.playPause, 0)
         }
 
         function test_peek_shows_current_activity() {

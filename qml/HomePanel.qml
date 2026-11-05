@@ -16,6 +16,28 @@ Item {
     signal closeRequested()
     focus: true
     Keys.onEscapePressed: closeRequested()
+    // 1-9 and Tab switch tabs; Space plays or pauses; arrows seek. A focused text box keeps its own keys.
+    Keys.onPressed: event => {
+        const keys = panel.tabKeys
+        const at = keys.indexOf(panel.tab)
+        if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9 && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+            const n = event.key - Qt.Key_1
+            if (n < keys.length)
+                panel.tab = keys[n]
+            event.accepted = true
+        } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+            const back = event.key === Qt.Key_Backtab || (event.modifiers & Qt.ShiftModifier)
+            panel.tab = keys[(Math.max(0, at) + (back ? keys.length - 1 : 1)) % keys.length]
+            event.accepted = true
+        } else if (event.key === Qt.Key_Space && panel.player) {
+            panel.player.PlayPause()
+            event.accepted = true
+        } else if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && panel.player && panel.player.canSeek !== false && panel.player.length > 0) {
+            const step = (event.key === Qt.Key_Right ? 1 : -1) * 5000000
+            panel.player.position = Math.max(0, Math.min(panel.player.length - 1000000, panel.player.position + step))
+            event.accepted = true
+        }
+    }
     // Off in unit tests: the buttons talk to the real system.
     property bool showQuickButtons: true
     property var quickHidden: []
@@ -58,6 +80,19 @@ Item {
     ]
     readonly property var extra: tools.find(t => t.key === extraTool) || tools[0]
     property bool menuOpen: false
+    readonly property var tabList: [
+        { key: "home", label: "Home", icon: "go-home" },
+        { key: "music", label: "Music", icon: "media-playback-start" },
+        { key: "timer", label: "Timer", icon: "chronometer" },
+        { key: "mixer", label: "Sound Mixer", icon: "view-media-equalizer" },
+        ...(history && history.settings.save ? [{ key: "notifications", label: "Notifications", icon: "notifications" }] : []),
+        { divider: true },
+        { key: "todo", label: "To-Do", icon: "view-list-symbolic" },
+        { key: extra.key, label: extra.label, icon: extra.icon, name: "extra" },
+        { key: "more", label: "More", icon: "overflow-menu" }
+    ]
+    // The tabs the keyboard steps through, in order (the ⋯ menu isn't one).
+    readonly property var tabKeys: tabList.filter(t => !t.divider && t.key !== "more").map(t => t.key)
     readonly property bool wantsKeyboard: tab === "clipboard" || tab === "notes" || tab === "todo"
     // Home is shorter than the other tabs; the island shrinks to it. 0 means use the full height.
     readonly property real fitHeight: tab === "home" ? tabContent.y + homeTab.implicitHeight : 0
@@ -121,17 +156,7 @@ Item {
             spacing: 4
 
             Repeater {
-                model: [
-                    { key: "home", label: "Home", icon: "go-home" },
-                    { key: "music", label: "Music", icon: "media-playback-start" },
-                    { key: "timer", label: "Timer", icon: "chronometer" },
-                    { key: "mixer", label: "Sound Mixer", icon: "view-media-equalizer" },
-                    ...(panel.history && panel.history.settings.save ? [{ key: "notifications", label: "Notifications", icon: "notifications" }] : []),
-                    { divider: true },
-                    { key: "todo", label: "To-Do", icon: "view-list-symbolic" },
-                    { key: panel.extra.key, label: panel.extra.label, icon: panel.extra.icon, name: "extra" },
-                    { key: "more", label: "More", icon: "overflow-menu" }
-                ]
+                model: panel.tabList
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool selected: panel.tab === modelData.key
