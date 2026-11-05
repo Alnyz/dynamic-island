@@ -49,6 +49,8 @@ Item {
             property real addedMinutes: 0
             function pause() { pauseCalls++ }
             function addMinutes(m) { addedMinutes += m; remainingMs += m * 60000 }
+            property real startedMinutes: 0
+            function start(m) { startedMinutes = m }
             function resume() {}
         }
     }
@@ -451,6 +453,84 @@ Item {
             mouseMove(island, 10, 10)
             tryCompare(island, "mode", "peek")
             compare(findChild(island, "peekSeek").visible, false)
+        }
+
+        SignalSpy { id: menuSpy; signalName: "menuAction" }
+
+        function test_right_click_opens_menu() {
+            const { island } = make({})
+            mouseMove(island, 10, 10)
+            mouseClick(island, 10, 10, Qt.RightButton)
+            compare(island.mode, "menu")
+            tryCompare(island, "height", 16 + 4 * 36)
+            verify(findChild(island, "menu-dnd-hour").visible)
+            verify(findChild(island, "menu-hide-hour").visible)
+            verify(findChild(island, "menu-settings").visible)
+            // The panel never opens from a right click.
+            wait(400)
+            compare(island.open, false)
+        }
+
+        function test_menu_rows_send_actions() {
+            const { island } = make(null)
+            menuSpy.target = island
+            menuSpy.clear()
+            mouseMove(island, 10, 10)
+            mouseClick(island, 10, 10, Qt.RightButton)
+            tryCompare(island, "height", island.size.h)
+            mouseClick(findChild(island, "menu-dnd-hour"))
+            compare(menuSpy.count, 1)
+            compare(menuSpy.signalArguments[0][0], "dnd-hour")
+            compare(island.menuOpen, false)
+
+            island.dnd = true
+            mouseClick(island, 10, 10, Qt.RightButton)
+            tryCompare(island, "height", island.size.h)
+            verify(findChild(island, "menu-dnd-off").visible)
+            mouseClick(findChild(island, "menu-settings"))
+            compare(menuSpy.signalArguments[1][0], "settings")
+        }
+
+        function test_menu_starts_timer() {
+            const { island, timer } = make(null, true)
+            mouseMove(island, 10, 10)
+            mouseClick(island, 10, 10, Qt.RightButton)
+            tryCompare(island, "height", island.size.h)
+            mouseClick(findChild(island, "menu-timer-10"))
+            compare(timer.startedMinutes, 10)
+            compare(island.menuOpen, false)
+        }
+
+        function test_menu_closes_when_pointer_leaves() {
+            const { island } = make(null)
+            mouseMove(island, 10, 10)
+            mouseClick(island, 10, 10, Qt.RightButton)
+            compare(island.mode, "menu")
+            mouseMove(stage, 1090, 510)
+            tryCompare(island, "menuOpen", false, 2000)
+            tryCompare(island, "mode", "idle")
+        }
+
+        function test_left_click_closes_menu_without_opening() {
+            const { island } = make(null)
+            mouseMove(island, 10, 10)
+            mouseClick(island, 10, 10, Qt.RightButton)
+            tryCompare(island, "height", island.size.h)
+            // Below the rows, in the menu's padding.
+            mouseClick(island, island.width / 2, island.height - 3)
+            compare(island.menuOpen, false)
+            compare(island.open, false)
+        }
+
+        function test_hidden_by_user_folds_away() {
+            const { island } = make(null)
+            island.hiddenByUser = true
+            compare(island.tucked, true)
+            tryCompare(island, "height", 0)
+            // Alerts still come out of the sliver.
+            island.showAlert({ kind: "volume", value: 40, muted: false }, 2000)
+            compare(island.tucked, false)
+            tryCompare(island, "height", 32)
         }
 
         function test_peek_shows_current_activity() {

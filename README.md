@@ -22,6 +22,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Scroll up or down on it to change the volume, or the minutes left while the timer shows. Middle-click plays or pauses, and double-clicking the music turn skips the song.
 - Point at it to see the song title and a seek bar you can drag. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. The key can be changed in System Settings → Shortcuts.
+- Right-click it for a quick menu: pause notifications for an hour, start a 5, 10 or 25 minute timer, hide the island for an hour (Meta+N brings it back), or open Settings.
 - Choose between a notch joined to the top edge or a floating pill. Switching animates.
 
 ### Short alerts in the pill

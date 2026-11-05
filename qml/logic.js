@@ -139,9 +139,11 @@ function pickPlayer(entries, nowMs, timeoutMs) {
     return best >= 0 ? best : bestPaused
 }
 
-function islandState(hasPlayer, hovered, open, hasAlert) {
+function islandState(hasPlayer, hovered, open, hasAlert, menu) {
     if (open)
         return "open"
+    if (menu)
+        return "menu"
     if (hasAlert)
         return "alert"
     if (!hasPlayer)
@@ -334,6 +336,18 @@ function clipRows(items, query, kind) {
 }
 
 // The pill's size while it shows an alert.
+// Rows of the right-click menu on the pill. s: { dnd, hidden }.
+function pillMenu(s) {
+    return [
+        s.dnd ? { key: "dnd-off", label: "Resume notifications", icon: "notifications" }
+              : { key: "dnd-hour", label: "Pause notifications for 1 hour", icon: "notifications-disabled" },
+        { key: "timers", label: "Timer", icon: "chronometer", minutes: [5, 10, 25] },
+        s.hidden ? { key: "show", label: "Show the island", icon: "view-visible" }
+                 : { key: "hide-hour", label: "Hide for 1 hour", icon: "view-hidden" },
+        { key: "settings", label: "Settings", icon: "configure" }
+    ]
+}
+
 // a: the alert itself, for kinds whose size depends on it (a notification with buttons is taller).
 function alertSize(kind, barHeight, radius, a) {
     if (kind === "notification" && a && a.buttons && a.buttons.length > 0)

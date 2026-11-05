@@ -69,6 +69,8 @@ TestCase {
         compare(L.islandState(true, true, true), "open")
         compare(L.islandState(true, true, false, true), "alert")
         compare(L.islandState(false, false, true, true), "open")
+        compare(L.islandState(true, true, false, true, true), "menu")
+        compare(L.islandState(true, true, true, false, true), "open")
     }
 
     function test_alert_size() {
@@ -469,6 +471,14 @@ TestCase {
 
     function test_privacy_alert_size() {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
+    }
+
+    function test_pill_menu() {
+        const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
+        compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])
+        const flipped = L.pillMenu({ dnd: true, hidden: true }).map(r => r.key)
+        compare(flipped, ["dnd-off", "timers", "show", "settings"])
+        compare(L.pillMenu({}).find(r => r.key === "timers").minutes, [5, 10, 25])
     }
 
     function test_volume_after_steps() {

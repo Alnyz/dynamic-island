@@ -81,6 +81,22 @@ Item {
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
     signal notificationClicked(string desktopEntry)
+    // Right-click menu. Its timer rows start the timer here; the rest go out as menuAction(key).
+    property bool menuOpen: false
+    property bool dnd: false
+    // Folded into a sliver at the top edge, like behind a full-screen app, until shown again.
+    property bool hiddenByUser: false
+    readonly property var menuRows: L.pillMenu({ dnd: dnd, hidden: hiddenByUser })
+    signal menuAction(string key)
+    function pickMenu(key, minutes) {
+        menuOpen = false
+        if (key === "timers") {
+            if (timer)
+                timer.start(minutes)
+            return
+        }
+        menuAction(key)
+    }
     // One of a notification's own actions: a button on its alert, or "default" for a click on it.
     signal notificationAction(int serverId, string key)
     // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
@@ -113,10 +129,12 @@ Item {
             openedByKeyboard = false
             touched = false
         }
-        if (open)
+        if (open) {
             alert = null
-        else
+            menuOpen = false
+        } else {
             requestedTab = ""
+        }
     }
     Timer {
         id: alertTimer
@@ -146,7 +164,7 @@ Item {
     readonly property bool cyclePaused: swipePause.running
     property int wheelAccum: 0
     property bool swipeUsed: false
-    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null)
+    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null, menuOpen)
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
 
     readonly property var sizes: ({
@@ -158,12 +176,13 @@ Item {
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
         // 14 + 18: panelLoader's top and bottom margins.
+        menu: { w: 290, h: 16 + menuRows.length * 36, r: 22 },
         open: { w: 860, h: panelLoader.item && panelLoader.item.fitHeight > 0 ? panelLoader.item.fitHeight + 14 + 18 : 420, r: 30 }
     })
     // Behind a full-screen app the pill folds into a sliver at the top edge; an alert grows out of it.
     property bool coveredByFullScreen: false
     property real sliverWidth: 120
-    readonly property bool tucked: coveredByFullScreen && (mode === "idle" || mode === "compact" || mode === "peek")
+    readonly property bool tucked: (coveredByFullScreen || hiddenByUser) && (mode === "idle" || mode === "compact" || mode === "peek")
     readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius, alert)
                               : tucked ? { w: sliverWidth, h: 0, r: 6 }
                               : sizes[mode]
@@ -231,8 +250,15 @@ Item {
     // island closes when the pointer stays away for a moment instead.
     Timer {
         interval: 300
-        running: island.openOnHover && island.hovered && !island.open
+        running: island.openOnHover && island.hovered && !island.open && !island.menuOpen
         onTriggered: island.open = true
+    }
+
+    // The menu closes once the pointer has left it for a moment.
+    Timer {
+        interval: 500
+        running: island.menuOpen && !island.hovered
+        onTriggered: island.menuOpen = false
     }
 
     Timer {
@@ -300,7 +326,7 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
         onDoubleClicked: mouse => {
             if (mouse.button === Qt.LeftButton && clickDelay.running) {
                 clickDelay.stop()
@@ -309,6 +335,17 @@ Item {
             }
         }
         onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                if (!island.open) {
+                    clickDelay.stop()
+                    island.menuOpen = !island.menuOpen
+                }
+                return
+            }
+            if (island.mode === "menu") {
+                island.menuOpen = false
+                return
+            }
             if (mouse.button === Qt.MiddleButton) {
                 if (island.player && !island.open)
                     island.player.PlayPause()
@@ -1011,6 +1048,113 @@ Item {
                 height: 4
                 radius: 2
                 color: dot.index === island.current % island.activities.length ? "#ffffff" : "#5a616a"
+            }
+        }
+    }
+
+    component MenuRow: Rectangle {
+        id: row
+        property string icon
+        property string label
+        signal picked()
+        width: parent ? parent.width : 0
+        height: 32
+        radius: 10
+        color: rowArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        Kirigami.Icon {
+            id: rowIcon
+            x: 10
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: row.icon
+            color: "#ffffff"
+            isMask: true
+        }
+        Text {
+            anchors.left: rowIcon.right
+            anchors.leftMargin: 10
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            text: row.label
+            color: "#ffffff"
+            font.pixelSize: 13
+            elide: Text.ElideRight
+        }
+        MouseArea {
+            id: rowArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: row.picked()
+        }
+    }
+
+    Slide {
+        shown: island.mode === "menu"
+        Column {
+            objectName: "pillMenu"
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 4
+            Repeater {
+                model: island.mode === "menu" ? island.menuRows : []
+                delegate: Item {
+                    id: entry
+                    required property var modelData
+                    width: parent.width
+                    height: 32
+                    MenuRow {
+                        visible: !entry.modelData.minutes
+                        objectName: "menu-" + entry.modelData.key
+                        icon: entry.modelData.icon
+                        label: entry.modelData.label
+                        onPicked: island.pickMenu(entry.modelData.key)
+                    }
+                    // Timer presets sit side by side on one row.
+                    Row {
+                        visible: !!entry.modelData.minutes
+                        anchors.fill: parent
+                        spacing: 6
+                        Kirigami.Icon {
+                            x: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16
+                            height: 16
+                            source: entry.modelData.icon
+                            color: "#ffffff"
+                            isMask: true
+                        }
+                        Item { width: 4; height: 1 }
+                        Repeater {
+                            model: entry.modelData.minutes || []
+                            delegate: Rectangle {
+                                required property int modelData
+                                objectName: "menu-timer-" + modelData
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 64
+                                height: 26
+                                radius: 13
+                                color: chipArea.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.1)
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: parent.modelData + " min"
+                                    color: "#ffffff"
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                }
+                                MouseArea {
+                                    id: chipArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: island.pickMenu("timers", parent.modelData)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

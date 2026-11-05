@@ -281,18 +281,50 @@ Window {
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
         userIdle: SystemStatus.userIdle
-        onSettingsRequested: {
-            settingsWindow.show()
-            settingsWindow.raise()
-            settingsWindow.requestActivate()
+        onSettingsRequested: root.showSettings()
+        dnd: SystemStatus.dnd
+        onMenuAction: key => {
+            if (key === "dnd-hour") {
+                SystemStatus.setDnd(true)
+                dndHour.restart()
+            } else if (key === "dnd-off") {
+                dndHour.stop()
+                SystemStatus.setDnd(false)
+            } else if (key === "hide-hour") {
+                island.hiddenByUser = true
+                hideHour.restart()
+            } else if (key === "show") {
+                island.hiddenByUser = false
+            } else if (key === "settings") {
+                root.showSettings()
+            }
         }
         onOpenChanged: if (open) {
+            // Opening the panel (Meta+N) brings a hidden island back.
+            hiddenByUser = false
             SystemStatus.refresh()
             calendarSource.refreshIfStale()
         }
         onInputRectChanged: root.updateInputRegion()
         coveredByFullScreen: fullScreen.active
         onWantsFrontChanged: InputRegion.setLayer(root, wantsFront)
+    }
+
+    function showSettings() {
+        settingsWindow.show()
+        settingsWindow.raise()
+        settingsWindow.requestActivate()
+    }
+    // "Pause notifications for 1 hour" and "Hide for 1 hour" from the pill's menu.
+    Timer {
+        id: dndHour
+        interval: 3600000
+        onTriggered: SystemStatus.setDnd(false)
+    }
+    Timer {
+        id: hideHour
+        interval: 3600000
+        onTriggered: island.hiddenByUser = false
     }
 
     // Two small file reads; frequent enough to catch a plugged-in charger within a few seconds.
