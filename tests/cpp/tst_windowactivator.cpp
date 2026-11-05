@@ -17,6 +17,14 @@ private Q_SLOTS:
         QCOMPARE(WindowActivator::hintFromOrigin(QString()), QString());
     }
 
+    void raiseScriptTargetsThisProcess()
+    {
+        const QString s = WindowActivator::raiseScript(4242);
+        QVERIFY(s.contains(QStringLiteral("w.pid === 4242")));
+        QVERIFY(s.contains(QStringLiteral("\"dynamic-island\"")));
+        QVERIFY(s.contains(QStringLiteral("workspace.raiseWindow(w);")));
+    }
+
     void scriptQuotesItsInputs()
     {
         const QString s = WindowActivator::script(QStringLiteral("brave-browser"), QStringLiteral("whatsapp"));

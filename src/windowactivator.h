@@ -27,9 +27,26 @@ public:
     // replyTo (this process's bus name), a miss calls back noWindow() so the app can be started.
     static QString script(const QString &desktopEntry, const QString &titleHint, const QString &replyTo = QString());
 
+    // "web.whatsapp.com" -> "whatsapp": the part of a site's name its tab title usually shows.
+    static QString hintFromOrigin(const QString &origin);
+    // The same for QML, which can't call static functions.
+    Q_INVOKABLE QString originHint(const QString &origin) const { return hintFromOrigin(origin); }
+
+    // Puts the island back on top of the panels. The island and Plasma's panels share KWin's dock
+    // layer, where the last one shown wins; after a login, an unlock or Plasma restarting, a panel
+    // comes back on top and covers the island. Runs on its own at those moments.
+    Q_INVOKABLE void raiseIsland();
+    // The KWin script that raises the window of process pid.
+    static QString raiseScript(qint64 pid);
+
 public Q_SLOTS:
     // Called by the KWin script when no window matched.
     Q_SCRIPTABLE void noWindow(const QString &desktopEntry);
-    // "web.whatsapp.com" -> "whatsapp": the part of a site's name its tab title usually shows.
-    static QString hintFromOrigin(const QString &origin);
+
+private Q_SLOTS:
+    void onScreenSaverActiveChanged(bool active);
+
+private:
+    // Loads and runs a one-off KWin script under name, unloading it again afterwards.
+    void runScript(const QString &name, const QString &source);
 };

@@ -322,7 +322,7 @@ Window {
         micApps: prefs.show.privacy ? soundSource.recorders : []
         jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
-        onNotificationClicked: (entry, origin) => WindowActivator.activate(entry, WindowActivator.hintFromOrigin(origin), true)
+        onNotificationClicked: (entry, origin) => WindowActivator.activate(entry, WindowActivator.originHint(origin), true)
         onNotificationAction: (serverId, key, entry, origin) => {
             notificationWatcher.invokeAction(serverId, key)
             // The app gets the click but can't raise itself on Wayland; bring its window forward
@@ -427,7 +427,7 @@ Window {
             origin = o
             restart()
         }
-        onTriggered: WindowActivator.activate(entry, WindowActivator.hintFromOrigin(origin))
+        onTriggered: WindowActivator.activate(entry, WindowActivator.originHint(origin))
     }
 
     function showSettings() {

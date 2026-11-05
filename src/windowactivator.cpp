@@ -1,6 +1,8 @@
 #include "windowactivator.h"
 
+#include <QCoreApplication>
 #include <QDBusConnection>
+#include <QDBusServiceWatcher>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -36,6 +38,68 @@ WindowActivator::WindowActivator(QObject *parent)
 {
     // Where the KWin script reports that the app has no window to bring forward.
     QDBusConnection::sessionBus().registerObject(kPath, this, QDBusConnection::ExportScriptableSlots);
+
+    // The moments a panel ends up over the island: shortly after login (panels may start after
+    // the island), unlocking the screen, and Plasma's shell restarting.
+    for (int ms : {3000, 10000})
+        QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
+    QDBusConnection::sessionBus().connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"), QStringLiteral("org.freedesktop.ScreenSaver"),
+                                          QStringLiteral("ActiveChanged"), this, SLOT(onScreenSaverActiveChanged(bool)));
+    auto *shell = new QDBusServiceWatcher(QStringLiteral("org.kde.plasmashell"), QDBusConnection::sessionBus(), QDBusServiceWatcher::WatchForRegistration, this);
+    connect(shell, &QDBusServiceWatcher::serviceRegistered, this, [this] {
+        for (int ms : {3000, 8000})
+            QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
+    });
+}
+
+void WindowActivator::onScreenSaverActiveChanged(bool active)
+{
+    if (active)
+        return;
+    // The lock screen's own panels go away a moment after unlocking.
+    for (int ms : {800, 3000})
+        QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
+}
+
+QString WindowActivator::raiseScript(qint64 pid)
+{
+    return QStringLiteral(
+               "for (const w of workspace.windowList()) {\n"
+               "    if (w.pid === %1 && (w.resourceClass || \"\") === \"dynamic-island\")\n"
+               "        workspace.raiseWindow(w);\n"
+               "}\n")
+        .arg(pid);
+}
+
+void WindowActivator::raiseIsland()
+{
+    runScript(QStringLiteral("dynamic-island-raise"), raiseScript(QCoreApplication::applicationPid()));
+}
+
+void WindowActivator::runScript(const QString &name, const QString &source)
+{
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QDir().mkpath(dir);
+    const QString path = dir + QLatin1Char('/') + name + QStringLiteral(".js");
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return;
+    file.write(source.toUtf8());
+    file.close();
+    auto bus = QDBusConnection::sessionBus();
+    // A previous one that's still loaded would block loading under the same name.
+    bus.call(scripting(QStringLiteral("unloadScript")) << name);
+    auto *load = new QDBusPendingCallWatcher(bus.asyncCall(scripting(QStringLiteral("loadScript")) << path << name), this);
+    connect(load, &QDBusPendingCallWatcher::finished, this, [load, name] {
+        load->deleteLater();
+        const QDBusPendingReply<int> id = *load;
+        if (!id.isValid() || id.value() < 0)
+            return;
+        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"), QStringLiteral("/Scripting/Script") + QString::number(id.value()),
+                                                                              QStringLiteral("org.kde.kwin.Script"), QStringLiteral("run")));
+        // It has done its job by then; unloading keeps KWin's script list clean.
+        QTimer::singleShot(2000, [name] { QDBusConnection::sessionBus().asyncCall(scripting(QStringLiteral("unloadScript")) << name); });
+    });
 }
 
 void WindowActivator::noWindow(const QString &desktopEntry)
@@ -99,28 +163,5 @@ void WindowActivator::activate(const QString &desktopEntry, const QString &title
     static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
     if (!safe.match(desktopEntry).hasMatch())
         return;
-    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    QDir().mkpath(dir);
-    const QString path = dir + QStringLiteral("/activate.js");
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-    file.write(script(desktopEntry, titleHint, launch ? QDBusConnection::sessionBus().baseService() : QString()).toUtf8());
-    file.close();
-
-    auto bus = QDBusConnection::sessionBus();
-    // A previous one that's still loaded would block loading under the same name.
-    bus.call(scripting(QStringLiteral("unloadScript")) << kName);
-    auto *load = new QDBusPendingCallWatcher(bus.asyncCall(scripting(QStringLiteral("loadScript")) << path << kName), this);
-    connect(load, &QDBusPendingCallWatcher::finished, this, [load] {
-        load->deleteLater();
-        const QDBusPendingReply<int> id = *load;
-        if (!id.isValid() || id.value() < 0)
-            return;
-        auto bus = QDBusConnection::sessionBus();
-        bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"), QStringLiteral("/Scripting/Script") + QString::number(id.value()),
-                                                     QStringLiteral("org.kde.kwin.Script"), QStringLiteral("run")));
-        // It has done its job by then; unloading keeps KWin's script list clean.
-        QTimer::singleShot(2000, [] { QDBusConnection::sessionBus().asyncCall(scripting(QStringLiteral("unloadScript")) << kName); });
-    });
+    runScript(kName, script(desktopEntry, titleHint, launch ? QDBusConnection::sessionBus().baseService() : QString()));
 }
