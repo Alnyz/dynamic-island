@@ -98,6 +98,9 @@ Item {
     property var now: () => new Date()
     property int battery: -1
     property bool charging: false
+    // For the battery ring's tooltip.
+    property string batteryState: ""
+    property int batteryMinutes: -1
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
     property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false, todo: true })
@@ -695,6 +698,16 @@ Item {
             width: 14
             height: 14
             preferredRendererType: Shape.CurveRenderer
+            readonly property string tip: L.batteryTooltip(island.battery, island.batteryState, island.batteryMinutes)
+            // Point at the ring for the battery's details.
+            HoverHandler {
+                id: batteryHover
+                margin: 6
+            }
+            readonly property bool tipShown: batteryHover.hovered
+            QQC.ToolTip.visible: tipShown
+            QQC.ToolTip.text: tip
+            QQC.ToolTip.delay: 300
             ShapePath {
                 fillColor: "transparent"
                 strokeColor: palette.dark
@@ -726,7 +739,20 @@ Item {
             width: historyRow.implicitWidth + 12
             height: 18
             radius: 9
-            color: "#33270f"
+            color: historyArea.containsMouse ? "#4a3815" : "#33270f"
+            // Opens the Notifications tab.
+            MouseArea {
+                id: historyArea
+                objectName: "historyChipArea"
+                anchors.fill: parent
+                anchors.margins: -5
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    island.requestedTab = "notifications"
+                    island.open = true
+                }
+            }
             Row {
                 id: historyRow
                 anchors.centerIn: parent

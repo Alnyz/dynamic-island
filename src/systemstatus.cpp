@@ -172,7 +172,29 @@ void SystemStatus::readBattery()
     // No battery (a desktop): -1 keeps it out of the pill instead of reading as 0%.
     m_battery = fake.isEmpty() && !QFile::exists(kBattery + QStringLiteral("capacity")) ? -1 : capacity;
     m_charging = charging;
+    m_batteryState = fake.isEmpty() ? readFile(kBattery + QStringLiteral("status")).trimmed() : QStringLiteral("Discharging");
+    // Energy (µWh, µW) on most laptops; charge (µAh, µA) on some.
+    const bool energy = QFile::exists(kBattery + QStringLiteral("energy_now"));
+    auto num = [](const QString &path) { return readFile(path).trimmed().toLongLong(); };
+    m_batteryMinutes = !fake.isEmpty() ? -1
+        : energy ? minutesLeft(m_batteryState, num(kBattery + QStringLiteral("energy_now")), num(kBattery + QStringLiteral("energy_full")), num(kBattery + QStringLiteral("power_now")))
+                 : minutesLeft(m_batteryState, num(kBattery + QStringLiteral("charge_now")), num(kBattery + QStringLiteral("charge_full")), num(kBattery + QStringLiteral("current_now")));
     Q_EMIT changed();
+}
+
+int SystemStatus::minutesLeft(const QString &status, qint64 now, qint64 full, qint64 rate)
+{
+    rate = qAbs(rate);
+    if (rate <= 0 || now < 0)
+        return -1;
+    const QString s = status.trimmed();
+    double hours = -1;
+    if (s == QLatin1String("Discharging"))
+        hours = double(now) / double(rate);
+    else if (s == QLatin1String("Charging") && full > now)
+        hours = double(full - now) / double(rate);
+    // A reading far beyond a day is the draw settling, not a real estimate.
+    return hours < 0 || hours > 48 ? -1 : int(hours * 60 + 0.5);
 }
 
 bool SystemStatus::silenced(bool ownDnd, bool trayDnd, bool inhibited, bool ignoreHolds)

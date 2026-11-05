@@ -18,6 +18,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Closed pill
 
 - Cover art and a small level meter that follows the sound while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
+- Point at the battery ring for the charge, whether it's charging, and the time until full or empty.
 - When nothing is going on, it shows a glance (an event starting soon, low battery on the laptop or a Bluetooth device, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default; click the count to see the packages and update them in a terminal) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Scroll up or down on it to change the volume, or the minutes left while the timer shows. Middle-click plays or pauses, and double-clicking the music turn skips the song.
@@ -30,7 +31,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 - Volume and brightness levels, and Caps Lock turning on or off, replacing Plasma's on-screen box.
 - Notifications, replacing Plasma's popups. Click one to open it in its app, and use the app's own buttons (Mark as read, Accept, ...) right on the alert. Typed replies stay in Plasma's own popup: only Plasma can deliver them to the app.
-- Every notification is also saved, even ones that never popped up (do not disturb, a locked screen, the panel open). On the idle pill, an amber bell chip counts the ones you haven't looked at yet.
+- Every notification is also saved, even ones that never popped up (do not disturb, a locked screen, the panel open). On the idle pill, an amber bell chip counts the ones you haven't looked at yet; click it to open them.
 - Downloads and copies finishing or failing. Click a finished one to open its folder.
 - An app starting to use the microphone or camera, Bluetooth devices connecting, and the charger being plugged in or out.
 - Over a full-screen game or film, alerts still come to the front for a moment. Notifications only do when their app is on your urgent list (or marked critical), unless "Show all notifications" is on. Each kind can be turned off under Settings → Alerts → Over full-screen apps.

@@ -37,6 +37,21 @@ private Q_SLOTS:
         QCOMPARE(SystemStatus::parseBattery(QStringLiteral("80\n"), QStringLiteral("Not charging\n")), (std::pair{80, true}));
     }
 
+    void testMinutesLeft()
+    {
+        // 30 Wh left at 15 W: two hours.
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Discharging"), 30000000, 57000000, 15000000), 120);
+        // 27 Wh to go at 54 W: half an hour.
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Charging\n"), 30000000, 57000000, 54000000), 30);
+        // Some batteries report the current as negative while discharging.
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Discharging"), 4000000, 5000000, -2000000), 120);
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Full"), 57180000, 57180000, 0), -1);
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Not charging"), 50000000, 57000000, 1000000), -1);
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Discharging"), 30000000, 57000000, 0), -1);
+        // A trickle that would take days isn't an estimate.
+        QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Discharging"), 50000000, 57000000, 100000), -1);
+    }
+
     void testSilenced()
     {
         // Plasma holds notifications while a full-screen app is active; the island can look past

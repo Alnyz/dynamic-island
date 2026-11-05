@@ -199,6 +199,22 @@ function eventWhen(ev) {
     return String(start.getHours()).padStart(2, "0") + ":" + String(start.getMinutes()).padStart(2, "0")
 }
 
+// The battery ring's tooltip: "82% · Charging · 1 h 20 min until full", "45% · 2 h 5 min left",
+// "100% · Fully charged". state is the battery's sysfs status; minutes -1 when unknown.
+function batteryTooltip(percent, state, minutes) {
+    const time = minutes >= 0 ? (minutes >= 60 ? Math.floor(minutes / 60) + " h" + (minutes % 60 ? " " + (minutes % 60) + " min" : "") : minutes + " min") : ""
+    const parts = [percent + "%"]
+    if (state === "Full" || (state !== "Discharging" && percent >= 100))
+        parts.push("Fully charged")
+    else if (state === "Charging")
+        parts.push(time ? "Charging · " + time + " until full" : "Charging")
+    else if (state === "Not charging")
+        parts.push("Plugged in, not charging")
+    else if (state === "Discharging")
+        parts.push(time ? time + " left" : "On battery")
+    return parts.join(" · ")
+}
+
 // Countries with a public holiday calendar from Google, and the region code that picks each
 // one automatically from the system's language setting (en_IN -> India).
 var HOLIDAY_COUNTRIES = [

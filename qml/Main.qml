@@ -351,6 +351,8 @@ Window {
         panelDate: prefs.panel.date
         battery: SystemStatus.battery
         charging: SystemStatus.charging
+        batteryState: SystemStatus.batteryState
+        batteryMinutes: SystemStatus.batteryMinutes
         idleMode: prefs.idle.mode
         glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count

@@ -373,6 +373,40 @@ Item {
             compare(chip.visible, false)
         }
 
+        function test_history_chip_opens_notifications() {
+            const { island } = make(null)
+            island.newNotifications = 2
+            const chip = findChild(island, "historyChip")
+            tryCompare(chip, "visible", true)
+            // Wait for the pill to grow and the row to settle before clicking it.
+            tryCompare(island, "width", island.size.w)
+            waitForRendering(island)
+            mouseClick(chip)
+            compare(island.open, true)
+            compare(findChild(island, "homePanel").tab, "notifications")
+        }
+
+        function test_battery_ring_tooltip() {
+            const { island } = make(null)
+            island.battery = 82
+            island.charging = true
+            island.batteryState = "Charging"
+            island.batteryMinutes = 80
+            island.refreshGlance()
+            const ring = findChild(island, "batteryRing")
+            tryCompare(ring, "visible", true)
+            tryCompare(island, "width", island.size.w)
+            waitForRendering(island)
+            compare(ring.tip, "82% · Charging · 1 h 20 min until full")
+            mouseMove(ring, ring.width / 2, ring.height / 2)
+            tryCompare(ring, "tipShown", true)
+            // Hovering the ring doesn't open anything.
+            compare(island.open, false)
+            island.batteryState = "Discharging"
+            island.batteryMinutes = 125
+            compare(ring.tip, "82% · 2 h 5 min left")
+        }
+
         function test_history_chip_hidden_outside_glances() {
             const { island } = make(null)
             island.newNotifications = 3

@@ -662,6 +662,18 @@ TestCase {
         compare(merged.map(e => e.title), ["Karva Chauth", "Standup", "Diwali"])
     }
 
+    function test_battery_tooltip() {
+        compare(L.batteryTooltip(82, "Charging", 80), "82% · Charging · 1 h 20 min until full")
+        compare(L.batteryTooltip(82, "Charging", -1), "82% · Charging")
+        compare(L.batteryTooltip(45, "Discharging", 125), "45% · 2 h 5 min left")
+        compare(L.batteryTooltip(45, "Discharging", 40), "45% · 40 min left")
+        compare(L.batteryTooltip(45, "Discharging", 120), "45% · 2 h left")
+        compare(L.batteryTooltip(45, "Discharging", -1), "45% · On battery")
+        compare(L.batteryTooltip(100, "Full", -1), "100% · Fully charged")
+        compare(L.batteryTooltip(100, "Not charging", -1), "100% · Fully charged")
+        compare(L.batteryTooltip(80, "Not charging", -1), "80% · Plugged in, not charging")
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])
