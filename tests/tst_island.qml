@@ -415,6 +415,44 @@ Item {
             compare(island.open, true)
         }
 
+        function test_peek_seek_bar_jumps() {
+            const { island } = make({ position: 0, length: 200000000 })
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            tryCompare(island, "height", 60)
+            const seek = findChild(island, "peekSeekArea")
+            verify(findChild(island, "peekSeek").visible)
+            mouseClick(seek, seek.width / 2, seek.height / 2)
+            compare(island.player.position, 100000000)
+            // Seeking never opens the panel.
+            wait(400)
+            compare(island.open, false)
+        }
+
+        function test_peek_seek_bar_drags() {
+            const { island } = make({ position: 0, length: 200000000 })
+            mouseMove(island, 10, 10)
+            tryCompare(island, "height", 60)
+            const seek = findChild(island, "peekSeekArea")
+            const bar = findChild(island, "peekSeek")
+            const x = Math.round(seek.width / 4)
+            mousePress(seek, 2, seek.height / 2)
+            mouseMove(seek, x, seek.height / 2)
+            // The bar follows the pointer before the player is told.
+            compare(bar.fraction, x / seek.width)
+            compare(island.player.position, 0)
+            mouseRelease(seek, x, seek.height / 2)
+            compare(island.player.position, Math.round(x / seek.width * 200000000))
+            compare(bar.dragFraction, -1)
+        }
+
+        function test_peek_seek_bar_hidden_without_length() {
+            const { island } = make({ length: 0 })
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            compare(findChild(island, "peekSeek").visible, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

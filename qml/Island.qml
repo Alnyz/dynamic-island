@@ -180,7 +180,7 @@ Item {
     Behavior on height { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
 
     // The position timer only runs while playing, so fetch once on open.
-    onModeChanged: if (mode === "open" && player) player.updatePosition()
+    onModeChanged: if ((mode === "open" || mode === "peek") && player && player.updatePosition) player.updatePosition()
 
     function step(dir) {
         if (activities.length > 1)
@@ -245,7 +245,8 @@ Item {
     Timer {
         interval: 1000
         repeat: true
-        running: island.mode === "open" && island.playing
+        // The music peek has a seek bar too.
+        running: (island.mode === "open" || island.musicShown && island.mode === "peek") && island.playing
         onTriggered: island.player.updatePosition()
     }
 
@@ -710,6 +711,65 @@ Item {
                 color: "#9aa3ad"
                 font.pixelSize: 12
                 elide: Text.ElideRight
+            }
+        }
+
+        // A thin seek bar along the bottom of the music peek; drag or click to jump.
+        Item {
+            id: peekSeek
+            objectName: "peekSeek"
+            visible: island.mode === "peek" && island.player !== null && island.player.length > 0
+            anchors.left: art.left
+            anchors.right: peekPlayPause.right
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            height: 10
+            // While dragging, the bar follows the pointer; the player seeks on release.
+            property real dragFraction: -1
+            readonly property real fraction: dragFraction >= 0 ? dragFraction
+                : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.player.position / island.player.length)) : 0
+
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width
+                height: seekArea.containsMouse || seekArea.pressed ? 4 : 2
+                radius: height / 2
+                color: Qt.rgba(1, 1, 1, 0.18)
+                Behavior on height { NumberAnimation { duration: 120 } }
+                Rectangle {
+                    objectName: "peekSeekFill"
+                    width: parent.width * peekSeek.fraction
+                    height: parent.height
+                    radius: parent.radius
+                    color: "#ffffff"
+                }
+            }
+            Rectangle {
+                visible: seekArea.containsMouse || seekArea.pressed
+                width: 9
+                height: 9
+                radius: 4.5
+                x: peekSeek.fraction * peekSeek.width - width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#ffffff"
+            }
+            MouseArea {
+                id: seekArea
+                objectName: "peekSeekArea"
+                anchors.fill: parent
+                anchors.topMargin: -3
+                hoverEnabled: true
+                enabled: island.player !== null && island.player.canSeek !== false
+                cursorShape: Qt.PointingHandCursor
+                preventStealing: true
+                function fractionAt(x) { return Math.max(0, Math.min(1, x / width)) }
+                onPressed: mouse => peekSeek.dragFraction = fractionAt(mouse.x)
+                onPositionChanged: mouse => { if (pressed) peekSeek.dragFraction = fractionAt(mouse.x) }
+                onReleased: mouse => {
+                    island.player.position = Math.round(fractionAt(mouse.x) * island.player.length)
+                    peekSeek.dragFraction = -1
+                }
+                onCanceled: peekSeek.dragFraction = -1
             }
         }
 
