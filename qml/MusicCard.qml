@@ -6,6 +6,7 @@ Column {
 
     property var player: null
     property string artUrl: ""
+    property color tint: "#ffffff"
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property bool hasLength: player !== null && player.length > 0
 
@@ -54,10 +55,11 @@ Column {
             radius: 1.5
             color: "#262626"
             Rectangle {
+                objectName: "cardProgressFill"
                 width: card.hasLength ? parent.width * Math.min(1, card.player.position / card.player.length) : 0
                 height: parent.height
                 radius: parent.radius
-                color: "#ffffff"
+                color: card.tint
             }
         }
         Item {

@@ -8,7 +8,7 @@ QtObject {
     required property string location
 
     readonly property var defaults: ({
-        style: { look: "notch", accent: "#0a84ff" },
+        style: { look: "notch", accent: "#0a84ff", coverTint: true },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
         behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
@@ -26,6 +26,8 @@ QtObject {
         category: "style"
         property string look: prefs.defaults.style.look
         property string accent: prefs.defaults.style.accent
+        // Music controls take the cover's main colour.
+        property bool coverTint: prefs.defaults.style.coverTint
     }
 
     property Settings shape: Settings {

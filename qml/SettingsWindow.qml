@@ -235,6 +235,12 @@ QQC.ApplicationWindow {
                             onClicked: accentDialog.open()
                         }
                     }
+                    QQC.CheckBox {
+                        objectName: "coverTint"
+                        text: "Tint music controls with the cover's colour"
+                        checked: win.prefs.style.coverTint
+                        onToggled: win.prefs.style.coverTint = checked
+                    }
                     ColorDialog {
                         id: accentDialog
                         title: "Choose an accent colour"

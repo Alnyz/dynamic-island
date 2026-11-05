@@ -8,6 +8,9 @@ Item {
 
     property var player: null
     property string artUrl: ""
+    // Fill for music progress and volume, and the colour of active music toggles.
+    property color musicTint: "#e8e2d0"
+    property color accentTint: palette.accent
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -340,6 +343,7 @@ Item {
                     width: parent.width
                     player: panel.player
                     artUrl: panel.artUrl
+                    tint: panel.musicTint
                 }
                 MonthCalendar {
                     width: parent.width
@@ -376,6 +380,8 @@ Item {
             visible: panel.tab === "music"
             player: panel.player
             artUrl: panel.artUrl
+            tint: panel.musicTint
+            accentTint: panel.accentTint
         }
         Loader {
             objectName: "mixerTab"

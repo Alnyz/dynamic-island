@@ -232,6 +232,11 @@ Window {
         refreshMinutes: prefs.calendar.refreshMinutes
     }
 
+    CoverColor {
+        id: coverColor
+        source: prefs.style.coverTint ? source.artUrl : ""
+    }
+
     PlayerSource {
         id: source
         players: mpris.list
@@ -256,6 +261,8 @@ Window {
             out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
         }
         artUrl: source.artUrl
+        coverTinted: coverColor.valid
+        coverTint: coverColor.valid ? coverColor.color : "transparent"
         timer: timerModel
         weather: weatherSource
         calendar: calendarSource

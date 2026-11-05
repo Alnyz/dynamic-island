@@ -124,4 +124,13 @@ TestCase {
         keyClick(Qt.Key_Return)
         compare(win.page, first.page)
     }
+
+    function test_cover_tint_switch() {
+        const { prefs, win } = make()
+        win.page = 0
+        const box = findChild(win.contentItem, "coverTint")
+        verify(box.checked)
+        mouseClick(box)
+        compare(prefs.style.coverTint, false)
+    }
 }

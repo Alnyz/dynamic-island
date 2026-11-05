@@ -9,6 +9,8 @@ Item {
 
     property var player: null
     property string artUrl: ""
+    property color tint: "#e8e2d0"
+    property color accentTint: palette.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
     readonly property color dim: Qt.rgba(1, 1, 1, 0.62)
@@ -143,7 +145,7 @@ Item {
                         VolumeSlider {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 130
-                            fill: "#e8e2d0"
+                            fill: music.tint
                             trackColor: Qt.rgba(1, 1, 1, 0.14)
                             value: music.player ? music.player.volume : 0
                             onMoved: v => music.player.volume = v
@@ -193,7 +195,7 @@ Item {
         VolumeSlider {
             objectName: "progress"
             width: parent.width
-            fill: "#e8e2d0"
+            fill: music.tint
             trackColor: Qt.rgba(1, 1, 1, 0.14)
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
@@ -225,7 +227,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.shuffle ?? 0) !== L.Shuffle.Unknown
                 iconName: "media-playlist-shuffle"
-                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? palette.accent : "#6b737c"
+                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? music.accentTint : "#6b737c"
                 onClicked: music.player.shuffle = music.player.shuffle === L.Shuffle.On ? L.Shuffle.Off : L.Shuffle.On
             }
             ControlButton {
@@ -268,7 +270,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.loopStatus ?? 0) !== L.Loop.Unknown
                 iconName: music.player && music.player.loopStatus === L.Loop.Track ? "media-repeat-single" : "media-playlist-repeat"
-                iconColor: music.player && music.player.loopStatus > L.Loop.None ? palette.accent : "#6b737c"
+                iconColor: music.player && music.player.loopStatus > L.Loop.None ? music.accentTint : "#6b737c"
                 onClicked: music.player.loopStatus = L.nextLoop(music.player.loopStatus)
             }
         }

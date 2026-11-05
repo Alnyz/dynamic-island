@@ -11,6 +11,11 @@ Item {
     property var player: null
     // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
     property string artUrl: ""
+    // The cover's colour (CoverColor), when there is one; music controls use musicTint.
+    property bool coverTinted: false
+    property color coverTint: "transparent"
+    readonly property color musicTint: coverTinted ? coverTint : palette.accent
+    Behavior on coverTint { ColorAnimation { duration: 400 } }
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -330,7 +335,9 @@ Item {
 
         ShapePath {
             fillColor: "#000000"
-            strokeWidth: -1
+            // A thin edge in the cover's colour while the music turn shows.
+            strokeWidth: island.coverTinted && island.musicShown ? 1 : -1
+            strokeColor: Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55)
             startX: notch.topR - notch.ear; startY: 0
             PathLine { x: island.width + notch.ear - notch.topR; y: 0 }
             PathArc { x: island.width; y: notch.corner; radiusX: notch.corner; radiusY: notch.corner; direction: notch.turn }
@@ -783,6 +790,7 @@ Item {
             objectName: "bars"
             visible: island.mode === "compact"
             running: island.playing
+            color: island.coverTinted ? island.coverTint : "#e8e2d0"
             anchors.right: parent.right
             anchors.rightMargin: 10 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
@@ -842,7 +850,7 @@ Item {
                     width: parent.width * peekSeek.fraction
                     height: parent.height
                     radius: parent.radius
-                    color: "#ffffff"
+                    color: island.coverTinted ? island.coverTint : "#ffffff"
                 }
             }
             Rectangle {
@@ -1418,6 +1426,8 @@ Item {
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player
             artUrl: island.artUrl
+            musicTint: island.coverTinted ? island.coverTint : "#e8e2d0"
+            accentTint: island.musicTint
             timer: island.timer
             weather: island.weather
             calendar: island.calendar

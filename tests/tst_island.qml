@@ -758,6 +758,25 @@ Item {
             compare(stage.calls.playPause, 0)
         }
 
+        function test_cover_colour_tints_music() {
+            const { island } = make({ position: 50000000, length: 200000000 })
+            compare(findChild(island, "bars").color, Qt.color("#e8e2d0"))
+            compare(island.musicTint, island.palette.accent)
+            island.coverTinted = true
+            island.coverTint = "#e0403a"
+            tryCompare(findChild(island, "bars"), "color", Qt.color("#e0403a"))
+            compare(island.musicTint, Qt.color("#e0403a"))
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            compare(findChild(island, "peekSeekFill").color, Qt.color("#e0403a"))
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            compare(findChild(island, "cardProgressFill").color, Qt.color("#e0403a"))
+            // No usable colour: back to the usual look.
+            island.coverTinted = false
+            compare(findChild(island, "cardProgressFill").color, Qt.color("#e8e2d0"))
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)
