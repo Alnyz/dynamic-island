@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
@@ -27,6 +28,28 @@ QString quoted(const QString &s)
 }
 
 const QString kName = QStringLiteral("dynamic-island-activate");
+const QString kPath = QStringLiteral("/WindowActivator");
+}
+
+WindowActivator::WindowActivator(QObject *parent)
+    : QObject(parent)
+{
+    // Where the KWin script reports that the app has no window to bring forward.
+    QDBusConnection::sessionBus().registerObject(kPath, this, QDBusConnection::ExportScriptableSlots);
+}
+
+void WindowActivator::noWindow(const QString &desktopEntry)
+{
+    static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
+    if (!safe.match(desktopEntry).hasMatch())
+        return;
+    QProcess launcher;
+    launcher.setProgram(QStringLiteral("gtk-launch"));
+    launcher.setArguments({desktopEntry});
+    // The app's own startup chatter stays out of the island's terminal.
+    launcher.setStandardOutputFile(QProcess::nullDevice());
+    launcher.setStandardErrorFile(QProcess::nullDevice());
+    launcher.startDetached();
 }
 
 QString WindowActivator::hintFromOrigin(const QString &origin)
@@ -39,8 +62,11 @@ QString WindowActivator::hintFromOrigin(const QString &origin)
     return parts.at(parts.size() - (countryPair ? 3 : 2));
 }
 
-QString WindowActivator::script(const QString &desktopEntry, const QString &titleHint)
+QString WindowActivator::script(const QString &desktopEntry, const QString &titleHint, const QString &replyTo)
 {
+    const QString miss = replyTo.isEmpty() ? QString()
+        : QStringLiteral("else {\n    callDBus(%1, %2, \"io.github.alnyz.DynamicIsland.WindowActivator\", \"noWindow\", %3);\n}\n")
+              .arg(quoted(replyTo), quoted(kPath), quoted(desktopEntry));
     return QStringLiteral(
                "const entry = %1.toLowerCase();\n"
                "const hint = %2.toLowerCase();\n"
@@ -64,10 +90,11 @@ QString WindowActivator::script(const QString &desktopEntry, const QString &titl
                "    if (best.minimized) best.minimized = false;\n"
                "    workspace.activeWindow = best;\n"
                "}\n")
-        .arg(quoted(desktopEntry), quoted(titleHint));
+               .arg(quoted(desktopEntry), quoted(titleHint))
+        + miss;
 }
 
-void WindowActivator::activate(const QString &desktopEntry, const QString &titleHint)
+void WindowActivator::activate(const QString &desktopEntry, const QString &titleHint, bool launch)
 {
     static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
     if (!safe.match(desktopEntry).hasMatch())
@@ -78,7 +105,7 @@ void WindowActivator::activate(const QString &desktopEntry, const QString &title
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
         return;
-    file.write(script(desktopEntry, titleHint).toUtf8());
+    file.write(script(desktopEntry, titleHint, launch ? QDBusConnection::sessionBus().baseService() : QString()).toUtf8());
     file.close();
 
     auto bus = QDBusConnection::sessionBus();

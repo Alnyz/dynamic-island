@@ -12,7 +12,7 @@ Item {
     property var now: () => Date.now()
     readonly property int newCount: groups.reduce((n, g) => n + L.newCount(g.rows, lastSeen), 0)
 
-    signal openRequested(string id, string desktopEntry)
+    signal openRequested(string id, string desktopEntry, string origin)
     signal removeRequested(string id)
     signal clearRequested()
 
@@ -183,7 +183,7 @@ Item {
                     HoverHandler { id: hover }
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: tab.openRequested(row.modelData.id, row.modelData.desktopEntry || "")
+                        onClicked: tab.openRequested(row.modelData.id, row.modelData.desktopEntry || "", row.modelData.origin || "")
                     }
 
                     Rectangle {

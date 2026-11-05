@@ -88,7 +88,7 @@ Item {
     // NotificationHistory; its tab is shown only while saving is on.
     property var history: null
     property int newNotifications: 0
-    signal notificationClicked(string desktopEntry)
+    signal notificationClicked(string desktopEntry, string origin)
     // Leaving the Notifications tab marks everything in it seen. The panel is destroyed on close, so that counts too.
     signal notificationsLeft()
     property string shownTab
@@ -537,10 +537,10 @@ Item {
             sourceComponent: NotificationsTab {
                 groups: panel.history.groups
                 lastSeen: panel.history.lastSeen
-                onOpenRequested: (id, entry) => {
+                onOpenRequested: (id, entry, origin) => {
                     panel.history.markSeen(id)
                     if (entry)
-                        panel.notificationClicked(entry)
+                        panel.notificationClicked(entry, origin)
                 }
                 onRemoveRequested: id => panel.history.remove(id)
                 onClearRequested: panel.history.clear()

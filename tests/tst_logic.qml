@@ -393,6 +393,8 @@ TestCase {
     function test_history_add() {
         const one = L.historyAdd([], notif(), 1000, 7)
         compare(one.length, 1)
+        compare(one[0].origin, "")
+        compare(L.historyAdd([], notif({ origin: "web.whatsapp.com" }), 1000, 7)[0].origin, "web.whatsapp.com")
         compare(one[0].key, "org.telegram.desktop")
         compare(one[0].time, 1000)
         compare(one[0].seen, false)

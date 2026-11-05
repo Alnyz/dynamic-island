@@ -129,7 +129,8 @@ Item {
     }
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
-    signal notificationClicked(string desktopEntry)
+    // Bring the app forward (its window showing the site, for a browser), starting it if it isn't open.
+    signal notificationClicked(string desktopEntry, string origin)
     // First-run tour: a card per step of L.TOUR, until finished or skipped.
     property bool tourActive: false
     property int tourStep: 0
@@ -463,7 +464,7 @@ Item {
                 if (island.alert.hasDefault && island.alert.serverId > 0)
                     island.notificationAction(island.alert.serverId, "default", island.alert.desktopEntry || "", island.alert.origin || "")
                 else
-                    island.notificationClicked(island.alert.desktopEntry)
+                    island.notificationClicked(island.alert.desktopEntry, island.alert.origin || "")
                 island.alert = null
                 return
             }
@@ -1301,9 +1302,9 @@ Item {
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
-            onNotificationClicked: entry => {
+            onNotificationClicked: (entry, origin) => {
                 island.open = false
-                island.notificationClicked(entry)
+                island.notificationClicked(entry, origin)
             }
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool

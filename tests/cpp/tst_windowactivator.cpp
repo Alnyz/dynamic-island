@@ -25,6 +25,10 @@ private Q_SLOTS:
         QVERIFY(s.contains(QStringLiteral("const family = entry.replace(")));
         QVERIFY(s.contains(QStringLiteral("const hint = \"whatsapp\".toLowerCase();")));
         QVERIFY(s.contains(QStringLiteral("workspace.activeWindow = best;")));
+        // Without a bus name to report to, a miss does nothing.
+        QVERIFY(!s.contains(QStringLiteral("callDBus")));
+        const QString launching = WindowActivator::script(QStringLiteral("brave-browser"), QString(), QStringLiteral(":1.42"));
+        QVERIFY(launching.contains(QStringLiteral("else {\n    callDBus(\":1.42\", \"/WindowActivator\", \"io.github.alnyz.DynamicIsland.WindowActivator\", \"noWindow\", \"brave-browser\");")));
         // Quotes and newlines in a hint can't break out of the string.
         const QString evil = WindowActivator::script(QStringLiteral("x"), QStringLiteral("a\"; workspace.windowList().forEach(w => w.closeWindow()); \"\n"));
         QVERIFY(evil.contains(QStringLiteral("const hint = \"a\\\"; workspace.windowList().forEach(w => w.closeWindow()); \\\"\\n\".toLowerCase();")));

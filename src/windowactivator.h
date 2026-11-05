@@ -11,18 +11,25 @@
 class WindowActivator : public QObject
 {
     Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "io.github.alnyz.DynamicIsland.WindowActivator")
     QML_ELEMENT
     QML_SINGLETON
 
 public:
-    using QObject::QObject;
+    explicit WindowActivator(QObject *parent = nullptr);
 
     // Activates (and un-minimises) a window of the app with this desktop entry, preferring one whose
-    // title contains titleHint ("whatsapp" for a WhatsApp Web tab). Does nothing when none is open.
-    Q_INVOKABLE void activate(const QString &desktopEntry, const QString &titleHint = QString());
+    // title contains titleHint ("whatsapp" for a WhatsApp Web tab). With none open, starts the app
+    // when launch is true, else does nothing.
+    Q_INVOKABLE void activate(const QString &desktopEntry, const QString &titleHint = QString(), bool launch = false);
 
-    // The KWin script for activate(); the strings are JSON-quoted, never pasted in raw.
-    static QString script(const QString &desktopEntry, const QString &titleHint);
+    // The KWin script for activate(); the strings are JSON-quoted, never pasted in raw. With
+    // replyTo (this process's bus name), a miss calls back noWindow() so the app can be started.
+    static QString script(const QString &desktopEntry, const QString &titleHint, const QString &replyTo = QString());
+
+public Q_SLOTS:
+    // Called by the KWin script when no window matched.
+    Q_SCRIPTABLE void noWindow(const QString &desktopEntry);
     // "web.whatsapp.com" -> "whatsapp": the part of a site's name its tab title usually shows.
     static QString hintFromOrigin(const QString &origin);
 };

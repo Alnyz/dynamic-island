@@ -1652,14 +1652,15 @@ Item {
         function test_notification_row_click_closes_panel() {
             const { island } = make(null)
             let opened = ""
-            island.notificationClicked.connect(e => opened = e)
+            island.notificationClicked.connect((e, origin) => opened = e + "|" + origin)
             island.history = fakeHistory(true)
             island.requestedTab = "notifications"
             island.open = true
             const tab = findChild(island, "notificationsTab")
             tryVerify(() => tab.item !== null)
-            tab.item.openRequested("r1", "org.telegram.desktop")
-            compare(opened, "org.telegram.desktop")
+            // A saved browser notification keeps the site it came from.
+            tab.item.openRequested("r1", "brave-browser", "web.whatsapp.com")
+            compare(opened, "brave-browser|web.whatsapp.com")
             compare(island.open, false)
         }
 
