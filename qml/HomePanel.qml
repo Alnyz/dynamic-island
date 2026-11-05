@@ -55,7 +55,7 @@ Item {
     ]
     readonly property var extra: tools.find(t => t.key === extraTool) || tools[0]
     property bool menuOpen: false
-    readonly property bool wantsKeyboard: tab === "clipboard" || tab === "notes"
+    readonly property bool wantsKeyboard: tab === "clipboard" || tab === "notes" || tab === "todo"
     // Home is shorter than the other tabs; the island shrinks to it. 0 means use the full height.
     readonly property real fitHeight: tab === "home" ? tabContent.y + homeTab.implicitHeight : 0
     readonly property bool typing: (clipboardTab.item && clipboardTab.item.typing) || (notesTab.item && notesTab.item.typing) || false
@@ -124,6 +124,7 @@ Item {
                     { key: "mixer", label: "Sound Mixer", icon: "view-media-equalizer" },
                     ...(panel.history && panel.history.settings.save ? [{ key: "notifications", label: "Notifications", icon: "notifications" }] : []),
                     { divider: true },
+                    { key: "todo", label: "To-Do", icon: "view-list-symbolic" },
                     { key: panel.extra.key, label: panel.extra.label, icon: panel.extra.icon, name: "extra" },
                     { key: "more", label: "More", icon: "overflow-menu" }
                 ]
@@ -401,6 +402,12 @@ Item {
             sourceComponent: TimerTab {
                 timer: panel.timer
             }
+        }
+        Loader {
+            objectName: "todoTab"
+            anchors.fill: parent
+            active: panel.tab === "todo"
+            sourceComponent: TodoList {}
         }
     }
 
