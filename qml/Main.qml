@@ -323,7 +323,13 @@ Window {
         jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
         onNotificationClicked: entry => notificationWatcher.openApp(entry)
-        onNotificationAction: (serverId, key) => notificationWatcher.invokeAction(serverId, key)
+        onNotificationAction: (serverId, key, entry, origin) => {
+            notificationWatcher.invokeAction(serverId, key)
+            // The app gets the click but can't raise itself on Wayland; bring its window forward
+            // once it has switched to the right tab or chat.
+            if (key === "default" && entry)
+                Qt.callLater(() => activateLater.start(entry, origin))
+        }
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore
@@ -409,6 +415,19 @@ Window {
         interval: 4000
         running: !prefs.behaviour.tourSeen
         onTriggered: island.startTour()
+    }
+
+    Timer {
+        id: activateLater
+        interval: 200
+        property string entry
+        property string origin
+        function start(e, o) {
+            entry = e
+            origin = o
+            restart()
+        }
+        onTriggered: WindowActivator.activate(entry, WindowActivator.hintFromOrigin(origin))
     }
 
     function showSettings() {

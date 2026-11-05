@@ -232,6 +232,8 @@ QVariantMap NotificationWatcher::describe(const QString &appName, const QString 
         {QStringLiteral("title"), title.isEmpty() ? appName : title},
         {QStringLiteral("body"), text},
         {QStringLiteral("urgency"), hints.value(QStringLiteral("urgency"), 1).toInt()},
+        // The website a browser notification came from (web.whatsapp.com).
+        {QStringLiteral("origin"), hints.value(QStringLiteral("x-kde-origin-name")).toString()},
     };
 }
 

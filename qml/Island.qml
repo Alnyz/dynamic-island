@@ -173,7 +173,7 @@ Item {
         menuAction(key)
     }
     // One of a notification's own actions: a button on its alert, or "default" for a click on it.
-    signal notificationAction(int serverId, string key)
+    signal notificationAction(int serverId, string key, string desktopEntry, string origin)
     // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
     signal volumeStep(int steps)
     signal linkRequested(string url)
@@ -461,7 +461,7 @@ Item {
             if (island.mode === "alert" && island.alert.kind === "notification") {
                 // The app's own default action opens the right chat or page; otherwise just the app.
                 if (island.alert.hasDefault && island.alert.serverId > 0)
-                    island.notificationAction(island.alert.serverId, "default")
+                    island.notificationAction(island.alert.serverId, "default", island.alert.desktopEntry || "", island.alert.origin || "")
                 else
                     island.notificationClicked(island.alert.desktopEntry)
                 island.alert = null
@@ -1174,7 +1174,7 @@ Item {
         shown: island.mode === "alert"
         onButtonClicked: key => {
             if (island.alert && island.alert.serverId > 0)
-                island.notificationAction(island.alert.serverId, key)
+                island.notificationAction(island.alert.serverId, key, island.alert.desktopEntry || "", island.alert.origin || "")
             island.alert = null
         }
     }

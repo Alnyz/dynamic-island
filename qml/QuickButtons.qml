@@ -58,6 +58,52 @@ Row {
             wheelAccum = r.accum
             if (r.steps !== 0)
                 SystemStatus.changeVolume(r.steps * 5)
+            levelTimer.restart()
+        }
+        // While scrolling, the level shows in a bubble: a tooltip hides as soon as the wheel turns.
+        showTip: !levelTimer.running
+        Timer {
+            id: levelTimer
+            interval: 1500
+        }
+        Rectangle {
+            objectName: "volumeBubble"
+            visible: levelTimer.running
+            anchors.top: parent.bottom
+            anchors.topMargin: 8
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 96
+            height: 30
+            radius: 15
+            z: 50
+            color: palette.alternateBase
+            border.color: palette.dark
+            Row {
+                anchors.centerIn: parent
+                spacing: 8
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 44
+                    height: 4
+                    radius: 2
+                    color: palette.button
+                    Rectangle {
+                        width: SystemStatus.muted ? 0 : parent.width * Math.min(100, SystemStatus.volume) / 100
+                        height: parent.height
+                        radius: parent.radius
+                        color: palette.accent
+                    }
+                }
+                Text {
+                    objectName: "volumeBubbleText"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: SystemStatus.muted ? "Muted" : SystemStatus.volume + "%"
+                    color: palette.windowText
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
+                }
+            }
         }
     }
     QuickButton {
@@ -116,6 +162,7 @@ Row {
         property string label
         property bool on: false
         property string badge: ""
+        property bool showTip: true
         signal clicked()
         signal rightClicked()
         signal scrolled(int delta)
@@ -163,7 +210,7 @@ Row {
             onClicked: mouse => mouse.button === Qt.RightButton ? button.rightClicked() : button.clicked()
             onWheel: wheel => button.scrolled(L.scrollAmount(wheel.angleDelta.y, wheel.inverted))
         }
-        QQC.ToolTip.visible: area.containsMouse
+        QQC.ToolTip.visible: area.containsMouse && button.showTip
         QQC.ToolTip.text: button.label
         QQC.ToolTip.delay: 500
     }
