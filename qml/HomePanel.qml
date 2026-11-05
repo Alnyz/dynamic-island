@@ -161,6 +161,12 @@ Item {
         onTriggered: panel.finishUndo()
     }
 
+    // Puts the keyboard where the current tab wants it: the clipboard's search box.
+    function focusTab() {
+        if (tab === "clipboard" && clipboardTab.item)
+            clipboardTab.item.focusSearch()
+    }
+
     function pickTool(key) {
         extraTool = key
         tab = key

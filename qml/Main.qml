@@ -125,7 +125,10 @@ Window {
         target: fullScreen
         function onSwitched() { island.open = false }
     }
-    PanelShortcut { onActivated: island.toggleFromKeyboard() }
+    PanelShortcut {
+        onActivated: island.toggleFromKeyboard()
+        onClipboardActivated: island.openTabFromKeyboard("clipboard")
+    }
 
     function alert(a, ms) {
         const f = prefs.fullScreen

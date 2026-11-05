@@ -170,6 +170,20 @@ Item {
     // the pointer has been on the panel (touched).
     property bool openedByKeyboard: false
     property bool touched: false
+    // Opens straight to a tab from a shortcut (clipboard history), or closes when it's showing.
+    function openTabFromKeyboard(tab) {
+        if (open && panelLoader.item && panelLoader.item.tab === tab) {
+            open = false
+            return
+        }
+        openedByKeyboard = true
+        requestedTab = tab
+        if (open && panelLoader.item)
+            panelLoader.item.tab = tab
+        open = true
+        if (panelLoader.item)
+            panelLoader.item.focusTab()
+    }
     function toggleFromKeyboard() {
         if (open) {
             open = false

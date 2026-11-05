@@ -945,6 +945,38 @@ Item {
             compare(chips.visible, false)
         }
 
+        function test_clipboard_shortcut_opens_search() {
+            const { island } = make(null)
+            const store = createTemporaryObject(undoStoreFake, stage)
+            store.items = [{ id: "c1", kind: "text", text: "hello", time: Date.now(), pinned: false }]
+            island.clipboard = store
+            island.openTabFromKeyboard("clipboard")
+            compare(island.open, true)
+            compare(island.openedByKeyboard, true)
+            const panel = findChild(island, "homePanel")
+            compare(panel.tab, "clipboard")
+            tryVerify(() => findChild(island, "clipSearch").activeFocus)
+            // Typing goes straight into the search.
+            keyClick(Qt.Key_H)
+            compare(findChild(island, "clipSearch").text, "h")
+            // Again closes it.
+            island.openTabFromKeyboard("clipboard")
+            compare(island.open, false)
+        }
+
+        function test_clipboard_shortcut_switches_open_panel() {
+            const { island } = make(null)
+            const store = createTemporaryObject(undoStoreFake, stage)
+            store.items = []
+            island.clipboard = store
+            island.open = true
+            const panel = findChild(island, "homePanel")
+            compare(panel.tab, "home")
+            island.openTabFromKeyboard("clipboard")
+            compare(island.open, true)
+            compare(panel.tab, "clipboard")
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

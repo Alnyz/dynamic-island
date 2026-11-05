@@ -26,6 +26,7 @@ Item {
     // Keep a selection whenever the list has something in it.
     onVisibleItemsChanged: if (!visibleItems.some(r => r.id === selectedId)) selectedId = visibleItems.length ? (visibleItems.find(r => !r.pinned) || visibleItems[0]).id : ""
     Component.onCompleted: visibleItemsChanged()
+    function focusSearch() { search.forceActiveFocus() }
 
 
     Column {
