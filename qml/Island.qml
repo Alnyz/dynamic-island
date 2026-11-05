@@ -81,6 +81,8 @@ Item {
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
     signal notificationClicked(string desktopEntry)
+    // One of a notification's own actions: a button on its alert, or "default" for a click on it.
+    signal notificationAction(int serverId, string key)
     // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
     signal volumeStep(int steps)
     signal linkRequested(string url)
@@ -88,7 +90,7 @@ Item {
     // A short alert (volume, notification, device, charger, colour) that takes over the closed pill.
     property var alert: null
     function showAlert(a, ms) {
-        sliverWidth = L.alertSize(a.kind, barHeight, cornerRadius).w * 0.4
+        sliverWidth = L.alertSize(a.kind, barHeight, cornerRadius, a).w * 0.4
         alert = a
         alertTimer.interval = ms
         alertTimer.restart()
@@ -162,7 +164,7 @@ Item {
     property bool coveredByFullScreen: false
     property real sliverWidth: 120
     readonly property bool tucked: coveredByFullScreen && (mode === "idle" || mode === "compact" || mode === "peek")
-    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius)
+    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius, alert)
                               : tucked ? { w: sliverWidth, h: 0, r: 6 }
                               : sizes[mode]
     // In front of the full-screen app while it has something to show, until it has folded away.
@@ -313,7 +315,11 @@ Item {
                 return
             }
             if (island.mode === "alert" && island.alert.kind === "notification") {
-                island.notificationClicked(island.alert.desktopEntry)
+                // The app's own default action opens the right chat or page; otherwise just the app.
+                if (island.alert.hasDefault && island.alert.serverId > 0)
+                    island.notificationAction(island.alert.serverId, "default")
+                else
+                    island.notificationClicked(island.alert.desktopEntry)
                 island.alert = null
                 return
             }
@@ -1012,6 +1018,11 @@ Item {
     AlertView {
         alert: island.alert
         shown: island.mode === "alert"
+        onButtonClicked: key => {
+            if (island.alert && island.alert.serverId > 0)
+                island.notificationAction(island.alert.serverId, key)
+            island.alert = null
+        }
     }
 
     // Mic and camera dots, plus the shelf count; they sit at the right end of the closed pill.

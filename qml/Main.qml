@@ -246,6 +246,7 @@ Window {
         jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
         onNotificationClicked: entry => notificationWatcher.openApp(entry)
+        onNotificationAction: (serverId, key) => notificationWatcher.invokeAction(serverId, key)
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore

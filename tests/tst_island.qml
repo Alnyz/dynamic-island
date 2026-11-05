@@ -759,6 +759,37 @@ Item {
             compare(island.open, false)
         }
 
+        function test_notification_buttons_run_actions() {
+            const { island } = make(null)
+            const ran = []
+            let opened = ""
+            island.notificationAction.connect((id, key) => ran.push(id + ":" + key))
+            island.notificationClicked.connect(e => opened = e)
+            island.showAlert({ kind: "notification", title: "Rina", body: "hi", icon: "", desktopEntry: "org.telegram.desktop",
+                               serverId: 32, hasDefault: true, buttons: [{ key: "mark", label: "Mark as read" }, { key: "mute", label: "Mute" }] }, 5000)
+            tryCompare(island, "height", 100)
+            compare(findChild(island, "notificationButtons").visible, true)
+            mouseClick(findChild(island, "notificationButton1"))
+            compare(ran, ["32:mute"])
+            compare(opened, "")
+            compare(island.mode, "idle")
+        }
+
+        function test_notification_click_uses_default_action() {
+            const { island } = make(null)
+            const ran = []
+            let opened = ""
+            island.notificationAction.connect((id, key) => ran.push(id + ":" + key))
+            island.notificationClicked.connect(e => opened = e)
+            island.showAlert({ kind: "notification", title: "Rina", body: "hi", icon: "", desktopEntry: "org.telegram.desktop",
+                               serverId: 7, hasDefault: true, buttons: [] }, 5000)
+            tryCompare(island, "height", 64)
+            compare(findChild(island, "notificationButtons").visible, false)
+            mouseClick(island, 40, 30)
+            compare(ran, ["7:default"])
+            compare(opened, "")
+        }
+
         function test_notification_waits_while_hovered() {
             const { island } = make(null)
             island.showAlert({ kind: "notification", title: "t", body: "", icon: "", desktopEntry: "" }, 200)

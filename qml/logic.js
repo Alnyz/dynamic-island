@@ -334,7 +334,10 @@ function clipRows(items, query, kind) {
 }
 
 // The pill's size while it shows an alert.
-function alertSize(kind, barHeight, radius) {
+// a: the alert itself, for kinds whose size depends on it (a notification with buttons is taller).
+function alertSize(kind, barHeight, radius, a) {
+    if (kind === "notification" && a && a.buttons && a.buttons.length > 0)
+        return { w: 400, h: 100, r: 24 }
     if (kind === "notification" || kind === "job")
         return { w: 400, h: 64, r: 22 }
     if (kind === "device")

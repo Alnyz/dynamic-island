@@ -74,6 +74,8 @@ TestCase {
     function test_alert_size() {
         compare(L.alertSize("volume", 32, 12), { w: 300, h: 32, r: 12 })
         compare(L.alertSize("notification", 32, 12), { w: 400, h: 64, r: 22 })
+        compare(L.alertSize("notification", 32, 12, { buttons: [{ key: "a", label: "A" }] }), { w: 400, h: 100, r: 24 })
+        compare(L.alertSize("notification", 32, 12, { buttons: [] }), { w: 400, h: 64, r: 22 })
         compare(L.alertSize("job", 32, 12), { w: 400, h: 64, r: 22 })
         compare(L.alertSize("device", 32, 12), { w: 330, h: 72, r: 24 })
     }

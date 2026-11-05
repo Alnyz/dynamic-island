@@ -27,7 +27,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Short alerts in the pill
 
 - Volume and brightness levels, and Caps Lock turning on or off, replacing Plasma's on-screen box.
-- Notifications, replacing Plasma's popups. Click one to open the app.
+- Notifications, replacing Plasma's popups. Click one to open it in its app, and use the app's own buttons (Mark as read, Accept, ...) right on the alert. Typed replies stay in Plasma's own popup: only Plasma can deliver them to the app.
 - Every notification is also saved, even ones that never popped up (do not disturb, a locked screen, the panel open). On the idle pill, an amber bell chip counts the ones you haven't looked at yet.
 - Downloads and copies finishing or failing. Click a finished one to open its folder.
 - An app starting to use the microphone or camera, Bluetooth devices connecting, and the charger being plugged in or out.

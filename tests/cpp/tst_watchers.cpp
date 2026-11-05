@@ -74,6 +74,104 @@ private Q_SLOTS:
         QVERIFY(NotificationWatcher::describe(QStringLiteral("x"), QString(), QStringLiteral(" "), QString(), {}).isEmpty());
     }
 
+    // A Notify call as Telegram would send it, with the given actions list.
+    static DBusMessage *notifyWithActions(const QStringList &actionList)
+    {
+        DBusMessage *m = dbus_message_new_method_call("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        dbus_message_set_sender(m, ":1.42");
+        dbus_message_set_serial(m, 17);
+        const char *app = "Telegram", *icon = "", *summary = "Rina", *body = "hi";
+        const dbus_uint32_t replaces = 0;
+        const dbus_int32_t timeout = -1;
+        DBusMessageIter it, actions, hints;
+        dbus_message_iter_init_append(m, &it);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &app);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_UINT32, &replaces);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &icon);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &summary);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &body);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "s", &actions);
+        QList<QByteArray> keep;
+        for (const QString &a : actionList) {
+            keep << a.toUtf8();
+            const char *s = keep.last().constData();
+            dbus_message_iter_append_basic(&actions, DBUS_TYPE_STRING, &s);
+        }
+        dbus_message_iter_close_container(&it, &actions);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &hints);
+        dbus_message_iter_close_container(&it, &hints);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_INT32, &timeout);
+        return m;
+    }
+
+    void notificationButtons()
+    {
+        const QVariantList b = NotificationWatcher::buttons({QStringLiteral("default"), QStringLiteral("Open"), QStringLiteral("mark"), QStringLiteral("Mark as read"),
+                                                             QStringLiteral("inline-reply"), QStringLiteral("Reply"), QStringLiteral("x"), QStringLiteral(" "),
+                                                             QStringLiteral("a"), QStringLiteral("A"), QStringLiteral("b"), QStringLiteral("B"), QStringLiteral("c"), QStringLiteral("C")});
+        QCOMPARE(b.size(), 3);
+        QCOMPARE(b.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("mark"));
+        QCOMPARE(b.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Mark as read"));
+        QCOMPARE(b.at(1).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("a"));
+        QCOMPARE(b.at(2).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("b"));
+        QVERIFY(NotificationWatcher::buttons({}).isEmpty());
+        QVERIFY(NotificationWatcher::buttons({QStringLiteral("odd")}).isEmpty());
+    }
+
+    void notificationWithActionsWaitsForId()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({QStringLiteral("default"), QStringLiteral("Open"), QStringLiteral("mark"), QStringLiteral("Mark as read")});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 0);
+
+        DBusMessage *reply = dbus_message_new_method_return(call);
+        const dbus_uint32_t id = 99;
+        dbus_message_append_args(reply, DBUS_TYPE_UINT32, &id, DBUS_TYPE_INVALID);
+        watcher.handle(reply);
+        QCOMPARE(notified.count(), 1);
+        const QVariantMap n = notified.first().first().toMap();
+        QCOMPARE(n.value(QStringLiteral("serverId")).toUInt(), 99u);
+        QCOMPARE(n.value(QStringLiteral("hasDefault")).toBool(), true);
+        QCOMPARE(n.value(QStringLiteral("buttons")).toList().size(), 1);
+        QCOMPARE(n.value(QStringLiteral("title")).toString(), QStringLiteral("Rina"));
+        // The fallback timer must not send it a second time.
+        QTest::qWait(400);
+        QCOMPARE(notified.count(), 1);
+        dbus_message_unref(reply);
+        dbus_message_unref(call);
+    }
+
+    void notificationWithActionsShowsWithoutReply()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({QStringLiteral("mark"), QStringLiteral("Mark as read")});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 0);
+        QTRY_COMPARE_WITH_TIMEOUT(notified.count(), 1, 1000);
+        const QVariantMap n = notified.first().first().toMap();
+        QVERIFY(!n.contains(QStringLiteral("serverId")));
+        QVERIFY(!n.contains(QStringLiteral("buttons")));
+        dbus_message_unref(call);
+    }
+
+    void notificationWithoutActionsIsImmediate()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 1);
+        // An unrelated reply is ignored.
+        DBusMessage *reply = dbus_message_new_method_return(call);
+        watcher.handle(reply);
+        QCOMPARE(notified.count(), 1);
+        dbus_message_unref(reply);
+        dbus_message_unref(call);
+    }
+
     void testNotifyReplaces()
     {
         DBusMessage *m = dbus_message_new_method_call(nullptr, "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");

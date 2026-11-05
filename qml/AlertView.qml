@@ -10,6 +10,9 @@ Item {
     // Keeps the last alert on screen while the pill fades back.
     property var a: ({ kind: "" })
     onAlertChanged: if (alert) a = alert
+    // A notification's action button, by its key.
+    signal buttonClicked(string key)
+    readonly property bool hasButtons: a.kind === "notification" && !!a.buttons && a.buttons.length > 0
 
     anchors.fill: parent
     opacity: shown ? 1 : 0
@@ -110,6 +113,8 @@ Item {
         anchors.fill: parent
         anchors.margins: 14
         anchors.topMargin: 12
+        // The buttons take the bottom row.
+        anchors.bottomMargin: view.hasButtons ? 48 : 14
         Kirigami.Icon {
             id: appIcon
             anchors.verticalCenter: parent.verticalCenter
@@ -151,6 +156,45 @@ Item {
             text: "now"
             color: "#9aa3ad"
             font.pixelSize: 12
+        }
+    }
+
+    Row {
+        objectName: "notificationButtons"
+        visible: view.hasButtons
+        anchors.left: parent.left
+        anchors.leftMargin: 58
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 12
+        spacing: 6
+        Repeater {
+            model: view.hasButtons ? view.a.buttons : []
+            delegate: Rectangle {
+                required property var modelData
+                required property int index
+                objectName: "notificationButton" + index
+                width: Math.min(150, label.implicitWidth + 24)
+                height: 26
+                radius: 13
+                color: buttonArea.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.12)
+                Text {
+                    id: label
+                    anchors.centerIn: parent
+                    width: Math.min(implicitWidth, 126)
+                    text: modelData.label
+                    color: "#ffffff"
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                MouseArea {
+                    id: buttonArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: view.buttonClicked(modelData.key)
+                }
+            }
         }
     }
 
