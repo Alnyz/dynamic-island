@@ -469,6 +469,22 @@ TestCase {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
     }
 
+    function test_volume_after_steps() {
+        compare(L.volumeAfterSteps(32768, 1, 65536), 36045)
+        compare(L.volumeAfterSteps(32768, -2, 65536), 26214)
+        compare(L.volumeAfterSteps(64000, 3, 65536), 65536)
+        compare(L.volumeAfterSteps(1000, -1, 65536), 0)
+    }
+
+    function test_timer_step_minutes() {
+        compare(L.timerStepMinutes(300000, 2), 2)
+        compare(L.timerStepMinutes(300000, -1), -1)
+        // 5 min left: at most 4 can come off, leaving 1.
+        compare(L.timerStepMinutes(300000, -9), -4)
+        compare(L.timerStepMinutes(90000, -1), 0)
+        compare(L.timerStepMinutes(30000, -1), 0)
+    }
+
     function test_held_art() {
         // A cover is taken as soon as it comes.
         let h = L.heldArt(null, { key: "a", url: "file:///a.jpg" })

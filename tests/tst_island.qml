@@ -46,7 +46,9 @@ Item {
             property real remainingMs: 272000
             property real pausedRemainingMs: 0
             property int pauseCalls: 0
+            property real addedMinutes: 0
             function pause() { pauseCalls++ }
+            function addMinutes(m) { addedMinutes += m; remainingMs += m * 60000 }
             function resume() {}
         }
     }
@@ -166,6 +168,7 @@ Item {
             island.settingsRequested.connect(() => asked++)
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             mouseClick(findChild(island, "settingsButton"))
             compare(asked, 1)
@@ -333,6 +336,85 @@ Item {
             compare(island.activity, "music")
         }
 
+        SignalSpy { id: volumeSpy; signalName: "volumeStep" }
+
+        function test_scroll_up_down_changes_volume() {
+            const { island } = make({})
+            volumeSpy.target = island
+            volumeSpy.clear()
+            mouseWheel(island, 10, 10, 0, 120)
+            compare(volumeSpy.count, 1)
+            compare(volumeSpy.signalArguments[0][0], 1)
+            mouseWheel(island, 10, 10, 0, -240)
+            compare(volumeSpy.signalArguments[1][0], -2)
+            // Small touchpad deltas add up to one step.
+            mouseWheel(island, 10, 10, 0, 60)
+            compare(volumeSpy.count, 2)
+            mouseWheel(island, 10, 10, 0, 60)
+            compare(volumeSpy.count, 3)
+            // Scrolling never switches the turn.
+            compare(island.activity, "music")
+        }
+
+        function test_scroll_idle_changes_volume() {
+            const { island } = make(null)
+            volumeSpy.target = island
+            volumeSpy.clear()
+            mouseWheel(island, 10, 10, 0, 120)
+            compare(volumeSpy.count, 1)
+        }
+
+        function test_scroll_over_timer_changes_minutes() {
+            const { island, timer } = make(null, true)
+            volumeSpy.target = island
+            volumeSpy.clear()
+            compare(island.activity, "timer")
+            mouseWheel(island, 10, 10, 0, 120)
+            compare(timer.addedMinutes, 1)
+            mouseWheel(island, 10, 10, 0, -360)
+            compare(timer.addedMinutes, -2)
+            compare(volumeSpy.count, 0)
+        }
+
+        function test_scroll_ignored_while_open() {
+            const { island } = make({})
+            volumeSpy.target = island
+            volumeSpy.clear()
+            island.open = true
+            mouseWheel(island, 10, 10, 0, 120)
+            compare(volumeSpy.count, 0)
+        }
+
+        function test_middle_click_plays_and_pauses() {
+            const { island } = make({})
+            mouseClick(island, 10, 10, Qt.MiddleButton)
+            compare(stage.calls.playPause, 1)
+            wait(400)
+            compare(island.open, false)
+        }
+
+        function test_double_click_skips() {
+            const { island } = make({})
+            mouseDoubleClickSequence(island, 10, 10)
+            compare(stage.calls.next, 1)
+            wait(400)
+            compare(island.open, false)
+        }
+
+        function test_single_click_on_music_still_opens() {
+            const { island } = make({})
+            mouseClick(island, 10, 10)
+            compare(island.open, false)
+            tryCompare(island, "open", true, 1000)
+            compare(stage.calls.next, 0)
+        }
+
+        function test_click_without_music_opens_at_once() {
+            const { island } = make(null)
+            mouseClick(island, 10, 10)
+            compare(island.open, true)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)
@@ -392,6 +474,7 @@ Item {
             const { island } = make({ canGoPrevious: false })
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             mouseClick(findChild(island, "tab-music"))
             const prev = findChild(island, "prev")
@@ -438,6 +521,7 @@ Item {
             const { island } = make()
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             const panel = findChild(island, "homePanel")
             panel.now = () => new Date(2026, 9, 23, 9, 5)
@@ -456,6 +540,7 @@ Item {
             const { island } = make()
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             tryCompare(findChild(island, "tabLabel-home"), "opacity", 1)
             compare(findChild(island, "tabLabel-music").opacity, 0)
@@ -471,6 +556,7 @@ Item {
             island.linkRequested.connect(url => opened = url)
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             mouseClick(findChild(island, "tab-more"))
             mouseClick(findChild(island, "menu-links"))
@@ -487,6 +573,7 @@ Item {
             island.copyRequested.connect(t => copied = t)
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             mouseClick(findChild(island, "tab-more"))
             mouseClick(findChild(island, "menu-color"))
@@ -501,6 +588,7 @@ Item {
             const { island } = make()
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             compare(findChild(island, "tabLabel-extra").text, "Clipboard")
             mouseClick(findChild(island, "tab-more"))
@@ -762,6 +850,7 @@ Item {
             const { island } = make()
             mouseMove(island, 10, 10)
             mouseClick(island, 10, 10)
+            tryCompare(island, "open", true)
             tryCompare(island, "height", island.size.h)
             mouseClick(findChild(island, "tab-music"))
             compare(findChild(island, "homePanel").tab, "music")

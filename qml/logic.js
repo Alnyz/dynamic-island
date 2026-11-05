@@ -199,6 +199,20 @@ function countdownText(ms) {
 }
 
 // Touchpads send many small wheel deltas; step once per 120 units (one mouse notch).
+// Speaker volume after scrolling over the pill: 5% per step, between silent and 100%.
+// normal is the device's 100% (PulseAudio's PA_VOLUME_NORM, 65536).
+function volumeAfterSteps(volume, steps, normal) {
+    return Math.round(Math.max(0, Math.min(normal, volume + steps * normal * 0.05)))
+}
+
+// Minutes to add when scrolling over the timer; taking time off never leaves less than a minute.
+function timerStepMinutes(remainingMs, steps) {
+    if (steps >= 0)
+        return steps
+    const most = Math.floor((remainingMs - 60000) / 60000)
+    return -Math.min(-steps, Math.max(0, most))
+}
+
 function wheelSteps(accum, delta) {
     const total = accum + delta
     const steps = total > 0 ? Math.floor(total / 120) : Math.ceil(total / 120)

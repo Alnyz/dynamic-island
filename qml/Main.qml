@@ -229,6 +229,14 @@ Window {
         pill: prefs.style.look === "pill"
         palette.accent: prefs.style.accent
         player: source.player
+        onVolumeStep: steps => {
+            const out = soundSource.defaultOutput
+            if (!out)
+                return
+            if (out.muted && steps > 0)
+                out.muted = false
+            out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
+        }
         artUrl: source.artUrl
         timer: timerModel
         weather: weatherSource

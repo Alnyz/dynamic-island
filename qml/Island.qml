@@ -81,6 +81,8 @@ Item {
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
     signal notificationClicked(string desktopEntry)
+    // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
+    signal volumeStep(int steps)
     signal linkRequested(string url)
 
     // A short alert (volume, notification, device, charger, colour) that takes over the closed pill.
@@ -283,9 +285,32 @@ Item {
         }
     }
 
+    // A click on the music turn waits this long for a second click, which skips the song.
+    property int doubleClickMs: 250
+    readonly property bool musicShown: activity === "music" && player !== null && (mode === "compact" || mode === "peek")
+    property real verticalAccum: 0
+    Timer {
+        id: clickDelay
+        interval: island.doubleClickMs
+        onTriggered: island.open = true
+    }
+
     MouseArea {
         anchors.fill: parent
-        onClicked: {
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        onDoubleClicked: mouse => {
+            if (mouse.button === Qt.LeftButton && clickDelay.running) {
+                clickDelay.stop()
+                if (island.player.canGoNext !== false)
+                    island.player.Next()
+            }
+        }
+        onClicked: mouse => {
+            if (mouse.button === Qt.MiddleButton) {
+                if (island.player && !island.open)
+                    island.player.PlayPause()
+                return
+            }
             if (island.mode === "alert" && island.alert.kind === "notification") {
                 island.notificationClicked(island.alert.desktopEntry)
                 island.alert = null
@@ -297,11 +322,31 @@ Item {
                 island.alert = null
                 return
             }
+            if (island.musicShown) {
+                clickDelay.restart()
+                return
+            }
             island.open = true
         }
         onWheel: wheel => {
-            if (island.open || Math.abs(wheel.angleDelta.x) <= Math.abs(wheel.angleDelta.y)) {
+            if (island.open) {
                 wheel.accepted = false
+                return
+            }
+            // Up and down: volume, or minutes on the timer's turn. Sideways: switch turns.
+            if (Math.abs(wheel.angleDelta.y) > Math.abs(wheel.angleDelta.x)) {
+                const v = L.wheelSteps(island.verticalAccum, wheel.angleDelta.y)
+                island.verticalAccum = v.accum
+                if (v.steps === 0)
+                    return
+                if (island.activity === "timer" && island.timerActive && (island.mode === "compact" || island.mode === "peek")) {
+                    const t = island.timer
+                    const add = L.timerStepMinutes(t.paused ? t.pausedRemainingMs : t.remainingMs, v.steps)
+                    if (add !== 0)
+                        t.addMinutes(add)
+                } else {
+                    island.volumeStep(v.steps)
+                }
                 return
             }
             swipeEnd.restart()
