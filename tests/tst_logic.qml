@@ -573,6 +573,19 @@ TestCase {
         compare(L.pickLyrics(undefined, "CG5", "Dancin'", 0), null)
     }
 
+    function test_distinct_players() {
+        const multiplexer = { objectName: "brave.instance1", identity: "Brave", tag: "mux" }
+        const brave = { objectName: "brave.instance1", identity: "Brave", tag: "real" }
+        const ctld = { objectName: "playerctld", identity: "Brave" }
+        const spotify = { objectName: "spotify", identity: "Spotify" }
+        const list = L.distinctPlayers([multiplexer, brave, ctld, spotify])
+        compare(list.length, 2)
+        compare(list[0].tag, "real")
+        compare(list[1].identity, "Spotify")
+        compare(L.distinctPlayers([]).length, 0)
+        compare(L.distinctPlayers(undefined).length, 0)
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])

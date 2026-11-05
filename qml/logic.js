@@ -67,6 +67,20 @@ function nextLoop(status) {
 
 var PAUSE_TIMEOUT_MS = 300000
 
+// The players to choose between in the Music tab. Plasma's list repeats the active player (its
+// "multiplexer" row comes first, with the same name) and may hold playerctld, which mirrors
+// another player; each real player is kept once, as its own (last) row.
+function distinctPlayers(players) {
+    const byName = new Map()
+    for (const p of players || []) {
+        const name = p.objectName || p.identity || ""
+        if (!name || name === "playerctld" || name.indexOf("playerctld.") === 0)
+            continue
+        byName.set(name, p)
+    }
+    return Array.from(byName.values())
+}
+
 // The cover to show for the current song. Browsers (Plasma's browser integration) often send a
 // skipped-to song with no cover, and can take a cover away again moments after sending it, so a
 // cover is kept until the song changes. A new song never inherits the previous song's cover.

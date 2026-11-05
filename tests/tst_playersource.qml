@@ -183,4 +183,45 @@ TestCase {
         compare(tc.requests.length, 0)
         compare(source.artUrl, "")
     }
+
+    function test_pinned_player_wins_until_another_starts() {
+        const source = makeSource()
+        const a = makeFake({ track: "a", objectName: "brave" })
+        const b = makeFake({ track: "b", playbackStatus: L.Status.Paused, objectName: "spotify" })
+        const c = makeFake({ track: "c", playbackStatus: L.Status.Paused, objectName: "vlc" })
+        source.players = [a, b, c]
+        verify(source.player === a)
+        source.pin(b)
+        verify(source.player === b)
+        // The pinned one changing doesn't drop the pin; a keeps playing, still b.
+        t = 10
+        b.playbackStatus = L.Status.Playing
+        verify(source.player === b)
+        // Another player starting does.
+        t = 20
+        c.playbackStatus = L.Status.Playing
+        compare(source.pinned, null)
+        verify(source.player === c)
+    }
+
+    function test_pin_dropped_when_player_leaves() {
+        const source = makeSource()
+        const a = makeFake({ track: "a", objectName: "brave" })
+        const b = makeFake({ track: "b", playbackStatus: L.Status.Paused, objectName: "spotify" })
+        source.players = [a, b]
+        source.pin(b)
+        source.players = [a]
+        compare(source.pinned, null)
+        verify(source.player === a)
+    }
+
+    function test_choices_are_distinct() {
+        const source = makeSource()
+        const mux = makeFake({ objectName: "brave.instance1" })
+        const real = makeFake({ objectName: "brave.instance1" })
+        const ctld = makeFake({ objectName: "playerctld" })
+        source.players = [mux, real, ctld]
+        compare(source.choices.length, 1)
+        verify(source.choices[0] === real)
+    }
 }

@@ -7,6 +7,8 @@ Item {
     objectName: "homePanel"
 
     property var player: null
+    property var playerChoices: []
+    signal playerPicked(var p)
     property string artUrl: ""
     // Fill for music progress and volume, and the colour of active music toggles.
     property color musicTint: palette.brightText
@@ -402,6 +404,8 @@ Item {
         MusicPlayer {
             id: musicTab
             objectName: "musicPlayer"
+            choices: panel.playerChoices
+            onPicked: p => panel.playerPicked(p)
             coverHidden: panel.coverHidden
             lyrics: panel.lyrics
             anchors.fill: parent

@@ -38,7 +38,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Panel tabs
 
 - Home: music, the month calendar, weather for the next few hours, upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
-- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
+- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. With more than one player open, chips pick which one the island follows. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
 - Timer: drag the minute tape or pick a preset.
 - Sound mixer: output and input devices, mic level, and per-app volume.
 - Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.

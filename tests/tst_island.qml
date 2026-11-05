@@ -928,6 +928,23 @@ Item {
             compare(fill.fillColor.a, 1)
         }
 
+        function test_player_chips_pick_a_player() {
+            const { island } = make({ objectName: "brave", identity: "Brave" })
+            island.playerChoices = [stage.fakePlayer({ objectName: "brave", identity: "Brave" }), stage.fakePlayer({ objectName: "spotify", identity: "Spotify" })]
+            let picked = null
+            island.playerPicked.connect(p => picked = p)
+            openTab(island, "music")
+            const chips = findChild(island, "playerChips")
+            verify(chips.visible)
+            compare(findChild(island, "playerChip0").current, true)
+            compare(findChild(island, "playerChip1").current, false)
+            mouseClick(findChild(island, "playerChip1"))
+            compare(picked.identity, "Spotify")
+            // One player: no chips.
+            island.playerChoices = [stage.fakePlayer({ objectName: "brave", identity: "Brave" })]
+            compare(chips.visible, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

@@ -8,6 +8,9 @@ Item {
     id: music
 
     property var player: null
+    // Other players to switch to; chips show when there's more than one.
+    property var choices: []
+    signal picked(var p)
     property string artUrl: ""
     property color tint: palette.brightText
     property bool coverHidden: false
@@ -160,6 +163,42 @@ Item {
                     color: music.dim
                     font.pixelSize: 14
                     elide: Text.ElideRight
+                }
+                // With more than one player open, pick which one the island follows.
+                Row {
+                    objectName: "playerChips"
+                    visible: music.choices.length > 1
+                    topPadding: 8
+                    spacing: 6
+                    Repeater {
+                        model: music.choices.length > 1 ? music.choices : []
+                        delegate: Rectangle {
+                            required property var modelData
+                            required property int index
+                            readonly property bool current: music.player !== null
+                                && (modelData === music.player || (modelData.objectName || "") === (music.player.objectName || "") && modelData.objectName)
+                            objectName: "playerChip" + index
+                            width: chipLabel.implicitWidth + 22
+                            height: 24
+                            radius: 12
+                            color: current ? palette.windowText : chipArea.containsMouse ? palette.button : palette.alternateBase
+                            Text {
+                                id: chipLabel
+                                anchors.centerIn: parent
+                                text: modelData.identity || modelData.objectName || "Player"
+                                color: parent.current ? palette.window : palette.windowText
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                            }
+                            MouseArea {
+                                id: chipArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: music.picked(parent.modelData)
+                            }
+                        }
+                    }
                 }
                 LyricsView {
                     objectName: "lyricsView"

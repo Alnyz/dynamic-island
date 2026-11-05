@@ -269,6 +269,8 @@ Window {
         pill: prefs.style.look === "pill"
         palette.accent: prefs.style.accent
         player: source.player
+        playerChoices: source.choices
+        onPlayerPicked: p => source.pin(p)
         onVolumeStep: steps => {
             const out = soundSource.defaultOutput
             if (!out)

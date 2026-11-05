@@ -9,6 +9,9 @@ Item {
     id: island
 
     property var player: null
+    // Players to pick from in the Music tab (PlayerSource.choices), and the pick.
+    property var playerChoices: []
+    signal playerPicked(var p)
     // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
     property string artUrl: ""
     // The cover's colour (CoverColor), when there is one; music controls use musicTint.
@@ -1534,6 +1537,8 @@ Item {
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player
+            playerChoices: island.playerChoices
+            onPlayerPicked: p => island.playerPicked(p)
             artUrl: island.artUrl
             musicTint: island.coverTinted ? island.coverTint : palette.brightText
             accentTint: island.musicTint

@@ -7,14 +7,20 @@ QtObject {
     property var players: []
     property var now: () => Date.now()
     property real pauseTimeoutMs: L.PAUSE_TIMEOUT_MS
-    readonly property var player: chosen
+    // A player picked in the Music tab wins over the automatic choice until it goes away or
+    // another player starts playing.
+    property var pinned: null
+    readonly property var player: pinned !== null && players.indexOf(pinned) >= 0 ? pinned : chosen
+    // Each real player once, for picking.
+    readonly property var choices: L.distinctPlayers(players)
+    function pin(p) { pinned = p }
     // The chosen player's cover, kept through the gaps browsers leave (see L.heldArt).
     readonly property string artUrl: held.url
 
     property var held: ({ key: "", url: "" })
     function artKey(p) { return (p.desktopEntry || "") + "\n" + (p.artist || "") + "\n" + (p.track || "") }
     function updateArt() {
-        const p = chosen
+        const p = player
         held = p ? L.heldArt(held, { key: artKey(p), url: p.artUrl || "" })
                  : { key: "", url: "" }
         // Brave and other browsers often never send the cover of a skipped-to song; look it up instead.
@@ -58,7 +64,7 @@ QtObject {
     property Timer lookupTimer: Timer {
         interval: source.lookupDelayMs
         onTriggered: {
-            const p = source.chosen
+            const p = source.player
             if (!p || source.held.url)
                 return
             const key = source.held.key
@@ -75,9 +81,10 @@ QtObject {
         }
     }
     onChosenChanged: Qt.callLater(updateArt)
+    onPinnedChanged: Qt.callLater(updateArt)
     // The track and its cover arrive as separate change signals; read them once both have landed.
     property Connections artWatcher: Connections {
-        target: source.chosen
+        target: source.player
         ignoreUnknownSignals: true
         function onArtUrlChanged() { Qt.callLater(source.updateArt) }
         function onTrackChanged() { Qt.callLater(source.updateArt) }
@@ -93,6 +100,9 @@ QtObject {
         const next = new Map()
         const entries = players.map(p => {
             let h = history.get(p)
+            if (h && h.status !== p.playbackStatus && p.playbackStatus === L.Status.Playing && pinned !== null
+                    && p !== pinned && (p.objectName || "") !== (pinned.objectName || ""))
+                pinned = null
             if (!h || h.status !== p.playbackStatus) {
                 h = {
                     status: p.playbackStatus,
@@ -108,6 +118,8 @@ QtObject {
 
         const index = L.pickPlayer(entries, t, pauseTimeoutMs)
         chosen = index >= 0 ? players[index] : null
+        if (pinned !== null && players.indexOf(pinned) < 0)
+            pinned = null
 
         // Wake up when the oldest still-shown pause runs out, so the island goes idle without polling.
         let wait = Infinity
