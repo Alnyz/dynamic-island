@@ -76,6 +76,8 @@ Item {
     property var notes: null
     // TodoStore for the To-Do tab.
     property var todos: null
+    property var updatePackages: []
+    signal upgradeRequested()
     property var shelf: []
     property bool showJoin: true
     property var links: []
@@ -522,6 +524,15 @@ Item {
             active: panel.tab === "timer" && panel.timer !== null
             sourceComponent: TimerTab {
                 timer: panel.timer
+            }
+        }
+        Loader {
+            objectName: "updatesTab"
+            anchors.fill: parent
+            active: panel.tab === "updates"
+            sourceComponent: UpdatesTab {
+                packages: panel.updatePackages
+                onUpgradeRequested: panel.upgradeRequested()
             }
         }
         Loader {

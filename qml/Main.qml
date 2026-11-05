@@ -337,6 +337,8 @@ Window {
         idleMode: prefs.idle.mode
         glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count
+        updatePackages: updatesWatcher.packages
+        onUpgradeRequested: updatesWatcher.upgrade()
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
         userIdle: SystemStatus.userIdle

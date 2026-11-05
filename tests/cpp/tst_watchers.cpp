@@ -383,6 +383,24 @@ private Q_SLOTS:
         QCOMPARE(UpdatesWatcher::parse(2, ""), 0);
         QCOMPARE(UpdatesWatcher::parse(1, "boom"), -1);
     }
+
+    void testUpdatesList()
+    {
+        const QVariantList list = UpdatesWatcher::parseList("linux 6.1-1 -> 6.2-1\n  foo  1-1  ->  1-2 \nnot a package line\n\n");
+        QCOMPARE(list.size(), 2);
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("linux"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("from")).toString(), QStringLiteral("6.1-1"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("to")).toString(), QStringLiteral("6.2-1"));
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("foo"));
+        QVERIFY(UpdatesWatcher::parseList("").isEmpty());
+    }
+
+    void testUpgradeCommand()
+    {
+        QCOMPARE(UpdatesWatcher::upgradeCommand(true, true), QStringList({QStringLiteral("paru"), QStringLiteral("-Syu")}));
+        QCOMPARE(UpdatesWatcher::upgradeCommand(false, true), QStringList({QStringLiteral("yay"), QStringLiteral("-Syu")}));
+        QCOMPARE(UpdatesWatcher::upgradeCommand(false, false), QStringList({QStringLiteral("sudo"), QStringLiteral("pacman"), QStringLiteral("-Syu")}));
+    }
 };
 
 QTEST_MAIN(TestWatchers)

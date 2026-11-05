@@ -990,6 +990,31 @@ Item {
             compare(text.color, Qt.color("#30d158"))
         }
 
+        function test_update_count_opens_the_list() {
+            const { island } = make(null)
+            island.glances = ({ events: true, battery: true, time: true, weather: true, updates: true })
+            island.updates = 2
+            island.updatePackages = [{ name: "linux", from: "6.1-1", to: "6.2-1" }, { name: "mesa", from: "3:26.2.5-1", to: "3:26.2.6-1" }]
+            island.refreshGlance()
+            const count = findChild(island, "glanceUpdates")
+            tryVerify(() => count.visible)
+            // The row lays itself out on the next frame, and the pill grows to fit.
+            tryCompare(island, "width", island.size.w)
+            waitForRendering(island)
+            mouseClick(count)
+            compare(island.open, true)
+            const panel = findChild(island, "homePanel")
+            compare(panel.tab, "updates")
+            compare(findChild(island, "updatesTitle").text, "2 updates waiting")
+            tryVerify(() => findChild(island, "updateRow1") !== null)
+            let asked = 0
+            island.upgradeRequested.connect(() => asked++)
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(findChild(island, "updatesUpgrade"))
+            compare(asked, 1)
+            compare(island.open, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

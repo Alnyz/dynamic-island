@@ -91,8 +91,10 @@ Item {
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
     property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false, todo: true })
-    // Repo packages waiting for an update; -1 while unknown.
+    // Repo packages waiting for an update; -1 while unknown. updatePackages lists them.
     property int updates: -1
+    property var updatePackages: []
+    signal upgradeRequested()
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
     property string idleAnimation: "builtin:aurora"
     property bool animateOnHoverOnly: true
@@ -639,15 +641,32 @@ Item {
                 color: palette.windowText
                 isMask: true
             }
-            Text {
-                objectName: "glanceUpdates"
+            Item {
                 visible: parent.kind === "clock" && island.glance.updates > 0
                 anchors.verticalCenter: parent.verticalCenter
-                text: island.glance.updates || ""
-                color: palette.windowText
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.features: { "tnum": 1 }
+                width: updatesCount.implicitWidth
+                height: updatesCount.implicitHeight
+                Text {
+                    id: updatesCount
+                    objectName: "glanceUpdates"
+                    text: island.glance.updates || ""
+                    color: palette.windowText
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
+                }
+                // Opens the list of updates; covers the icon before the count too.
+                MouseArea {
+                    objectName: "glanceUpdatesArea"
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    anchors.leftMargin: -26
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        island.requestedTab = "updates"
+                        island.open = true
+                    }
+                }
             }
         }
 
@@ -1542,6 +1561,11 @@ Item {
             clipboard: island.clipboard
             notes: island.notes
             todos: island.todos
+            updatePackages: island.updatePackages
+            onUpgradeRequested: {
+                island.open = false
+                island.upgradeRequested()
+            }
             lyrics: island.lyrics
             history: island.history
             newNotifications: island.newNotifications
