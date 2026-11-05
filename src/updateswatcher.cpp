@@ -1,10 +1,18 @@
 #include "updateswatcher.h"
+#include <QFileSystemWatcher>
+#include <QProcess>
 
 UpdatesWatcher::UpdatesWatcher(QObject *parent)
-    : QObject(parent)
+: QObject(parent)
 {
     m_timer.setInterval(30 * 60 * 1000);
     connect(&m_timer, &QTimer::timeout, this, &UpdatesWatcher::check);
+
+    // Watch local pacman database for package changes (installs, upgrades, removals)
+    auto *watcher = new QFileSystemWatcher(this);
+    watcher->addPath(QStringLiteral("/var/lib/pacman/local"));
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, &UpdatesWatcher::check);
+
     connect(&m_proc, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
         setCount(status == QProcess::NormalExit ? parse(code, m_proc.readAllStandardOutput()) : -1);
     });
