@@ -12,6 +12,11 @@ QQC.ApplicationWindow {
 
     required property var prefs
     property var calendar: null
+    // The AppConfig singleton; passed in so the window also loads without the C++ module (tests).
+    property var appConfig: null
+    // BlurSettings: KWin's blur strength. Passed in, like appConfig, so tests load without it.
+    property var blur: null
+    signal tourRequested()
 
     title: "Dynamic Island settings"
     width: 760
@@ -42,6 +47,55 @@ QQC.ApplicationWindow {
     }
 
     property int page: 0
+
+    // Search: matches the text of every label, switch, check box and button on the pages.
+    property string query: ""
+    // Filled when the query changes, not as a binding: the labels' text isn't bindable from here.
+    property var results: []
+    onQueryChanged: results = query.trim().length >= 2 ? searchFor(query) : []
+    function searchFor(q) {
+        const words = q.toLowerCase().trim().split(/\s+/)
+        const out = []
+        const seen = {}
+        for (let i = 0; i < stack.children.length; ++i) {
+            const pg = stack.children[i]
+            collectText(pg, i, pg.title, words, out, seen)
+        }
+        return out.slice(0, 40)
+    }
+    function collectText(item, pageIndex, pageTitle, words, out, seen) {
+        // Text fields hold what the user typed, not a setting's name.
+        const editable = item.cursorPosition !== undefined
+        if (!editable && typeof item.text === "string" && item.text.length > 1 && item.objectName !== "searchSkip") {
+            const label = item.text.replace(/:$/, "").replace(/&/g, "")
+            const hay = (label + " " + pageTitle).toLowerCase()
+            const key = pageIndex + "|" + label
+            if (!seen[key] && label !== pageTitle && words.every(w => hay.includes(w))) {
+                seen[key] = true
+                out.push({ label: label, page: pageIndex, pageTitle: pageTitle, item: item })
+            }
+        }
+        for (let c = 0; c < item.children.length; ++c)
+            collectText(item.children[c], pageIndex, pageTitle, words, out, seen)
+    }
+    // Opens a result's page, scrolls it into view and flashes it.
+    function reveal(r) {
+        query = ""
+        page = r.page
+        const pg = stack.children[r.page]
+        Qt.callLater(() => {
+            const flick = pg.contentItem
+            const p = r.item.mapToItem(flick.contentItem, 0, 0)
+            flick.contentY = Math.max(0, Math.min(p.y - 40, flick.contentHeight - flick.height))
+            const q = r.item.mapToItem(win.contentItem, 0, 0)
+            flash.x = q.x - 6
+            flash.y = q.y - 4
+            flash.width = r.item.width + 12
+            flash.height = r.item.height + 8
+            flash.target = r.item
+            flashAnim.restart()
+        })
+    }
     readonly property var pages: [
             { label: "Look", icon: "preferences-desktop-theme-global" },
             { label: "Behaviour", icon: "preferences-system-windows-behavior" },
@@ -59,9 +113,64 @@ QQC.ApplicationWindow {
         spacing: 0
 
         // One page per topic, so no single page turns into a long scroll.
-        QQC.ScrollView {
+        ColumnLayout {
             Layout.fillHeight: true
             Layout.preferredWidth: 190
+            Layout.maximumWidth: 190
+            spacing: 0
+        Kirigami.SearchField {
+            id: search
+            objectName: "settingsSearch"
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.smallSpacing
+            placeholderText: "Search settings"
+            text: win.query
+            onTextChanged: win.query = text
+            Keys.onReturnPressed: if (win.results.length) win.reveal(win.results[0])
+            Keys.onEscapePressed: win.query = ""
+        }
+        QQC.Label {
+            objectName: "searchEmpty"
+            visible: win.query.trim().length >= 2 && win.results.length === 0
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.largeSpacing
+            text: "Nothing matches."
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+        }
+        QQC.ScrollView {
+            visible: win.results.length > 0
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            ListView {
+                objectName: "searchResults"
+                model: win.results
+                delegate: QQC.ItemDelegate {
+                    required property var modelData
+                    required property int index
+                    objectName: "searchResult" + index
+                    width: ListView.view.width
+                    contentItem: Column {
+                        QQC.Label {
+                            width: parent.width
+                            text: modelData.label
+                            elide: Text.ElideRight
+                        }
+                        QQC.Label {
+                            width: parent.width
+                            text: modelData.pageTitle
+                            font: Kirigami.Theme.smallFont
+                            opacity: 0.7
+                        }
+                    }
+                    onClicked: win.reveal(modelData)
+                }
+            }
+        }
+        QQC.ScrollView {
+            visible: win.query.trim().length < 2
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             ListView {
                 topMargin: Kirigami.Units.smallSpacing
                 model: win.pages
@@ -76,8 +185,10 @@ QQC.ApplicationWindow {
                 }
             }
         }
+        }
         Kirigami.Separator { Layout.fillHeight: true }
         StackLayout {
+            id: stack
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: win.page
@@ -125,6 +236,116 @@ QQC.ApplicationWindow {
                             icon.name: "color-picker"
                             onClicked: accentDialog.open()
                         }
+                    }
+                    QQC.CheckBox {
+                        objectName: "coverTint"
+                        text: "Tint music controls with the cover's colour"
+                        checked: win.prefs.style.coverTint
+                        onToggled: win.prefs.style.coverTint = checked
+                    }
+                    QQC.ComboBox {
+                        objectName: "themePicker"
+                        Kirigami.FormData.label: "Colours:"
+                        textRole: "label"
+                        valueRole: "key"
+                        model: [{ key: "dark", label: "Dark" }, { key: "light", label: "Light" }, { key: "system", label: "Follow Plasma" }]
+                        currentIndex: Math.max(0, model.findIndex(m => m.key === win.prefs.style.theme))
+                        onActivated: win.prefs.style.theme = currentValue
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Island colour:"
+                        spacing: 8
+                        Repeater {
+                            model: ["", "#000000", "#1c1c1e", "#0b1f33", "#1e1033", "#0f2a1d", "#2a1512", "#f2f2f7", "#fff4dc"]
+                            delegate: Rectangle {
+                                required property string modelData
+                                required property int index
+                                objectName: "islandColor" + index
+                                readonly property bool current: (win.prefs.style.color || "").toLowerCase() === modelData
+                                width: 26
+                                height: 26
+                                radius: 13
+                                // The first one is the theme's own colour, shown half dark, half light.
+                                color: modelData || "#000000"
+                                border.width: current ? 3 : 1
+                                border.color: current ? Kirigami.Theme.highlightColor : Kirigami.Theme.disabledTextColor
+                                Rectangle {
+                                    visible: parent.modelData === ""
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.rightMargin: parent.border.width
+                                    width: parent.width / 2 - parent.border.width
+                                    height: parent.height - 2 * parent.border.width
+                                    radius: height / 2
+                                    color: "#f2f2f7"
+                                }
+                                QQC.ToolTip.visible: swatchArea.containsMouse
+                                QQC.ToolTip.text: modelData === "" ? "The theme's colour" : modelData
+                                MouseArea {
+                                    id: swatchArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.prefs.style.color = parent.modelData
+                                }
+                            }
+                        }
+                        QQC.Button {
+                            objectName: "islandColorCustom"
+                            text: "Custom…"
+                            icon.name: "color-picker"
+                            onClicked: islandColorDialog.open()
+                        }
+                    }
+                    ColorDialog {
+                        id: islandColorDialog
+                        title: "Choose the island's colour"
+                        selectedColor: win.prefs.style.color || "#000000"
+                        onAccepted: win.prefs.style.color = selectedColor.toString().slice(0, 7)
+                    }
+                    SliderRow {
+                        objectName: "islandOpacity"
+                        Kirigami.FormData.label: "Opacity:"
+                        from: 20; to: 100; suffix: "%"
+                        value: L.islandOpacity(win.prefs.style.opacity, win.prefs.style.translucent)
+                        onMoved: v => win.prefs.style.opacity = v
+                    }
+                    QQC.CheckBox {
+                        objectName: "translucent"
+                        text: "Blur what shows through"
+                        enabled: L.islandOpacity(win.prefs.style.opacity, win.prefs.style.translucent) < 100
+                        checked: win.prefs.style.translucent
+                        onToggled: {
+                            // Old configs have no opacity yet; keep the one they see instead of letting it follow this box.
+                            if (win.prefs.style.opacity < 0)
+                                win.prefs.style.opacity = L.islandOpacity(-1, win.prefs.style.translucent)
+                            win.prefs.style.translucent = checked
+                        }
+                    }
+                    SliderRow {
+                        objectName: "blurStrength"
+                        Kirigami.FormData.label: "Blur strength:"
+                        visible: win.blur !== null
+                        enabled: win.blur !== null && win.blur.effect !== "" && win.prefs.style.translucent
+                        from: 1; to: 15; suffix: ""
+                        value: win.blur ? win.blur.strength : 12
+                        onMoved: v => win.blur.strength = v
+                    }
+                    QQC.Label {
+                        visible: win.blur !== null
+                        Layout.maximumWidth: 380
+                        wrapMode: Text.WordWrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: win.blur && win.blur.effect === "" ? "No blur effect is running in KWin."
+                            : "KWin has one blur strength for every window, so this changes the blur everywhere"
+                              + (win.blur && win.blur.effect === "better_blur_dx" ? " (Better Blur DX's setting)." : ".")
+                    }
+                    QQC.CheckBox {
+                        objectName: "liveBars"
+                        text: "Level bars follow the sound"
+                        checked: win.prefs.style.liveBars
+                        onToggled: win.prefs.style.liveBars = checked
                     }
                     ColorDialog {
                         id: accentDialog
@@ -199,6 +420,19 @@ QQC.ApplicationWindow {
                         from: 1; to: 60; suffix: " min"
                         value: win.prefs.behaviour.pausedMinutes
                         onMoved: v => win.prefs.behaviour.pausedMinutes = v
+                    }
+                    QQC.CheckBox {
+                        Kirigami.FormData.label: "Missing song covers:"
+                        text: "Look up on iTunes (sends the artist and title to Apple)"
+                        checked: win.prefs.behaviour.coverLookup
+                        onToggled: win.prefs.behaviour.coverLookup = checked
+                    }
+                    QQC.CheckBox {
+                        objectName: "lyricsSwitch"
+                        Kirigami.FormData.label: "Lyrics:"
+                        text: "Show lyrics in the Music tab (sends the song to lrclib.net when shown)"
+                        checked: win.prefs.behaviour.lyrics
+                        onToggled: win.prefs.behaviour.lyrics = checked
                     }
                     QQC.ButtonGroup { id: openGroup }
                     QQC.RadioButton {
@@ -422,6 +656,12 @@ QQC.ApplicationWindow {
                         checked: win.prefs.idle.updates
                         onToggled: win.prefs.idle.updates = checked
                     }
+                    QQC.CheckBox {
+                        visible: win.prefs.idle.mode === "glances"
+                        text: "Next task from the To-Do list"
+                        checked: win.prefs.idle.todo
+                        onToggled: win.prefs.idle.todo = checked
+                    }
                     QQC.ComboBox {
                         id: artPicker
                         visible: win.prefs.idle.mode === "animation"
@@ -483,6 +723,24 @@ QQC.ApplicationWindow {
                 title: "Calendar"
                 Kirigami.FormLayout {
                     Layout.fillWidth: true
+                    QQC.ComboBox {
+                        objectName: "holidayCountry"
+                        Kirigami.FormData.label: "Holidays and festivals:"
+                        textRole: "label"
+                        valueRole: "key"
+                        readonly property string autoKey: L.holidayCountry("auto", Qt.locale().name)
+                        model: [{ key: "auto", label: "Automatic" + (autoKey ? " (" + L.holidayLabel(autoKey) + ")" : "") }, { key: "", label: "None" }]
+                               .concat(L.HOLIDAY_COUNTRIES.map(c => ({ key: c.key, label: c.label })))
+                        currentIndex: Math.max(0, model.findIndex(m => m.key === win.prefs.calendar.holidays))
+                        onActivated: win.prefs.calendar.holidays = currentValue
+                    }
+                    QQC.CheckBox {
+                        objectName: "observances"
+                        text: "Include festivals and religious days, not only public holidays"
+                        enabled: L.holidayCountry(win.prefs.calendar.holidays, Qt.locale().name) !== ""
+                        checked: win.prefs.calendar.observances
+                        onToggled: win.prefs.calendar.observances = checked
+                    }
                     SliderRow {
                         Kirigami.FormData.label: "Check for changes every:"
                         from: 5; to: 120; suffix: " min"
@@ -606,13 +864,13 @@ QQC.ApplicationWindow {
                     QQC.ButtonGroup { id: unitGroup }
                     QQC.RadioButton {
                         Kirigami.FormData.label: "Temperature:"
-                        text: "°C"
+                        text: "Celsius (°C)"
                         QQC.ButtonGroup.group: unitGroup
                         checked: !win.prefs.weather.fahrenheit
                         onToggled: win.prefs.weather.fahrenheit = false
                     }
                     QQC.RadioButton {
-                        text: "°F"
+                        text: "Fahrenheit (°F)"
                         QQC.ButtonGroup.group: unitGroup
                         checked: win.prefs.weather.fahrenheit
                         onToggled: win.prefs.weather.fahrenheit = true
@@ -728,8 +986,16 @@ QQC.ApplicationWindow {
                     Layout.fillWidth: true
                     QQC.Switch {
                         Kirigami.FormData.label: "Start at login:"
-                        checked: AppConfig.autostart
-                        onToggled: AppConfig.autostart = checked
+                        enabled: win.appConfig !== null
+                        checked: win.appConfig ? win.appConfig.autostart : false
+                        onToggled: if (win.appConfig) win.appConfig.autostart = checked
+                    }
+                    QQC.Button {
+                        objectName: "tourAgain"
+                        Kirigami.FormData.label: "Getting started:"
+                        text: "Show the tour again"
+                        icon.name: "help-hint"
+                        onClicked: win.tourRequested()
                     }
                     QQC.Button {
                         text: "Reset to defaults"
@@ -769,6 +1035,25 @@ QQC.ApplicationWindow {
         }
         xhr.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(name))
         xhr.send()
+    }
+
+    // The setting a search result led to, flashed for a moment.
+    Rectangle {
+        id: flash
+        property var target: null
+        parent: win.contentItem
+        z: 100
+        radius: 6
+        color: "transparent"
+        border.color: Kirigami.Theme.highlightColor
+        border.width: 2
+        opacity: 0
+        SequentialAnimation {
+            id: flashAnim
+            NumberAnimation { target: flash; property: "opacity"; to: 1; duration: 120 }
+            PauseAnimation { duration: 900 }
+            NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 400 }
+        }
     }
 
     component Page: QQC.ScrollView {

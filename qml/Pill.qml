@@ -12,14 +12,14 @@ Rectangle {
     property bool selected: false
     signal clicked()
 
-    readonly property color ink: selected ? "#000000" : "#ffffff"
+    readonly property color ink: selected ? palette.window : palette.windowText
 
     height: 40
     width: text === "" ? height : content.implicitWidth + (height > 32 ? 36 : 26)
     radius: height / 2
     color: primary ? (area.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent)
-         : selected ? "#ffffff"
-         : area.containsMouse ? "#2a2a2a" : (height > 32 ? "#1f1f1f" : "#141414")
+         : selected ? palette.windowText
+         : area.containsMouse ? palette.button : (height > 32 ? palette.alternateBase : palette.base)
 
     Row {
         id: content

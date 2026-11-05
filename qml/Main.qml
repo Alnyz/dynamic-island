@@ -1,4 +1,6 @@
 import QtQuick
+import QtCore
+import org.kde.kirigami as Kirigami
 import Island
 import "logic.js" as L
 
@@ -13,6 +15,10 @@ Window {
 
     function updateInputRegion() {
         InputRegion.set(root, island.inputRect)
+        updateBlur()
+    }
+    function updateBlur() {
+        InputRegion.setBlur(root, island.inputRect, island.blurRadius, island.blurBehind && island.translucent && island.height > 0.5)
     }
 
     Prefs {
@@ -20,19 +26,43 @@ Window {
         location: "file://" + AppConfig.path
     }
 
+    BlurSettings { id: blurSettings }
+
     SettingsWindow {
         id: settingsWindow
         prefs: prefs
         calendar: calendarSource
+        appConfig: AppConfig
+        blur: blurSettings
+        onTourRequested: {
+            settingsWindow.close()
+            island.startTour()
+        }
     }
 
     MprisPlayers { id: mpris }
 
-    SoundSource { id: soundSource }
+    SoundSource {
+        id: soundSource
+        monitorOutput: prefs.style.liveBars && island.wantsLevel
+    }
 
     ClipboardHistory { id: clipboardHistory }
 
     NotesStore { id: notesStore }
+
+    TodoStore { id: todoStore }
+    // The first To-Do version kept its list in QSettings' default file; move it over once.
+    Settings {
+        id: oldTodos
+        category: "TodoList"
+        property string tasksJson: ""
+    }
+    function importOldTodos() {
+        if (oldTodos.tasksJson && oldTodos.tasksJson !== "[]" && todoStore.items.length === 0)
+            todoStore.importJson(oldTodos.tasksJson)
+        oldTodos.tasksJson = ""
+    }
 
     NotificationLog { id: notificationLog }
 
@@ -63,6 +93,7 @@ Window {
     }
 
     BluetoothWatcher {
+        id: btWatcher
         onDeviceChanged: d => {
             if (prefs.show.devices && !island.open)
                 root.alert(Object.assign({ kind: "device" }, d), 4000)
@@ -98,7 +129,10 @@ Window {
         target: fullScreen
         function onSwitched() { island.open = false }
     }
-    PanelShortcut { onActivated: island.toggleFromKeyboard() }
+    PanelShortcut {
+        onActivated: island.toggleFromKeyboard()
+        onClipboardActivated: island.openTabFromKeyboard("clipboard")
+    }
 
     function alert(a, ms) {
         const f = prefs.fullScreen
@@ -197,6 +231,10 @@ Window {
     TimerModel {
         id: timerModel
         onFinished: Notifier.timerDone()
+        onPhaseFinished: (ended, next) => {
+            const m = L.pomodoroMessage(ended, next, next === "work" ? workMinutes : next === "longBreak" ? longBreakMinutes : breakMinutes)
+            Notifier.timerDone(m.title, m.body)
+        }
     }
 
     WeatherSource {
@@ -207,16 +245,39 @@ Window {
         fahrenheit: prefs.weather.fahrenheit
     }
 
+    // Public holidays and festivals, from Google's calendar for the chosen country.
+    readonly property string holidayCountry: L.holidayCountry(prefs.calendar.holidays, Qt.locale().name)
+    CalendarSource {
+        id: holidaySource
+        urls: root.holidayCountry ? [L.holidayUrl(root.holidayCountry)] : []
+        refreshMinutes: 24 * 60
+    }
+
     CalendarSource {
         id: calendarSource
         urls: L.toList(prefs.calendar.icsUrls).filter(u => !L.toList(prefs.calendar.disabled).includes(u))
         refreshMinutes: prefs.calendar.refreshMinutes
     }
 
+    LyricsSource {
+        id: lyricsSource
+        enabled: prefs.behaviour.lyrics
+        artist: source.player ? source.player.artist || "" : ""
+        title: source.player ? source.player.track || "" : ""
+        album: source.player ? source.player.album || "" : ""
+        lengthUs: source.player ? source.player.length || 0 : 0
+    }
+
+    CoverColor {
+        id: coverColor
+        source: prefs.style.coverTint ? source.artUrl : ""
+    }
+
     PlayerSource {
         id: source
         players: mpris.list
         pauseTimeoutMs: prefs.behaviour.pausedMinutes * 60000
+        coverLookup: prefs.behaviour.coverLookup
     }
 
     Island {
@@ -227,6 +288,27 @@ Window {
         pill: prefs.style.look === "pill"
         palette.accent: prefs.style.accent
         player: source.player
+        playerChoices: source.choices
+        onPlayerPicked: p => source.pin(p)
+        onVolumeStep: steps => {
+            const out = soundSource.defaultOutput
+            if (!out)
+                return
+            if (out.muted && steps > 0)
+                out.muted = false
+            out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
+        }
+        artUrl: source.artUrl
+        lightTheme: prefs.style.theme === "light" || (prefs.style.theme === "system" && Kirigami.Theme.backgroundColor.hslLightness > 0.5)
+        customColor: prefs.style.color || "transparent"
+        fillOpacity: L.islandOpacity(prefs.style.opacity, prefs.style.translucent) / 100
+        blurBehind: prefs.style.translucent
+        onBlurRadiusChanged: root.updateBlur()
+        onTranslucentChanged: root.updateBlur()
+        onBlurBehindChanged: root.updateBlur()
+        audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
+        coverTinted: coverColor.valid
+        coverTint: coverColor.valid ? coverColor.color : "transparent"
         timer: timerModel
         weather: weatherSource
         calendar: calendarSource
@@ -235,9 +317,15 @@ Window {
         jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
         onNotificationClicked: entry => notificationWatcher.openApp(entry)
+        onNotificationAction: (serverId, key) => notificationWatcher.invokeAction(serverId, key)
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore
+        todos: todoStore
+        lyrics: lyricsSource
+        holidays: holidaySource
+        observances: prefs.calendar.observances
+        onTodoDone: id => todoStore.setDone(id, true)
         history: history
         newNotifications: history.newCount
         onNotificationsLeft: history.leave()
@@ -264,23 +352,71 @@ Window {
         battery: SystemStatus.battery
         charging: SystemStatus.charging
         idleMode: prefs.idle.mode
-        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, meetings: prefs.show.meetings })
+        glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count
+        updatePackages: updatesWatcher.packages
+        btDevices: btWatcher.devices
+        onUpgradeRequested: updatesWatcher.upgrade()
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
         userIdle: SystemStatus.userIdle
-        onSettingsRequested: {
-            settingsWindow.show()
-            settingsWindow.raise()
-            settingsWindow.requestActivate()
+        onSettingsRequested: root.showSettings()
+        onTourFinished: prefs.behaviour.tourSeen = true
+        dnd: SystemStatus.dnd
+        onMenuAction: key => {
+            if (key === "dnd-hour") {
+                SystemStatus.setDnd(true)
+                dndHour.restart()
+            } else if (key === "dnd-off") {
+                dndHour.stop()
+                SystemStatus.setDnd(false)
+            } else if (key === "hide-hour") {
+                island.hiddenByUser = true
+                hideHour.restart()
+            } else if (key === "show") {
+                island.hiddenByUser = false
+            } else if (key === "settings") {
+                root.showSettings()
+            }
         }
         onOpenChanged: if (open) {
+            // Opening the panel (Meta+N) brings a hidden island back.
+            hiddenByUser = false
             SystemStatus.refresh()
             calendarSource.refreshIfStale()
         }
         onInputRectChanged: root.updateInputRegion()
         coveredByFullScreen: fullScreen.active
         onWantsFrontChanged: InputRegion.setLayer(root, wantsFront)
+    }
+
+    // The tour waits until startup's burst of alerts is over.
+    Timer {
+        interval: 4000
+        running: !prefs.behaviour.tourSeen
+        onTriggered: island.startTour()
+    }
+
+    function showSettings() {
+        settingsWindow.show()
+        settingsWindow.raise()
+        settingsWindow.requestActivate()
+    }
+    // "Pause notifications for 1 hour" and "Hide for 1 hour" from the pill's menu.
+    Timer {
+        id: dndHour
+        interval: 3600000
+        onTriggered: SystemStatus.setDnd(false)
+    }
+    // Turned off elsewhere (Plasma's tray): the hour is over, so it can't end a later pause.
+    Connections {
+        target: SystemStatus
+        function onChanged() { if (!SystemStatus.dnd) dndHour.stop() }
+    }
+    Timer {
+        id: hideHour
+        interval: 3600000
+        onTriggered: island.hiddenByUser = false
     }
 
     // Two small file reads; frequent enough to catch a plugged-in charger within a few seconds.
@@ -319,6 +455,7 @@ Window {
     }
 
     Component.onCompleted: {
+        importOldTodos()
         updateInputRegion()
         PlasmaSettings.setOsdEnabled(!islandLevels)
         PlasmaSettings.setPopupsEnabled(!islandNotifications)

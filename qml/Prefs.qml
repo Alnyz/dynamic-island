@@ -8,14 +8,14 @@ QtObject {
     required property string location
 
     readonly property var defaults: ({
-        style: { look: "notch", accent: "#0a84ff" },
+        style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
-        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false },
+        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
         show: { levels: true, notifications: true, privacy: true, devices: true, meetings: true, power: true, jobs: true },
-        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, updates: false, animateOnHoverOnly: true },
+        idle: { mode: "glances", events: true, battery: true, time: true, weather: true, updates: false, todo: true, animateOnHoverOnly: true },
         history: { save: true, days: 7, system: true, apps: true, others: true, off: [] },
         fullScreen: { levels: true, jobs: true, privacy: true, devices: true, power: true, allNotifications: false, urgent: [] }
     })
@@ -26,6 +26,18 @@ QtObject {
         category: "style"
         property string look: prefs.defaults.style.look
         property string accent: prefs.defaults.style.accent
+        // Music controls take the cover's main colour.
+        property bool coverTint: prefs.defaults.style.coverTint
+        // The pill's level bars follow the sound instead of a loop.
+        property bool liveBars: prefs.defaults.style.liveBars
+        // "dark", "light" or "system" (follows Plasma's colour scheme).
+        property string theme: prefs.defaults.style.theme
+        // Blur what shows through when the island isn't fully opaque.
+        property bool translucent: prefs.defaults.style.translucent
+        // "" for the theme's colour, else "#rrggbb".
+        property string color: prefs.defaults.style.color
+        // Percent, 20..100; -1 until first set (see L.islandOpacity).
+        property int opacity: prefs.defaults.style.opacity
     }
 
     property Settings shape: Settings {
@@ -45,6 +57,10 @@ QtObject {
         property int swipeHoldSeconds: prefs.defaults.behaviour.swipeHoldSeconds
         property int pausedMinutes: prefs.defaults.behaviour.pausedMinutes
         property bool openOnHover: prefs.defaults.behaviour.openOnHover
+        property bool coverLookup: prefs.defaults.behaviour.coverLookup
+        property bool lyrics: prefs.defaults.behaviour.lyrics
+        // The first-run tour has been seen or skipped.
+        property bool tourSeen: false
     }
 
     // Calendar links are not part of reset: they are the user's data, not a look.
@@ -54,6 +70,10 @@ QtObject {
         property var icsUrls: []
         property var disabled: []
         property int refreshMinutes: 15
+        // A country key from L.HOLIDAY_COUNTRIES, "" for none, or "auto" (from the system language).
+        property string holidays: "auto"
+        // Festivals and religious days, besides public holidays.
+        property bool observances: true
     }
 
     // An empty city means: find the location from the internet connection.
@@ -82,6 +102,7 @@ QtObject {
         property bool time: prefs.defaults.idle.time
         property bool weather: prefs.defaults.idle.weather
         property bool updates: prefs.defaults.idle.updates
+        property bool todo: prefs.defaults.idle.todo
         property bool animateOnHoverOnly: prefs.defaults.idle.animateOnHoverOnly
         property string animation: ""
     }

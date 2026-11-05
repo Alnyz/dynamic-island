@@ -10,6 +10,8 @@ Item {
     property var readNote: id => ""
     property var writeNote: (id, text) => {}
     property var newId: () => ""
+    // Deleting a note: the panel removes it and offers undo with the text given here.
+    signal deleteRequested(string id, string text)
     property var now: () => Date.now()
     property string currentId: ""
     readonly property bool typing: editor.activeFocus
@@ -32,6 +34,16 @@ Item {
         editor.forceActiveFocus()
     }
 
+    function deleteCurrent() {
+        saveTimer.stop()
+        const id = currentId
+        const text = editor.text
+        const next = notes.find(n => n.id !== id)
+        if (text.trim() !== "")
+            deleteRequested(id, text)
+        next ? open(next.id) : createNote()
+    }
+
     Component.onCompleted: notes.length ? open(notes[0].id) : createNote()
     Component.onDestruction: flush()
 
@@ -52,7 +64,7 @@ Item {
             height: 16
             Text {
                 text: "NOTES"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.letterSpacing: 0.6
@@ -91,7 +103,7 @@ Item {
                 width: list.width
                 height: 48
                 radius: 10
-                color: modelData.id === tab.currentId ? "#141414" : noteArea.containsMouse ? "#0f0f0f" : "transparent"
+                color: modelData.id === tab.currentId ? palette.base : noteArea.containsMouse ? palette.alternateBase : "transparent"
                 Column {
                     x: 10
                     width: parent.width - 20
@@ -100,7 +112,7 @@ Item {
                     Text {
                         width: parent.width
                         text: note.modelData.title
-                        color: "#ffffff"
+                        color: palette.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -108,7 +120,7 @@ Item {
                     Text {
                         width: parent.width
                         text: L.noteWhen(note.modelData.modified, tab.now()) + (note.modelData.preview ? " · " + note.modelData.preview : "")
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
@@ -134,18 +146,18 @@ Item {
             height: parent.height - status.height - parent.spacing
             background: Rectangle {
                 radius: 14
-                color: "#0c0c0c"
-                border.color: editor.activeFocus ? "#2f3a48" : "#1c1c1c"
+                color: palette.base
+                border.color: editor.activeFocus ? palette.dark : palette.alternateBase
             }
             QQC.TextArea {
                 id: editor
                 objectName: "noteEditor"
                 padding: 16
                 wrapMode: TextEdit.Wrap
-                color: "#e5e9f0"
+                color: palette.text
                 selectionColor: palette.accent
                 placeholderText: "Write something…"
-                placeholderTextColor: "#8a929c"
+                placeholderTextColor: palette.mid
                 font.pixelSize: 14
                 background: null
                 onTextChanged: if (activeFocus) saveTimer.restart()
@@ -158,14 +170,32 @@ Item {
             height: 16
             Text {
                 text: "First line is the title"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
             Text {
+                objectName: "noteDelete"
+                visible: editor.text.trim() !== ""
+                anchors.right: noteStatusText.left
+                anchors.rightMargin: 14
+                text: "Delete"
+                color: deleteArea.containsMouse ? "#ff8a8a" : palette.placeholderText
+                font.pixelSize: 12
+                MouseArea {
+                    id: deleteArea
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: tab.deleteCurrent()
+                }
+            }
+            Text {
+                id: noteStatusText
                 objectName: "noteStatus"
                 anchors.right: parent.right
                 text: saveTimer.running ? "Saving…" : "Saved"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
         }

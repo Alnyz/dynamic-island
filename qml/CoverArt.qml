@@ -9,7 +9,7 @@ Rectangle {
     // Shown when there's no cover, e.g. Spotify sends none during ads.
     property string fallbackIcon
 
-    color: "#2a2a2a"
+    color: palette.button
 
     Image {
         id: cover

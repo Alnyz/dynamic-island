@@ -1,12 +1,39 @@
 #include "updateswatcher.h"
+#include <QFileSystemWatcher>
+#include <QProcess>
+#include <QStandardPaths>
 
 UpdatesWatcher::UpdatesWatcher(QObject *parent)
-    : QObject(parent)
+: QObject(parent)
 {
     m_timer.setInterval(30 * 60 * 1000);
     connect(&m_timer, &QTimer::timeout, this, &UpdatesWatcher::check);
+
+    // Watch local pacman database for package changes (installs, upgrades, removals)
+    auto *watcher = new QFileSystemWatcher(this);
+    watcher->addPath(QStringLiteral("/var/lib/pacman/local"));
+    // Only while the count is wanted: otherwise every install would run checkupdates for nothing.
+    // An upgrade changes it once per package, so wait until it has been quiet for a few seconds.
+    m_settle.setSingleShot(true);
+    m_settle.setInterval(5000);
+    connect(&m_settle, &QTimer::timeout, this, &UpdatesWatcher::check);
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, [this] {
+        if (enabled())
+            m_settle.start();
+    });
+
     connect(&m_proc, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
-        setCount(status == QProcess::NormalExit ? parse(code, m_proc.readAllStandardOutput()) : -1);
+        const QByteArray out = m_proc.readAllStandardOutput();
+        m_packages = status == QProcess::NormalExit && code == 0 ? parseList(out) : QVariantList();
+        const int n = status == QProcess::NormalExit ? parse(code, out) : -1;
+        if (n == m_count)
+            Q_EMIT countChanged(); // the list may have changed with the same count
+        setCount(n);
+        // The database changed while that run was going, so its answer may be out of date.
+        if (m_again) {
+            m_again = false;
+            check();
+        }
     });
     connect(&m_proc, &QProcess::errorOccurred, this, [this](QProcess::ProcessError e) {
         if (e == QProcess::FailedToStart)
@@ -23,6 +50,9 @@ void UpdatesWatcher::setEnabled(bool on)
         check();
     } else {
         m_timer.stop();
+        m_settle.stop();
+        m_again = false;
+        m_packages.clear();
         setCount(-1);
     }
     Q_EMIT enabledChanged();
@@ -32,6 +62,8 @@ void UpdatesWatcher::check()
 {
     if (m_proc.state() == QProcess::NotRunning)
         m_proc.start(QStringLiteral("checkupdates"), {});
+    else
+        m_again = true;
 }
 
 void UpdatesWatcher::setCount(int n)
@@ -49,4 +81,36 @@ int UpdatesWatcher::parse(int exitCode, const QByteArray &out)
     if (exitCode != 0)
         return -1;
     return out.trimmed().isEmpty() ? 0 : out.trimmed().split('\n').size();
+}
+
+QVariantList UpdatesWatcher::parseList(const QByteArray &out)
+{
+    QVariantList list;
+    for (const QByteArray &raw : out.split('\n')) {
+        const QList<QByteArray> parts = raw.simplified().split(' ');
+        // name old -> new
+        if (parts.size() < 4 || parts.at(2) != "->")
+            continue;
+        list.append(QVariantMap{{QStringLiteral("name"), QString::fromUtf8(parts.at(0))},
+                                {QStringLiteral("from"), QString::fromUtf8(parts.at(1))},
+                                {QStringLiteral("to"), QString::fromUtf8(parts.at(3))}});
+    }
+    return list;
+}
+
+QStringList UpdatesWatcher::upgradeCommand(bool hasParu, bool hasYay)
+{
+    if (hasParu)
+        return {QStringLiteral("paru"), QStringLiteral("-Syu")};
+    if (hasYay)
+        return {QStringLiteral("yay"), QStringLiteral("-Syu")};
+    return {QStringLiteral("sudo"), QStringLiteral("pacman"), QStringLiteral("-Syu")};
+}
+
+void UpdatesWatcher::upgrade()
+{
+    const QStringList cmd = upgradeCommand(!QStandardPaths::findExecutable(QStringLiteral("paru")).isEmpty(),
+                                           !QStandardPaths::findExecutable(QStringLiteral("yay")).isEmpty());
+    // --hold keeps the window open to read the result.
+    QProcess::startDetached(QStringLiteral("konsole"), QStringList{QStringLiteral("--hold"), QStringLiteral("-e")} + cmd);
 }

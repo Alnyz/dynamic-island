@@ -9,12 +9,55 @@ Item {
     id: island
 
     property var player: null
+    // Players to pick from in the Music tab (PlayerSource.choices), and the pick.
+    property var playerChoices: []
+    signal playerPicked(var p)
+    // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
+    property string artUrl: ""
+    // The cover's colour (CoverColor), when there is one; music controls use musicTint.
+    // Theme: light or dark colours for everything inside, and a see-through fill KWin blurs behind.
+    property bool lightTheme: false
+    // A background colour of the user's own (transparent for the theme's), how opaque the island
+    // is (0..1), and whether KWin blurs what shows through.
+    property color customColor: "transparent"
+    property real fillOpacity: 1
+    property bool blurBehind: false
+    readonly property bool translucent: fillOpacity < 0.999
+    readonly property var theme: L.themeColors(lightTheme, customColor.a > 0 ? customColor : "")
+    // Dark text on a custom colour counts as the light look (it gets the faint edge too).
+    readonly property bool lightLook: customColor.a > 0 ? theme.light === true : lightTheme
+    palette.window: theme.window
+    palette.windowText: theme.windowText
+    palette.text: theme.text
+    palette.placeholderText: theme.placeholderText
+    palette.mid: theme.mid
+    palette.base: theme.base
+    palette.alternateBase: theme.alternateBase
+    palette.button: theme.button
+    palette.dark: theme.dark
+    palette.brightText: theme.brightText
+    // What the window's blur should cover: the island's shape while it's visible.
+    readonly property real blurRadius: notch.r
+    // The speakers' level (0..1) for the bars, or -1; wantsLevel says when it's needed.
+    property real audioLevel: -1
+    readonly property bool wantsLevel: playing && mode === "compact" && activity === "music"
+    property bool coverTinted: false
+    property color coverTint: "transparent"
+    readonly property color musicTint: coverTinted ? coverTint : palette.accent
+    Behavior on coverTint { ColorAnimation { duration: 400 } }
     property var timer: null
     property var weather: null
     property var calendar: null
     property var sound: null
     property var clipboard: null
     property var notes: null
+    property var todos: null
+    property var lyrics: null
+    // Holiday calendar (CalendarSource) for the panel's calendar and Up next.
+    property var holidays: null
+    property bool observances: true
+    // Ticks a task off from the idle pill.
+    signal todoDone(string id)
     // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
     property var history: null
     property int newNotifications: 0
@@ -30,7 +73,7 @@ Item {
     readonly property bool hovered: hover.hovered
     // Not named `state`: Item already has a `state` property.
     readonly property bool timerActive: timer !== null && (timer.running || timer.paused)
-    readonly property var activities: L.activities(player !== null, timerActive, jobs.count > 0)
+    readonly property var activities: L.activities(island.playing, timerActive, jobs.count > 0)
     property int current: 0
     readonly property string activity: activities.length > 0 ? activities[current % activities.length] : ""
     property int cycleInterval: 6000
@@ -57,9 +100,13 @@ Item {
     property bool charging: false
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
-    property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false })
-    // Repo packages waiting for an update; -1 while unknown.
+    property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false, todo: true })
+    // Repo packages waiting for an update; -1 while unknown. updatePackages lists them.
     property int updates: -1
+    property var updatePackages: []
+    // Connected Bluetooth devices (BluetoothWatcher.devices).
+    property var btDevices: []
+    signal upgradeRequested()
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
     property string idleAnimation: "builtin:aurora"
     property bool animateOnHoverOnly: true
@@ -73,18 +120,62 @@ Item {
         return L.idleGlance({
             now: now(), show: glances, event: next.length ? next[0] : null,
             battery: battery, charging: charging,
-            temperature: weather ? weather.temperature : NaN, updates: updates
+            temperature: weather ? weather.temperature : NaN, updates: updates, devices: btDevices,
+            todo: todos && todos.nextOpen && todos.nextOpen.id ? todos.nextOpen : null
         })
     }
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
     signal notificationClicked(string desktopEntry)
+    // First-run tour: a card per step of L.TOUR, until finished or skipped.
+    property bool tourActive: false
+    property int tourStep: 0
+    signal tourFinished()
+    function startTour() {
+        open = false
+        menuOpen = false
+        tourStep = 0
+        tourActive = true
+    }
+    function nextTourStep() {
+        if (tourStep + 1 < L.TOUR.length) {
+            tourStep++
+        } else {
+            tourActive = false
+            tourFinished()
+        }
+    }
+    function skipTour() {
+        tourActive = false
+        tourFinished()
+    }
+
+    // Right-click menu. Its timer rows start the timer here; the rest go out as menuAction(key).
+    property bool menuOpen: false
+    property bool dnd: false
+    // Folded into a sliver at the top edge, like behind a full-screen app, until shown again.
+    property bool hiddenByUser: false
+    readonly property var menuRows: L.pillMenu({ dnd: dnd, hidden: hiddenByUser })
+    signal menuAction(string key)
+    function pickMenu(key, minutes) {
+        menuOpen = false
+        if (key === "timers") {
+            if (timer)
+                timer.start(minutes)
+            return
+        }
+        menuAction(key)
+    }
+    // One of a notification's own actions: a button on its alert, or "default" for a click on it.
+    signal notificationAction(int serverId, string key)
+    // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
+    signal volumeStep(int steps)
     signal linkRequested(string url)
 
     // A short alert (volume, notification, device, charger, colour) that takes over the closed pill.
     property var alert: null
     function showAlert(a, ms) {
-        sliverWidth = L.alertSize(a.kind, barHeight, cornerRadius).w * 0.4
+        sliverWidth = L.alertSize(a.kind, barHeight, cornerRadius, a).w * 0.4
         alert = a
         alertTimer.interval = ms
         alertTimer.restart()
@@ -93,6 +184,20 @@ Item {
     // the pointer has been on the panel (touched).
     property bool openedByKeyboard: false
     property bool touched: false
+    // Opens straight to a tab from a shortcut (clipboard history), or closes when it's showing.
+    function openTabFromKeyboard(tab) {
+        if (open && panelLoader.item && panelLoader.item.tab === tab) {
+            open = false
+            return
+        }
+        openedByKeyboard = true
+        requestedTab = tab
+        if (open && panelLoader.item)
+            panelLoader.item.tab = tab
+        open = true
+        if (panelLoader.item)
+            panelLoader.item.focusTab()
+    }
     function toggleFromKeyboard() {
         if (open) {
             open = false
@@ -107,10 +212,14 @@ Item {
             openedByKeyboard = false
             touched = false
         }
-        if (open)
+        if (open) {
             alert = null
-        else
+            menuOpen = false
+        } else {
             requestedTab = ""
+            if (flyer.visible)
+                landCover()
+        }
     }
     Timer {
         id: alertTimer
@@ -140,25 +249,29 @@ Item {
     readonly property bool cyclePaused: swipePause.running
     property int wheelAccum: 0
     property bool swipeUsed: false
-    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null)
+    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null, menuOpen, tourActive)
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
 
     readonly property var sizes: ({
         idle: { w: (idleMode !== "glances" ? idleWidth
                     : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
+                    : glance.kind === "todo" ? Math.max(idleWidth, 250)
+                    : glance.kind === "deviceLow" ? Math.max(idleWidth, 230)
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200) + (glance.updates > 0 ? 44 : 0)
                     : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
         // 14 + 18: panelLoader's top and bottom margins.
+        tour: { w: 420, h: 116, r: 26 },
+        menu: { w: 290, h: 16 + menuRows.length * 36, r: 22 },
         open: { w: 860, h: panelLoader.item && panelLoader.item.fitHeight > 0 ? panelLoader.item.fitHeight + 14 + 18 : 420, r: 30 }
     })
     // Behind a full-screen app the pill folds into a sliver at the top edge; an alert grows out of it.
     property bool coveredByFullScreen: false
     property real sliverWidth: 120
-    readonly property bool tucked: coveredByFullScreen && (mode === "idle" || mode === "compact" || mode === "peek")
-    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius)
+    readonly property bool tucked: (coveredByFullScreen || hiddenByUser) && (mode === "idle" || mode === "compact" || mode === "peek")
+    readonly property var size: mode === "alert" ? L.alertSize(alert.kind, barHeight, cornerRadius, alert)
                               : tucked ? { w: sliverWidth, h: 0, r: 6 }
                               : sizes[mode]
     // In front of the full-screen app while it has something to show, until it has folded away.
@@ -176,7 +289,13 @@ Item {
     Behavior on height { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
 
     // The position timer only runs while playing, so fetch once on open.
-    onModeChanged: if (mode === "open" && player) player.updatePosition()
+    onModeChanged: {
+        if ((mode === "open" || mode === "peek") && player && player.updatePosition)
+            player.updatePosition()
+        // Whether the cover was on the pill just before the panel opened, for its flight in.
+        if (mode !== "open" && mode !== "alert")
+            musicWasShown = musicShown
+    }
 
     function step(dir) {
         if (activities.length > 1)
@@ -225,8 +344,15 @@ Item {
     // island closes when the pointer stays away for a moment instead.
     Timer {
         interval: 300
-        running: island.openOnHover && island.hovered && !island.open
+        running: island.openOnHover && island.hovered && !island.open && !island.menuOpen && island.mode !== "tour"
         onTriggered: island.open = true
+    }
+
+    // The menu closes once the pointer has left it for a moment.
+    Timer {
+        interval: 500
+        running: island.menuOpen && !island.hovered
+        onTriggered: island.menuOpen = false
     }
 
     Timer {
@@ -241,7 +367,8 @@ Item {
     Timer {
         interval: 1000
         repeat: true
-        running: island.mode === "open" && island.playing
+        // The music peek has a seek bar too.
+        running: (island.mode === "open" || island.musicShown && island.mode === "peek") && island.playing
         onTriggered: island.player.updatePosition()
     }
 
@@ -267,8 +394,12 @@ Item {
         preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
-            fillColor: "#000000"
-            strokeWidth: -1
+            objectName: "islandFill"
+            fillColor: Qt.rgba(island.palette.window.r, island.palette.window.g, island.palette.window.b, island.fillOpacity)
+            // A thin edge in the cover's colour while the music turn shows; a faint one in the light theme.
+            readonly property bool tintEdge: island.coverTinted && island.musicShown
+            strokeWidth: tintEdge || island.lightLook ? 1 : -1
+            strokeColor: tintEdge ? Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55) : Qt.rgba(0, 0, 0, 0.14)
             startX: notch.topR - notch.ear; startY: 0
             PathLine { x: island.width + notch.ear - notch.topR; y: 0 }
             PathArc { x: island.width; y: notch.corner; radiusX: notch.corner; radiusY: notch.corner; direction: notch.turn }
@@ -281,11 +412,35 @@ Item {
         }
     }
 
+    readonly property bool musicShown: activity === "music" && player !== null && (mode === "compact" || mode === "peek")
+    property real verticalAccum: 0
     MouseArea {
         anchors.fill: parent
-        onClicked: {
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+        onClicked: mouse => {
+            if (island.mode === "tour")
+                return
+            if (mouse.button === Qt.RightButton) {
+                if (!island.open) {
+                    island.menuOpen = !island.menuOpen
+                }
+                return
+            }
+            if (island.mode === "menu") {
+                island.menuOpen = false
+                return
+            }
+            if (mouse.button === Qt.MiddleButton) {
+                if (island.player && !island.open)
+                    island.player.PlayPause()
+                return
+            }
             if (island.mode === "alert" && island.alert.kind === "notification") {
-                island.notificationClicked(island.alert.desktopEntry)
+                // The app's own default action opens the right chat or page; otherwise just the app.
+                if (island.alert.hasDefault && island.alert.serverId > 0)
+                    island.notificationAction(island.alert.serverId, "default")
+                else
+                    island.notificationClicked(island.alert.desktopEntry)
                 island.alert = null
                 return
             }
@@ -298,8 +453,24 @@ Item {
             island.open = true
         }
         onWheel: wheel => {
-            if (island.open || Math.abs(wheel.angleDelta.x) <= Math.abs(wheel.angleDelta.y)) {
+            if (island.open) {
                 wheel.accepted = false
+                return
+            }
+            // Up and down: volume, or minutes on the timer's turn. Sideways: switch turns.
+            if (Math.abs(wheel.angleDelta.y) > Math.abs(wheel.angleDelta.x)) {
+                const v = L.wheelSteps(island.verticalAccum, wheel.angleDelta.y)
+                island.verticalAccum = v.accum
+                if (v.steps === 0)
+                    return
+                if (island.activity === "timer" && island.timerActive && (island.mode === "compact" || island.mode === "peek")) {
+                    const t = island.timer
+                    const add = L.timerStepMinutes(t.paused ? t.pausedRemainingMs : t.remainingMs, v.steps)
+                    if (add !== 0)
+                        t.addMinutes(add)
+                } else {
+                    island.volumeStep(v.steps)
+                }
                 return
             }
             swipeEnd.restart()
@@ -325,14 +496,42 @@ Item {
             anchors.horizontalCenterOffset: -(island.indicatorWidth + island.historyChipWidth) / 2 - (batteryRing.visible ? 10 : 0)
             spacing: 7
             readonly property string kind: island.glance.kind
-            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : "#ffffff"
+            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" || kind === "deviceLow" ? "#ff6b6b" : palette.windowText
 
+            // The next task: tick the circle to mark it done.
+            Rectangle {
+                objectName: "glanceTodoCheck"
+                visible: parent.kind === "todo"
+                anchors.verticalCenter: parent.verticalCenter
+                width: 14
+                height: 14
+                radius: 7
+                color: todoCheckArea.containsMouse ? palette.accent : "transparent"
+                border.color: palette.accent
+                border.width: 1.5
+                Text {
+                    anchors.centerIn: parent
+                    visible: todoCheckArea.containsMouse
+                    text: "✓"
+                    color: "#ffffff"
+                    font.pixelSize: 9
+                }
+                MouseArea {
+                    id: todoCheckArea
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: island.todoDone(island.glance.id)
+                }
+            }
             Kirigami.Icon {
-                visible: parent.kind !== "clock"
+                visible: parent.kind !== "clock" && parent.kind !== "todo"
                 anchors.verticalCenter: parent.verticalCenter
                 width: 14
                 height: 14
                 source: parent.kind === "event" ? "view-calendar"
+                      : parent.kind === "deviceLow" ? island.glance.icon
                       : "battery-010"
                 color: parent.tint
                 isMask: true
@@ -343,7 +542,7 @@ Item {
                 width: Math.min(implicitWidth, island.width - 110 - island.historyChipWidth)
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.title || ""
-                color: parent.kind === "batteryLow" ? "#ff8a8a" : "#ffffff"
+                color: parent.kind === "batteryLow" || parent.kind === "deviceLow" ? "#ff8a8a" : palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -354,7 +553,7 @@ Item {
                 visible: parent.kind !== "clock"
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.detail || ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
 
@@ -388,7 +587,7 @@ Item {
                 visible: parent.kind === "clock" && island.glance.showTime
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.time || ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -398,7 +597,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
                 height: 12
-                color: "#333333"
+                color: palette.dark
             }
             Kirigami.Icon {
                 visible: parent.kind === "clock" && island.glance.showWeather
@@ -406,7 +605,7 @@ Item {
                 width: 14
                 height: 14
                 source: W.describe(island.weather ? island.weather.code : -1).icon
-                color: "#ffffff"
+                color: palette.windowText
                 isMask: true
             }
             Text {
@@ -414,7 +613,7 @@ Item {
                 visible: parent.kind === "clock" && island.glance.showWeather
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.weather ? island.weather.temperature + "°" : ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -424,7 +623,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
                 height: 12
-                color: "#333333"
+                color: palette.dark
             }
             Kirigami.Icon {
                 visible: parent.kind === "clock" && island.glance.updates > 0
@@ -433,18 +632,35 @@ Item {
                 height: 14
                 source: "update-none"
                 fallback: "view-refresh"
-                color: "#ffffff"
+                color: palette.windowText
                 isMask: true
             }
-            Text {
-                objectName: "glanceUpdates"
+            Item {
                 visible: parent.kind === "clock" && island.glance.updates > 0
                 anchors.verticalCenter: parent.verticalCenter
-                text: island.glance.updates || ""
-                color: "#ffffff"
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.features: { "tnum": 1 }
+                width: updatesCount.implicitWidth
+                height: updatesCount.implicitHeight
+                Text {
+                    id: updatesCount
+                    objectName: "glanceUpdates"
+                    text: island.glance.updates || ""
+                    color: palette.windowText
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
+                }
+                // Opens the list of updates; covers the icon before the count too.
+                MouseArea {
+                    objectName: "glanceUpdatesArea"
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    anchors.leftMargin: -26
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        island.requestedTab = "updates"
+                        island.open = true
+                    }
+                }
             }
         }
 
@@ -461,13 +677,13 @@ Item {
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: "#2b2f35"
+                strokeColor: palette.dark
                 strokeWidth: 2.2
                 PathAngleArc { centerX: 7; centerY: 7; radiusX: 5.5; radiusY: 5.5; startAngle: 0; sweepAngle: 360 }
             }
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: island.charging ? "#30d158" : "#ffffff"
+                strokeColor: island.charging ? "#30d158" : palette.windowText
                 strokeWidth: 2.2
                 capStyle: ShapePath.RoundCap
                 PathAngleArc {
@@ -544,6 +760,8 @@ Item {
     readonly property bool showJobs: activity === "jobs" && (mode === "compact" || mode === "peek")
     readonly property color jobInk: Qt.lighter(palette.accent, 1.45)
     readonly property color jobTile: Qt.rgba(palette.accent.r, palette.accent.g, palette.accent.b, 0.22)
+    // Pomodoro phases colour the countdown: tomato while focusing, green on a break.
+    readonly property color timerTint: timer && timer.pomodoro ? (timer.phase === "work" ? "#ff6b5a" : "#30d158") : palette.brightText
     readonly property string timerText: timerActive ? L.countdownText(timer.paused ? timer.pausedRemainingMs : timer.remainingMs) : ""
 
     // Jobs never use a circle, so they can't be mistaken for the idle battery ring.
@@ -595,24 +813,6 @@ Item {
         }
     }
 
-    component Slide: Item {
-        id: slide
-        property bool shown
-        anchors.fill: parent
-        opacity: shown ? 1 : 0
-        visible: opacity > 0
-        // Old content leaves fast and the new one fades in after it, so they never overlap visibly.
-        Behavior on opacity {
-            SequentialAnimation {
-                PauseAnimation { duration: slide.shown ? 90 : 0 }
-                NumberAnimation { duration: slide.shown ? 180 : 90 }
-            }
-        }
-        transform: Translate {
-            x: slide.shown ? 0 : 12
-            Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        }
-    }
 
     Slide {
         shown: island.showMusic
@@ -625,7 +825,7 @@ Item {
             radius: Math.round(side * 0.36)
             x: island.mode === "peek" ? 12 : 8
             y: (island.height - side) / 2
-            source: island.player ? island.player.artUrl : ""
+            source: island.player ? island.artUrl : ""
             fallbackIcon: island.player ? island.player.iconName || island.player.desktopEntry || "" : ""
         }
 
@@ -634,6 +834,8 @@ Item {
             objectName: "bars"
             visible: island.mode === "compact"
             running: island.playing
+            level: island.audioLevel
+            color: island.coverTinted ? island.coverTint : palette.brightText
             anchors.right: parent.right
             anchors.rightMargin: 10 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
@@ -651,7 +853,7 @@ Item {
                 objectName: "title"
                 width: parent.width
                 text: island.player ? island.player.track : ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -660,10 +862,20 @@ Item {
                 objectName: "artist"
                 width: parent.width
                 text: island.player ? island.player.artist : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
+        }
+
+        PeekSeekBar {
+            island: island
+            visible: island.mode === "peek" && island.player !== null && island.player.length > 0
+            anchors.left: art.left
+            anchors.right: peekPlayPause.right
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            height: 10
         }
 
         ControlButton {
@@ -694,7 +906,7 @@ Item {
             width: side
             height: side
             source: "chronometer"
-            color: "#ffffff"
+            color: island.timer && island.timer.pomodoro ? island.timerTint : palette.windowText
             isMask: true
         }
 
@@ -706,7 +918,7 @@ Item {
             anchors.rightMargin: 12 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
             text: island.timerText
-            color: "#e8e2d0"
+            color: island.timerTint
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -719,13 +931,13 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 text: island.timerActive && island.timer.paused ? "Timer paused" : "Timer"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
             Text {
                 objectName: "peekTimerText"
                 text: island.timerText
-                color: "#ffffff"
+                color: island.timer && island.timer.pomodoro ? island.timerTint : palette.windowText
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -766,7 +978,7 @@ Item {
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             text: island.jobs.count === 1 ? L.jobName(island.jobs.shown[0]) : island.jobs.count + " jobs"
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             elide: Text.ElideRight
@@ -779,7 +991,7 @@ Item {
             anchors.rightMargin: 12 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
             text: island.jobs.percent + "%"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.features: { "tnum": 1 }
         }
@@ -794,7 +1006,7 @@ Item {
             anchors.bottomMargin: 1
             height: 2
             radius: 1
-            color: "#24282d"
+            color: palette.button
             Rectangle {
                 objectName: "jobsLine"
                 width: parent.width * island.jobs.percent / 100
@@ -829,7 +1041,7 @@ Item {
                         Text {
                             width: parent.width
                             text: L.jobName(row.modelData)
-                            color: "#ffffff"
+                            color: palette.windowText
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
@@ -841,7 +1053,7 @@ Item {
                                   ? L.formatSize(row.modelData.processedBytes || 0) + " of " + L.formatSize(row.modelData.totalBytes)
                                     + (row.modelData.speed > 0 ? " · " + L.formatSize(row.modelData.speed) + "/s" : "") + (timeLeft ? " · " + timeLeft + " left" : "")
                                   : L.jobVerb(row.modelData) + (timeLeft ? " · " + timeLeft + " left" : "")
-                            color: "#9aa3ad"
+                            color: palette.placeholderText
                             font.pixelSize: 11
                             elide: Text.ElideRight
                         }
@@ -849,7 +1061,7 @@ Item {
                             width: parent.width
                             height: 3
                             radius: 1.5
-                            color: "#24282d"
+                            color: palette.button
                             Rectangle {
                                 width: parent.width * (row.modelData.percent || 0) / 100
                                 height: parent.height
@@ -863,7 +1075,7 @@ Item {
                         anchors.right: parent.right
                         y: 4
                         text: (row.modelData.percent || 0) + "%"
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 12
                         font.features: { "tnum": 1 }
                     }
@@ -876,7 +1088,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: 28
                 text: "+" + (island.jobs.count - 3) + " more"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -897,14 +1109,24 @@ Item {
                 width: 4
                 height: 4
                 radius: 2
-                color: dot.index === island.current % island.activities.length ? "#ffffff" : "#5a616a"
+                color: dot.index === island.current % island.activities.length ? palette.windowText : palette.mid
             }
         }
     }
 
+    TourCard { island: island }
+
+
+    PillMenu { island: island }
+
     AlertView {
         alert: island.alert
         shown: island.mode === "alert"
+        onButtonClicked: key => {
+            if (island.alert && island.alert.serverId > 0)
+                island.notificationAction(island.alert.serverId, key)
+            island.alert = null
+        }
     }
 
     // Mic and camera dots, plus the shelf count; they sit at the right end of the closed pill.
@@ -930,14 +1152,14 @@ Item {
                 width: 12
                 height: 12
                 source: "folder-download-symbolic"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 isMask: true
             }
             Text {
                 objectName: "shelfCount"
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.shelf.length
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 11
                 font.features: { "tnum": 1 }
             }
@@ -968,9 +1190,28 @@ Item {
         onDropped: drop => island.addToShelf(drop.urls.map(u => String(u)))
     }
 
+    // Opening from the music turn: the pill's cover flies to its place in the panel while the
+    // island grows.
+    property bool animateOpen: true
+    CoverFlyer {
+        id: flyer
+        island: island
+    }
+    function landCover() { flyer.land() }
+    property bool musicWasShown: false
+    onMusicShownChanged: if (musicShown) musicWasShown = true
+    function flyCoverIn() {
+        if (!animateOpen || !musicWasShown || !panelLoader.item || !island.parent)
+            return
+        const target = panelLoader.item.coverTarget()
+        if (target)
+            flyer.fly(art, target, panelLoader.item)
+    }
+
     Loader {
         id: panelLoader
         active: island.open
+        onLoaded: island.flyCoverIn()
         focus: true
         anchors.fill: parent
         anchors.margins: 18
@@ -994,6 +1235,16 @@ Item {
             onCopyRequested: text => island.copyRequested(text)
             clipboard: island.clipboard
             notes: island.notes
+            todos: island.todos
+            updatePackages: island.updatePackages
+            btDevices: island.btDevices
+            onUpgradeRequested: {
+                island.open = false
+                island.upgradeRequested()
+            }
+            lyrics: island.lyrics
+            holidays: island.holidays
+            observances: island.observances
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
@@ -1004,6 +1255,11 @@ Item {
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player
+            playerChoices: island.playerChoices
+            onPlayerPicked: p => island.playerPicked(p)
+            artUrl: island.artUrl
+            musicTint: island.coverTinted ? island.coverTint : palette.brightText
+            accentTint: island.musicTint
             timer: island.timer
             weather: island.weather
             calendar: island.calendar

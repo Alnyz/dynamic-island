@@ -7,7 +7,8 @@ TestCase {
     id: tc
     name: "Weather"
 
-    readonly property var geo: ({ city: "Bandung", latitude: "-6.9", longitude: "107.6" })
+    property var geo: ({ city: "Bandung", latitude: "-6.9", longitude: "107.6" })
+    property var place: ({ city: "Chhindwara", locality: "Chhindwara", principalSubdivision: "Madhya Pradesh", countryName: "India" })
     readonly property var forecast: ({
         current: { temperature_2m: 28.6, weather_code: 2 },
         daily: { temperature_2m_max: [31.7], temperature_2m_min: [23.8] },
@@ -22,7 +23,7 @@ TestCase {
         if (failing)
             done("network down", null)
         else
-            done(null, url.indexOf("geojs") >= 0 ? geo : forecast)
+            done(null, url.indexOf("geojs") >= 0 ? geo : url.indexOf("bigdatacloud") >= 0 ? place : forecast)
     }
 
     Component {
@@ -33,6 +34,44 @@ TestCase {
     function init() {
         requested = []
         failing = false
+        geo = { city: "Bandung", latitude: "-6.9", longitude: "107.6" }
+    }
+
+    function test_city_from_coordinates_when_ip_has_none() {
+        geo = { city: null, region: null, country: "India", latitude: "22.06", longitude: "78.94" }
+        const source = createTemporaryObject(sourceComp, tc)
+        source.refresh()
+        compare(source.city, "Chhindwara")
+        verify(requested.some(u => u.indexOf("bigdatacloud") >= 0 && u.indexOf("latitude=22.06") > 0))
+    }
+
+    function test_city_lookup_failing_falls_back_to_country() {
+        geo = { city: null, region: null, country: "India", latitude: "22.06", longitude: "78.94" }
+        const source = createTemporaryObject(sourceComp, tc)
+        source.fetch = function(url, done) {
+            if (url.indexOf("bigdatacloud") >= 0) done("down", null)
+            else tc.fakeFetch(url, done)
+        }
+        source.refresh()
+        compare(source.ok, true)
+        compare(source.city, "India")
+    }
+
+    function test_no_city_lookup_when_ip_has_one() {
+        const source = createTemporaryObject(sourceComp, tc)
+        source.refresh()
+        compare(source.city, "Bandung")
+        compare(requested.some(u => u.indexOf("bigdatacloud") >= 0), false)
+    }
+
+    function test_forecast_link() {
+        const source = createTemporaryObject(sourceComp, tc)
+        compare(source.forecastUrl, "")
+        source.refresh()
+        compare(source.forecastUrl, "https://weather.com/weather/tenday/l/-6.90,107.60")
+        compare(W.placeName({ locality: "Town" }, {}), "Town")
+        compare(W.placeName(null, { region: "Java", country: "Indonesia" }), "Java")
+        compare(W.placeName(null, null), "")
     }
 
     function test_describe_codes() {

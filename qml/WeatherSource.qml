@@ -33,6 +33,10 @@ QtObject {
     property real low: NaN
     property int code: -1
     property string city: ""
+    // Where the forecast is for, for the link to a full forecast; NaN until known.
+    property real latitude: NaN
+    property real longitude: NaN
+    readonly property string forecastUrl: isNaN(latitude) ? "" : W.forecastUrl(latitude, longitude)
     // [{hour: "17", temperature: 31}, ...] for the next 5 hours.
     property var hours: []
     readonly property bool retryScheduled: retry.running
@@ -50,7 +54,15 @@ QtObject {
                 failed()
                 return
             }
-            loadForecast(Number(geo.latitude), Number(geo.longitude), geo.city || "")
+            const lat = Number(geo.latitude), lon = Number(geo.longitude)
+            if (geo.city) {
+                loadForecast(lat, lon, geo.city)
+                return
+            }
+            // Some IP ranges come without a city; name the place from its coordinates instead.
+            fetch(W.placeUrl(lat, lon), function(err2, place) {
+                loadForecast(lat, lon, W.placeName(err2 ? null : place, geo))
+            })
         })
     }
 
@@ -69,6 +81,8 @@ QtObject {
             low = Math.round(data.daily.temperature_2m_min[0])
             hours = W.nextHours(data.hourly, 5)
             city = place
+            latitude = lat
+            longitude = lon
             ok = true
             retry.stop()
         })

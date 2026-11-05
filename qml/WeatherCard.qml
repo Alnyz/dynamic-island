@@ -6,6 +6,8 @@ Column {
     id: card
 
     property var weather
+    // Clicking the card asks to open a full forecast.
+    signal forecastRequested(string url)
     readonly property var info: W.describe(weather ? weather.code : -1)
     readonly property bool hasData: weather !== null && weather !== undefined && !isNaN(weather.temperature)
 
@@ -17,7 +19,7 @@ Column {
         Text {
             id: deg
             text: card.hasData ? card.weather.temperature + "°" : ""
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 52
             font.weight: Font.ExtraLight
             font.letterSpacing: -1
@@ -34,12 +36,12 @@ Column {
                     width: 14
                     height: 14
                     source: card.info.icon
-                    color: "#ffffff"
+                    color: palette.windowText
                     isMask: true
                 }
                 Text {
                     text: card.info.text
-                    color: "#ffffff"
+                    color: palette.windowText
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
                 }
@@ -48,7 +50,7 @@ Column {
                 width: parent.width
                 elide: Text.ElideRight
                 text: card.hasData ? (card.weather.city ? card.weather.city + " · " : "") + "H " + card.weather.high + "° L " + card.weather.low + "°" : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -65,14 +67,14 @@ Column {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: modelData.hour + ":00"
-                    color: "#9aa3ad"
+                    color: palette.placeholderText
                     font.pixelSize: 11
                     font.features: { "tnum": 1 }
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: modelData.temperature + "°"
-                    color: "#ffffff"
+                    color: palette.windowText
                     font.pixelSize: 12
                     font.weight: Font.Medium
                     font.features: { "tnum": 1 }
@@ -84,7 +86,18 @@ Column {
     Text {
         visible: !card.hasData
         text: "Weather unavailable"
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
+    }
+
+    // Handlers, not a MouseArea: a Column places its children itself.
+    readonly property bool clickable: hasData && !!weather.forecastUrl
+    TapHandler {
+        enabled: card.clickable
+        onTapped: card.forecastRequested(card.weather.forecastUrl)
+    }
+    HoverHandler {
+        enabled: card.clickable
+        cursorShape: Qt.PointingHandCursor
     }
 }

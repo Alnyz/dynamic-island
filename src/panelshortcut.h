@@ -5,8 +5,9 @@
 
 class QAction;
 
-// The global shortcut that opens and closes the panel (Meta+N by default), registered with
-// Plasma so it can be changed in System Settings → Shortcuts.
+// The global shortcuts, registered with Plasma so they can be changed in System Settings →
+// Shortcuts: open or close the panel (Meta+N), and open clipboard history (Meta+Shift+V; Meta+V
+// is Plasma's own clipboard popup unless the user moves it).
 class PanelShortcut : public QObject
 {
     Q_OBJECT
@@ -17,7 +18,9 @@ public:
 
 Q_SIGNALS:
     void activated();
+    void clipboardActivated();
 
 private:
     QAction *m_action;
+    QAction *m_clipboard;
 };

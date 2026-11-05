@@ -8,7 +8,7 @@ Item {
     property real value: 0
     property bool dimmed: false
     property color fill: palette.accent
-    property color trackColor: "#262626"
+    property color trackColor: palette.button
     signal moved(real value)
 
     implicitHeight: 22
@@ -28,7 +28,7 @@ Item {
             width: track.width * Math.max(0, Math.min(1, slider.value))
             height: parent.height
             radius: parent.radius
-            color: slider.dimmed ? "#4a5059" : slider.fill
+            color: slider.dimmed ? palette.mid : slider.fill
         }
     }
     Rectangle {
@@ -37,7 +37,7 @@ Item {
         width: 16
         height: 16
         radius: 8
-        color: "#ffffff"
+        color: palette.windowText
     }
     MouseArea {
         anchors.fill: parent

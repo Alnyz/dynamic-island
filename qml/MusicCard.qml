@@ -5,6 +5,9 @@ Column {
     id: card
 
     property var player: null
+    property string artUrl: ""
+    property color tint: palette.windowText
+    property bool coverHidden: false
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property bool hasLength: player !== null && player.length > 0
 
@@ -14,10 +17,13 @@ Column {
         width: parent.width
         spacing: 12
         CoverArt {
+            objectName: "cardCover"
+            // Hidden while the pill's cover flies in to take its place.
+            opacity: card.coverHidden ? 0 : 1
             width: 56
             height: 56
             radius: 10
-            source: card.player ? card.player.artUrl : ""
+            source: card.player ? card.artUrl : ""
             fallbackIcon: card.player ? card.player.iconName || card.player.desktopEntry || "" : ""
         }
         Column {
@@ -27,7 +33,7 @@ Column {
             Text {
                 width: parent.width
                 text: card.player ? card.player.track : "Nothing playing"
-                color: card.player ? "#ffffff" : "#9aa3ad"
+                color: card.player ? palette.windowText : palette.placeholderText
                 font.pixelSize: 14
                 font.weight: card.player ? Font.DemiBold : Font.Normal
                 elide: Text.ElideRight
@@ -36,7 +42,7 @@ Column {
                 width: parent.width
                 visible: card.player !== null
                 text: card.player ? card.player.artist : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
@@ -51,12 +57,13 @@ Column {
             width: parent.width
             height: 3
             radius: 1.5
-            color: "#262626"
+            color: palette.button
             Rectangle {
+                objectName: "cardProgressFill"
                 width: card.hasLength ? parent.width * Math.min(1, card.player.position / card.player.length) : 0
                 height: parent.height
                 radius: parent.radius
-                color: "#ffffff"
+                color: card.tint
             }
         }
         Item {
@@ -65,14 +72,14 @@ Column {
             Text {
                 id: elapsed
                 text: card.hasLength ? L.formatTime(card.player.position) : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 11
                 font.features: { "tnum": 1 }
             }
             Text {
                 anchors.right: parent.right
                 text: card.hasLength ? L.formatTime(card.player.length) : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 11
                 font.features: { "tnum": 1 }
             }
@@ -94,12 +101,12 @@ Column {
             width: 38
             height: 38
             radius: 19
-            color: "#ffffff"
+            color: palette.windowText
             ControlButton {
                 anchors.centerIn: parent
                 iconName: card.playing ? "media-playback-pause" : "media-playback-start"
                 iconSize: 18
-                iconColor: "#000000"
+                iconColor: palette.window
                 onClicked: card.player.PlayPause()
             }
         }

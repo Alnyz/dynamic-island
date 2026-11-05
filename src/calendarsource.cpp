@@ -32,14 +32,27 @@ CalendarSource::CalendarSource(QObject *parent)
     m_timer.start();
 }
 
+KCalendarCore::MemoryCalendar::Ptr CalendarSource::parse(const QByteArray &doc)
+{
+    auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
+    KCalendarCore::ICalFormat format;
+    return format.fromRawString(calendar, doc) ? calendar : KCalendarCore::MemoryCalendar::Ptr();
+}
+
 QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to)
 {
-    QList<Occurrence> out;
+    QList<KCalendarCore::MemoryCalendar::Ptr> calendars;
     for (const auto &doc : icsDocs) {
-        auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
-        KCalendarCore::ICalFormat format;
-        if (!format.fromRawString(calendar, doc))
-            continue;
+        if (auto calendar = parse(doc))
+            calendars.append(calendar);
+    }
+    return expand(calendars, from, to);
+}
+
+QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &from, const QDateTime &to)
+{
+    QList<Occurrence> out;
+    for (const auto &calendar : calendars) {
         KCalendarCore::OccurrenceIterator it(*calendar, from, to);
         while (it.hasNext()) {
             it.next();
@@ -47,7 +60,8 @@ QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray>
             if (incidence->type() != KCalendarCore::IncidenceBase::TypeEvent || incidence->status() == KCalendarCore::Incidence::StatusCanceled)
                 continue;
             const QString link = meetingLink(incidence->location() + QLatin1Char(' ') + incidence->description() + QLatin1Char(' ') + incidence->url().toString());
-            out.append({incidence->summary(), it.occurrenceStartDate(), it.occurrenceEndDate(), incidence->allDay(), link});
+            const QString note = incidence->description().section(QLatin1Char('\n'), 0, 0).trimmed().left(60);
+            out.append({incidence->summary(), it.occurrenceStartDate(), it.occurrenceEndDate(), incidence->allDay(), link, note});
         }
     }
     std::sort(out.begin(), out.end(), [](const Occurrence &a, const Occurrence &b) {
@@ -58,7 +72,17 @@ QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray>
 
 QList<CalendarSource::Occurrence> CalendarSource::upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count)
 {
-    auto occ = expand(icsDocs, now.date().startOfDay(), now.date().addDays(2).startOfDay());
+    QList<KCalendarCore::MemoryCalendar::Ptr> calendars;
+    for (const auto &doc : icsDocs) {
+        if (auto calendar = parse(doc))
+            calendars.append(calendar);
+    }
+    return upcoming(calendars, now, count);
+}
+
+QList<CalendarSource::Occurrence> CalendarSource::upcoming(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &now, int count)
+{
+    auto occ = expand(calendars, now.date().startOfDay(), now.date().addDays(2).startOfDay());
     occ.erase(std::remove_if(occ.begin(), occ.end(),
                              [&now](const Occurrence &o) {
                                  // All-day events end at 00:00 of their last day; they last until the next midnight.
@@ -87,7 +111,7 @@ void CalendarSource::setUrls(const QStringList &urls)
     if (urls == m_urls)
         return;
     m_urls = urls;
-    m_docs.clear();
+    m_calendars.clear();
     Q_EMIT changed();
     refresh();
 }
@@ -104,8 +128,12 @@ void CalendarSource::refresh()
         connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
             reply->deleteLater();
             // Never log the URL: it is a secret link.
-            if (reply->error() == QNetworkReply::NoError)
-                m_docs.insert(url, reply->readAll());
+            // Parsed once here: the panel asks for events every time it opens, and a country's
+            // holiday calendar covers years, so parsing it then held the panel up for a second.
+            // ponytail: still parses on the GUI thread, once per download; move to a thread if that shows.
+            auto calendar = reply->error() == QNetworkReply::NoError ? parse(reply->readAll()) : KCalendarCore::MemoryCalendar::Ptr();
+            if (calendar)
+                m_calendars.insert(url, calendar);
             else
                 m_roundFailed = true;
             if (--m_pending > 0)
@@ -143,6 +171,7 @@ QVariantList CalendarSource::toVariant(const QList<Occurrence> &occ) const
             {QStringLiteral("end"), o.end},
             {QStringLiteral("allDay"), o.allDay},
             {QStringLiteral("link"), o.link},
+            {QStringLiteral("note"), o.note},
         });
     }
     return out;
@@ -150,10 +179,10 @@ QVariantList CalendarSource::toVariant(const QList<Occurrence> &occ) const
 
 QVariantList CalendarSource::occurrences(QDate from, QDate to) const
 {
-    return toVariant(expand(m_docs.values(), from.startOfDay(), to.addDays(1).startOfDay()));
+    return toVariant(expand(m_calendars.values(), from.startOfDay(), to.addDays(1).startOfDay()));
 }
 
 QVariantList CalendarSource::upNext(int count) const
 {
-    return toVariant(upcoming(m_docs.values(), QDateTime::currentDateTime(), count));
+    return toVariant(upcoming(m_calendars.values(), QDateTime::currentDateTime(), count));
 }

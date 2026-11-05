@@ -12,7 +12,7 @@ Column {
 
     Text {
         text: "TIMER"
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
         font.weight: Font.DemiBold
         font.letterSpacing: 0.6
@@ -20,7 +20,7 @@ Column {
 
     Text {
         text: card.active ? L.countdownText(card.leftMs) : "0:00"
-        color: card.active ? "#ffffff" : "#8a929c"
+        color: card.active ? palette.windowText : palette.mid
         font.pixelSize: 40
         font.weight: Font.ExtraLight
         font.letterSpacing: -1
@@ -32,7 +32,7 @@ Column {
         width: parent.width
         height: 3
         radius: 1.5
-        color: "#262626"
+        color: palette.button
         Rectangle {
             width: card.timer.durationMs > 0 ? parent.width * card.leftMs / card.timer.durationMs : 0
             height: parent.height
@@ -44,7 +44,7 @@ Column {
     Text {
         visible: card.active
         text: card.timer.paused ? "Paused" : "Ends at " + Qt.formatTime(new Date(card.timer.endMs), "HH:mm")
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
     }
 

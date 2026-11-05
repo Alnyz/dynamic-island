@@ -8,9 +8,48 @@ Item {
     id: music
 
     property var player: null
+    // Other players to switch to; chips show when there's more than one.
+    property var choices: []
+    signal picked(var p)
+    property string artUrl: ""
+    property color tint: palette.brightText
+    property bool coverHidden: false
+    // LyricsSource; the lyrics button only shows when it's on.
+    property var lyrics: null
+    property bool showLyrics: false
+    readonly property bool lyricsOn: lyrics !== null && lyrics.enabled
+    onShowLyricsChanged: {
+        syncPosition()
+        if (lyrics)
+            lyrics.wanted = showLyrics && visible
+    }
+    onPlayerChanged: syncPosition()
+    Component.onCompleted: syncPosition()
+    onVisibleChanged: if (lyrics) lyrics.wanted = showLyrics && visible
+    Component.onDestruction: if (lyrics) lyrics.wanted = false
+    // The player's position only updates once a second; between updates it's counted on here.
+    property real positionMs: 0
+    property real positionAt: 0
+    Connections {
+        target: music.player
+        ignoreUnknownSignals: true
+        function onPositionChanged() { music.syncPosition() }
+    }
+    function syncPosition() {
+        positionMs = player ? player.position / 1000 : 0
+        positionAt = Date.now()
+    }
+    property real lyricsPositionMs: positionMs
+    Timer {
+        interval: 100
+        repeat: true
+        running: music.showLyrics && music.visible
+        onTriggered: music.lyricsPositionMs = music.positionMs + (music.playing ? Date.now() - music.positionAt : 0)
+    }
+    property color accentTint: palette.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
-    readonly property color dim: Qt.rgba(1, 1, 1, 0.62)
+    readonly property color dim: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.62)
 
     implicitHeight: 330
 
@@ -18,7 +57,7 @@ Item {
         visible: music.player === null
         anchors.centerIn: parent
         text: "Nothing playing"
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 13
     }
 
@@ -30,7 +69,7 @@ Item {
         Image {
             id: glowSource
             anchors.fill: parent
-            source: music.player ? music.player.artUrl : ""
+            source: music.player ? music.artUrl : ""
             // A few pixels, smoothly stretched, is already a soft colour field; the blur only hides the seams.
             sourceSize: Qt.size(6, 6)
             smooth: true
@@ -61,7 +100,7 @@ Item {
                     focalY: centerY
                     centerRadius: music.width / 2
                     GradientStop { position: 0.1; color: "transparent" }
-                    GradientStop { position: 0.8; color: "#000000" }
+                    GradientStop { position: 0.8; color: palette.window }
                 }
                 PathRectangle { width: music.width; height: music.width }
             }
@@ -89,9 +128,11 @@ Item {
                     color: Qt.rgba(0, 0, 0, 0.6)
                 }
                 CoverArt {
+                    objectName: "musicCover"
+                    opacity: music.coverHidden ? 0 : 1
                     anchors.fill: parent
                     radius: 16
-                    source: music.player ? music.player.artUrl : ""
+                    source: music.player ? music.artUrl : ""
                     fallbackIcon: music.appIcon
                 }
             }
@@ -103,8 +144,8 @@ Item {
                 Text {
                     objectName: "title"
                     width: parent.width
-                    text: music.player ? music.player.track : ""
-                    color: "#ffffff"
+                    text: music.player ? L.displayTitle(music.player.track) : ""
+                    color: palette.windowText
                     font.pixelSize: 26
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -117,7 +158,62 @@ Item {
                     font.pixelSize: 14
                     elide: Text.ElideRight
                 }
+                // With more than one player open, pick which one the island follows.
+                Row {
+                    objectName: "playerChips"
+                    visible: music.choices.length > 1
+                    topPadding: 8
+                    spacing: 6
+                    Repeater {
+                        model: music.choices.length > 1 ? music.choices : []
+                        delegate: Rectangle {
+                            required property var modelData
+                            required property int index
+                            readonly property bool current: music.player !== null
+                                && (modelData === music.player || (modelData.objectName || "") === (music.player.objectName || "") && modelData.objectName)
+                            objectName: "playerChip" + index
+                            width: chipLabel.implicitWidth + 22
+                            height: 24
+                            radius: 12
+                            color: current ? palette.windowText : chipArea.containsMouse ? palette.button : palette.alternateBase
+                            Text {
+                                id: chipLabel
+                                anchors.centerIn: parent
+                                text: modelData.identity || modelData.objectName || "Player"
+                                color: parent.current ? palette.window : palette.windowText
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                            }
+                            MouseArea {
+                                id: chipArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: music.picked(parent.modelData)
+                            }
+                        }
+                    }
+                }
+                LyricsView {
+                    objectName: "lyricsView"
+                    visible: music.showLyrics && music.lyricsOn
+                    width: parent.width
+                    height: 112
+                    state: music.lyrics ? music.lyrics.state : "off"
+                    lines: music.lyrics ? music.lyrics.lines : []
+                    plain: music.lyrics ? music.lyrics.plain : ""
+                    positionMs: music.lyricsPositionMs
+                    tint: music.accentTint
+                    onSeekRequested: ms => {
+                        if (music.player && music.player.canSeek !== false) {
+                            music.player.position = Math.round(ms * 1000)
+                            music.positionMs = ms
+                            music.positionAt = Date.now()
+                        }
+                    }
+                }
                 Item {
+                    visible: !(music.showLyrics && music.lyricsOn)
                     width: parent.width
                     height: 34 + 28
 
@@ -136,8 +232,8 @@ Item {
                         VolumeSlider {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 130
-                            fill: "#e8e2d0"
-                            trackColor: Qt.rgba(1, 1, 1, 0.14)
+                            fill: music.tint
+                            trackColor: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
                             value: music.player ? music.player.volume : 0
                             onMoved: v => music.player.volume = v
                         }
@@ -150,8 +246,8 @@ Item {
                         width: openRow.implicitWidth + 28
                         height: 34
                         radius: height / 2
-                        color: openArea.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.45)
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        color: openArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14) : Qt.rgba(palette.window.r, palette.window.g, palette.window.b, 0.5)
+                        border.color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12)
                         Row {
                             id: openRow
                             anchors.centerIn: parent
@@ -161,12 +257,12 @@ Item {
                                 width: 13
                                 height: 13
                                 source: "external-link-symbolic"
-                                color: "#ffffff"
+                                color: palette.windowText
                                 isMask: true
                             }
                             Text {
                                 text: "Open " + (music.player ? music.player.identity : "")
-                                color: "#ffffff"
+                                color: palette.windowText
                                 font.pixelSize: 12
                             }
                         }
@@ -186,8 +282,8 @@ Item {
         VolumeSlider {
             objectName: "progress"
             width: parent.width
-            fill: "#e8e2d0"
-            trackColor: Qt.rgba(1, 1, 1, 0.14)
+            fill: music.tint
+            trackColor: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
             value: music.player && music.player.length > 0 ? music.player.position / music.player.length : 0
@@ -218,7 +314,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.shuffle ?? 0) !== L.Shuffle.Unknown
                 iconName: "media-playlist-shuffle"
-                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? palette.accent : "#6b737c"
+                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? music.accentTint : palette.mid
                 onClicked: music.player.shuffle = music.player.shuffle === L.Shuffle.On ? L.Shuffle.Off : L.Shuffle.On
             }
             ControlButton {
@@ -234,13 +330,13 @@ Item {
                 width: 54
                 height: 54
                 radius: 27
-                color: playArea.pressed ? "#d8d8d8" : "#ffffff"
+                color: playArea.pressed ? palette.text : palette.windowText
                 Kirigami.Icon {
                     anchors.centerIn: parent
                     width: 24
                     height: 24
                     source: music.playing ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"
-                    color: "#000000"
+                    color: palette.window
                     isMask: true
                 }
                 MouseArea {
@@ -261,8 +357,16 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.loopStatus ?? 0) !== L.Loop.Unknown
                 iconName: music.player && music.player.loopStatus === L.Loop.Track ? "media-repeat-single" : "media-playlist-repeat"
-                iconColor: music.player && music.player.loopStatus > L.Loop.None ? palette.accent : "#6b737c"
+                iconColor: music.player && music.player.loopStatus > L.Loop.None ? music.accentTint : palette.mid
                 onClicked: music.player.loopStatus = L.nextLoop(music.player.loopStatus)
+            }
+            ControlButton {
+                objectName: "lyricsToggle"
+                anchors.verticalCenter: parent.verticalCenter
+                visible: music.lyricsOn
+                iconName: "view-media-lyrics"
+                iconColor: music.showLyrics ? music.accentTint : palette.mid
+                onClicked: music.showLyrics = !music.showLyrics
             }
         }
     }

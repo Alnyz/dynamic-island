@@ -76,4 +76,117 @@ TestCase {
         prefs.history.days = 30
         compare(box.currentText, "30 days")
     }
+
+    function test_search_finds_and_reveals_a_setting() {
+        const { win } = make()
+        const field = findChild(win.contentItem, "settingsSearch")
+        mouseClick(field)
+        keyClick(Qt.Key_L); keyClick(Qt.Key_O); keyClick(Qt.Key_G); keyClick(Qt.Key_I); keyClick(Qt.Key_N)
+        compare(win.query, "login")
+        const hit = win.results.find(r => r.label === "Start at login")
+        verify(hit !== undefined)
+        compare(hit.pageTitle, "General")
+        const row = findChild(win.contentItem, "searchResult" + win.results.indexOf(hit))
+        verify(row)
+        mouseClick(row)
+        compare(win.page, 8)
+        compare(win.query, "")
+    }
+
+    function test_search_matches_words_in_any_order_and_page_names() {
+        const { win } = make()
+        win.query = "brightness volume"
+        verify(win.results.some(r => r.pageTitle === "Alerts" && r.label.indexOf("Volume and brightness") === 0))
+        // A page's name counts as part of each of its settings.
+        win.query = "weather fahrenheit"
+        verify(win.results.length > 0)
+        verify(win.results.every(r => r.pageTitle === "Weather"))
+    }
+
+    function test_search_nothing_matches() {
+        const { win } = make()
+        win.query = "zzqx"
+        compare(win.results.length, 0)
+        verify(findChild(win.contentItem, "searchEmpty").visible)
+        // One letter isn't a search yet.
+        win.query = "a"
+        compare(win.results.length, 0)
+        verify(!findChild(win.contentItem, "searchEmpty").visible)
+    }
+
+    function test_search_enter_opens_first_result() {
+        const { win } = make()
+        const field = findChild(win.contentItem, "settingsSearch")
+        mouseClick(field)
+        win.query = "tour"
+        verify(win.results.length > 0)
+        const first = win.results[0]
+        keyClick(Qt.Key_Return)
+        compare(win.page, first.page)
+    }
+
+    function test_cover_tint_switch() {
+        const { prefs, win } = make()
+        win.page = 0
+        const box = findChild(win.contentItem, "coverTint")
+        verify(box.checked)
+        mouseClick(box)
+        compare(prefs.style.coverTint, false)
+    }
+
+    function test_theme_settings() {
+        const { prefs, win } = make()
+        win.page = 0
+        const picker = findChild(win.contentItem, "themePicker")
+        compare(picker.currentValue, "dark")
+        prefs.style.theme = "light"
+        compare(picker.currentValue, "light")
+        // The tests share one settings file; start from the defaults.
+        prefs.style.translucent = false
+        prefs.style.opacity = -1
+        const box = findChild(win.contentItem, "translucent")
+        verify(!box.checked)
+        // Blur only matters once the island lets something show through.
+        verify(!box.enabled)
+        prefs.style.opacity = 70
+        verify(box.enabled)
+        mouseClick(box)
+        compare(prefs.style.translucent, true)
+    }
+
+    function test_island_colour_and_opacity() {
+        const { prefs, win } = make()
+        win.page = 0
+        prefs.style.color = ""
+        verify(findChild(win.contentItem, "islandColor0").current)
+        mouseClick(findChild(win.contentItem, "islandColor3"))
+        compare(prefs.style.color, "#0b1f33")
+        verify(findChild(win.contentItem, "islandColor3").current)
+        mouseClick(findChild(win.contentItem, "islandColor0"))
+        compare(prefs.style.color, "")
+        // Opacity: unset shows 100%, or the old see-through 78%.
+        prefs.style.opacity = -1
+        prefs.style.translucent = false
+        compare(findChild(win.contentItem, "islandOpacity").value, 100)
+        prefs.style.translucent = true
+        compare(findChild(win.contentItem, "islandOpacity").value, 78)
+        // Without KWin's blur settings passed in, the strength row stays hidden.
+        compare(findChild(win.contentItem, "blurStrength").visible, false)
+    }
+
+    function test_holiday_settings() {
+        const { prefs, win } = make()
+        win.page = 4
+        const picker = findChild(win.contentItem, "holidayCountry")
+        prefs.calendar.holidays = "auto"
+        compare(picker.currentValue, "auto")
+        prefs.calendar.holidays = "indian"
+        compare(picker.currentText, "India")
+        prefs.calendar.holidays = ""
+        compare(picker.currentText, "None")
+        compare(findChild(win.contentItem, "observances").enabled, false)
+        prefs.calendar.holidays = "usa"
+        compare(findChild(win.contentItem, "observances").enabled, true)
+        prefs.calendar.holidays = "auto"
+    }
 }

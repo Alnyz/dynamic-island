@@ -74,6 +74,104 @@ private Q_SLOTS:
         QVERIFY(NotificationWatcher::describe(QStringLiteral("x"), QString(), QStringLiteral(" "), QString(), {}).isEmpty());
     }
 
+    // A Notify call as Telegram would send it, with the given actions list.
+    static DBusMessage *notifyWithActions(const QStringList &actionList)
+    {
+        DBusMessage *m = dbus_message_new_method_call("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        dbus_message_set_sender(m, ":1.42");
+        dbus_message_set_serial(m, 17);
+        const char *app = "Telegram", *icon = "", *summary = "Rina", *body = "hi";
+        const dbus_uint32_t replaces = 0;
+        const dbus_int32_t timeout = -1;
+        DBusMessageIter it, actions, hints;
+        dbus_message_iter_init_append(m, &it);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &app);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_UINT32, &replaces);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &icon);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &summary);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_STRING, &body);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "s", &actions);
+        QList<QByteArray> keep;
+        for (const QString &a : actionList) {
+            keep << a.toUtf8();
+            const char *s = keep.last().constData();
+            dbus_message_iter_append_basic(&actions, DBUS_TYPE_STRING, &s);
+        }
+        dbus_message_iter_close_container(&it, &actions);
+        dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &hints);
+        dbus_message_iter_close_container(&it, &hints);
+        dbus_message_iter_append_basic(&it, DBUS_TYPE_INT32, &timeout);
+        return m;
+    }
+
+    void notificationButtons()
+    {
+        const QVariantList b = NotificationWatcher::buttons({QStringLiteral("default"), QStringLiteral("Open"), QStringLiteral("mark"), QStringLiteral("Mark as read"),
+                                                             QStringLiteral("inline-reply"), QStringLiteral("Reply"), QStringLiteral("x"), QStringLiteral(" "),
+                                                             QStringLiteral("a"), QStringLiteral("A"), QStringLiteral("b"), QStringLiteral("B"), QStringLiteral("c"), QStringLiteral("C")});
+        QCOMPARE(b.size(), 3);
+        QCOMPARE(b.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("mark"));
+        QCOMPARE(b.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Mark as read"));
+        QCOMPARE(b.at(1).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("a"));
+        QCOMPARE(b.at(2).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("b"));
+        QVERIFY(NotificationWatcher::buttons({}).isEmpty());
+        QVERIFY(NotificationWatcher::buttons({QStringLiteral("odd")}).isEmpty());
+    }
+
+    void notificationWithActionsWaitsForId()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({QStringLiteral("default"), QStringLiteral("Open"), QStringLiteral("mark"), QStringLiteral("Mark as read")});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 0);
+
+        DBusMessage *reply = dbus_message_new_method_return(call);
+        const dbus_uint32_t id = 99;
+        dbus_message_append_args(reply, DBUS_TYPE_UINT32, &id, DBUS_TYPE_INVALID);
+        watcher.handle(reply);
+        QCOMPARE(notified.count(), 1);
+        const QVariantMap n = notified.first().first().toMap();
+        QCOMPARE(n.value(QStringLiteral("serverId")).toUInt(), 99u);
+        QCOMPARE(n.value(QStringLiteral("hasDefault")).toBool(), true);
+        QCOMPARE(n.value(QStringLiteral("buttons")).toList().size(), 1);
+        QCOMPARE(n.value(QStringLiteral("title")).toString(), QStringLiteral("Rina"));
+        // The fallback timer must not send it a second time.
+        QTest::qWait(400);
+        QCOMPARE(notified.count(), 1);
+        dbus_message_unref(reply);
+        dbus_message_unref(call);
+    }
+
+    void notificationWithActionsShowsWithoutReply()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({QStringLiteral("mark"), QStringLiteral("Mark as read")});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 0);
+        QTRY_COMPARE_WITH_TIMEOUT(notified.count(), 1, 1000);
+        const QVariantMap n = notified.first().first().toMap();
+        QVERIFY(!n.contains(QStringLiteral("serverId")));
+        QVERIFY(!n.contains(QStringLiteral("buttons")));
+        dbus_message_unref(call);
+    }
+
+    void notificationWithoutActionsIsImmediate()
+    {
+        NotificationWatcher watcher;
+        QSignalSpy notified(&watcher, &NotificationWatcher::notified);
+        DBusMessage *call = notifyWithActions({});
+        watcher.handle(call);
+        QCOMPARE(notified.count(), 1);
+        // An unrelated reply is ignored.
+        DBusMessage *reply = dbus_message_new_method_return(call);
+        watcher.handle(reply);
+        QCOMPARE(notified.count(), 1);
+        dbus_message_unref(reply);
+        dbus_message_unref(call);
+    }
+
     void testNotifyReplaces()
     {
         DBusMessage *m = dbus_message_new_method_call(nullptr, "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
@@ -141,19 +239,67 @@ private Q_SLOTS:
         QCOMPARE(InputRegion::maskRect(QRectF(300, 0, 300.4, 32)), QRect(300, 0, 301, 32));
     }
 
+    void connectedBluetoothDevices()
+    {
+        BluezObjects objects;
+        BluezInterfaces earbuds;
+        earbuds.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("Noise Earbuds")},
+                                                             {QStringLiteral("Icon"), QStringLiteral("audio-headset")},
+                                                             {QStringLiteral("Connected"), true}});
+        earbuds.insert(QStringLiteral("org.bluez.Battery1"), {{QStringLiteral("Percentage"), QVariant::fromValue<uchar>(12)}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_A")), earbuds);
+        BluezInterfaces mouse;
+        mouse.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("Mouse")},
+                                                           {QStringLiteral("Icon"), QStringLiteral("input-mouse")},
+                                                           {QStringLiteral("Connected"), true}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_B")), mouse);
+        BluezInterfaces speaker;
+        speaker.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("JBL Go 3")}, {QStringLiteral("Connected"), false}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_C")), speaker);
+        BluezInterfaces adapter;
+        adapter.insert(QStringLiteral("org.bluez.Adapter1"), {{QStringLiteral("Alias"), QStringLiteral("anu-pc")}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0")), adapter);
+
+        const QVariantList list = BluetoothWatcher::connectedDevices(objects);
+        QCOMPARE(list.size(), 2);
+        // By name: Mouse, then Noise Earbuds.
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("Mouse"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("battery")).toInt(), -1);
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("Noise Earbuds"));
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("battery")).toInt(), 12);
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("path")).toString(), QStringLiteral("/org/bluez/hci0/dev_A"));
+        QVERIFY(!list.at(1).toMap().contains(QStringLiteral("connected")));
+    }
+
+    void blurRegionIsRounded()
+    {
+        const QRegion r = InputRegion::roundedRegion(QRectF(10, 0, 200, 40), 20);
+        QVERIFY(r.contains(QPoint(110, 20)));
+        // The corners are cut away.
+        QVERIFY(!r.contains(QPoint(11, 1)));
+        QVERIFY(!r.contains(QPoint(208, 38)));
+        QVERIFY(r.boundingRect().width() <= 201);
+        QVERIFY(InputRegion::roundedRegion(QRectF(0, 0, 0, 0), 10).isEmpty());
+    }
+
     void fullScreenWatcherWithoutServiceLoadsNothing()
     {
         // Another instance (here: the test) already owns the name, so this one must neither load
         // nor, on destruction, unload the other instance's KWin script.
-        auto bus = QDBusConnection::sessionBus();
-        const bool mine = bus.registerService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+        // The name is taken on a second connection: on the watcher's own connection D-Bus would
+        // answer "already yours" and the watcher would load its script into the real KWin.
+        // If a real island is running it already owns the name, which tests the same thing.
+        auto other = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("tst_watchers_other"));
+        QVERIFY(other.isConnected());
+        const bool mine = other.registerService(QStringLiteral("io.github.alnyz.DynamicIsland"));
         {
             FullScreenWatcher w;
             w.setEnabled(true);
             QVERIFY(!w.loaded());
         }
         if (mine)
-            bus.unregisterService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+            other.unregisterService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+        QDBusConnection::disconnectFromBus(QStringLiteral("tst_watchers_other"));
     }
 
     void notificationUrgency()
@@ -268,6 +414,24 @@ private Q_SLOTS:
         QCOMPARE(UpdatesWatcher::parse(0, "linux 6.1-1 -> 6.2-1\nfoo 1-1 -> 1-2\n"), 2);
         QCOMPARE(UpdatesWatcher::parse(2, ""), 0);
         QCOMPARE(UpdatesWatcher::parse(1, "boom"), -1);
+    }
+
+    void testUpdatesList()
+    {
+        const QVariantList list = UpdatesWatcher::parseList("linux 6.1-1 -> 6.2-1\n  foo  1-1  ->  1-2 \nnot a package line\n\n");
+        QCOMPARE(list.size(), 2);
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("linux"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("from")).toString(), QStringLiteral("6.1-1"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("to")).toString(), QStringLiteral("6.2-1"));
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("foo"));
+        QVERIFY(UpdatesWatcher::parseList("").isEmpty());
+    }
+
+    void testUpgradeCommand()
+    {
+        QCOMPARE(UpdatesWatcher::upgradeCommand(true, true), QStringList({QStringLiteral("paru"), QStringLiteral("-Syu")}));
+        QCOMPARE(UpdatesWatcher::upgradeCommand(false, true), QStringList({QStringLiteral("yay"), QStringLiteral("-Syu")}));
+        QCOMPARE(UpdatesWatcher::upgradeCommand(false, false), QStringList({QStringLiteral("sudo"), QStringLiteral("pacman"), QStringLiteral("-Syu")}));
     }
 };
 

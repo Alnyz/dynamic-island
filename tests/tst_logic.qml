@@ -69,11 +69,16 @@ TestCase {
         compare(L.islandState(true, true, true), "open")
         compare(L.islandState(true, true, false, true), "alert")
         compare(L.islandState(false, false, true, true), "open")
+        compare(L.islandState(true, true, false, true, true), "menu")
+        compare(L.islandState(true, true, true, false, true), "open")
+        compare(L.islandState(true, true, false, true, true, true), "tour")
     }
 
     function test_alert_size() {
         compare(L.alertSize("volume", 32, 12), { w: 300, h: 32, r: 12 })
         compare(L.alertSize("notification", 32, 12), { w: 400, h: 64, r: 22 })
+        compare(L.alertSize("notification", 32, 12, { buttons: [{ key: "a", label: "A" }] }), { w: 400, h: 100, r: 24 })
+        compare(L.alertSize("notification", 32, 12, { buttons: [] }), { w: 400, h: 64, r: 22 })
         compare(L.alertSize("job", 32, 12), { w: 400, h: 64, r: 22 })
         compare(L.alertSize("device", 32, 12), { w: 330, h: 72, r: 24 })
     }
@@ -142,6 +147,12 @@ TestCase {
         compare(L.eventWhen(ev(d(23), d(24), true)), "All day")
         compare(L.eventDetail(ev(d(23), d(24), true), now), "Today")
         compare(L.eventDetail(ev(d(24), d(25), true), now), "Tomorrow")
+        // Days further off are named, not called tomorrow.
+        compare(L.eventDetail(ev(d(27, 9), d(27, 10), false), now), L.dayName(d(27), now) + " · 1 h")
+        compare(L.dayName(d(22), now), "Yesterday")
+        compare(L.eventDetail(ev(d(27, 9), d(27, 10, 30), false), now, true), "1 h 30 min")
+        compare(L.eventDetail(ev(d(27), d(28), true), now, true), "All day")
+        compare(L.dayName(new Date(2026, 9, 30), now), "Fri 30 Oct")
     }
 
     function test_countdown_text_rounds_up() {
@@ -209,6 +220,25 @@ TestCase {
         compare(g({ battery: 12 }).kind, "batteryLow")
         compare(g({ battery: 12, charging: true }).kind, "clock")
         compare(g({ event: soon, battery: 12 }).kind, "event")
+
+        // A Bluetooth device running low comes after the laptop's battery, before tasks.
+        const buds = [{ name: "Noise Earbuds", battery: 12, icon: "audio-headset" }]
+        compare(g({ devices: buds }).kind, "deviceLow")
+        compare(g({ devices: buds }).title, "Noise Earbuds")
+        compare(g({ devices: buds }).detail, "12%")
+        compare(g({ devices: buds, battery: 12 }).kind, "batteryLow")
+        compare(g({ devices: buds, todo: { id: "t", text: "x" } }).kind, "deviceLow")
+        compare(g({ devices: [{ name: "Mouse", battery: 40 }] }).kind, "clock")
+
+        // The next task comes after events and low battery, before the clock.
+        const task = { id: "t1", text: "Send invoice", done: false }
+        compare(g({ todo: task }).kind, "todo")
+        compare(g({ todo: task }).title, "Send invoice")
+        compare(g({ todo: task }).id, "t1")
+        compare(g({ todo: task, event: soon }).kind, "event")
+        compare(g({ todo: task, battery: 12 }).kind, "batteryLow")
+        compare(g({ todo: task, show: Object.assign({}, all, { todo: false }) }).kind, "clock")
+        compare(g({ todo: null }).kind, "clock")
 
         const clock = g({})
         compare(clock.time, "16:35")
@@ -467,5 +497,236 @@ TestCase {
 
     function test_privacy_alert_size() {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
+    }
+
+    // WCAG contrast ratio, for checking the theme stays readable.
+    function contrast(a, b) {
+        const lum = c => {
+            const ch = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+            const q = Qt.color(c)
+            return 0.2126 * ch(q.r) + 0.7152 * ch(q.g) + 0.0722 * ch(q.b)
+        }
+        const x = lum(a), y = lum(b)
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+    }
+
+    function test_theme_colors() {
+        const roles = ["window", "windowText", "text", "placeholderText", "mid", "base", "alternateBase", "button", "dark", "brightText"]
+        for (const light of [false, true]) {
+            const t = L.themeColors(light)
+            for (const r of roles)
+                verify(t[r] !== undefined, r)
+            // Body text and secondary text stay readable on the background and on panels.
+            for (const bg of [t.window, t.base, t.alternateBase]) {
+                verify(contrast(t.windowText, bg) >= 7, "windowText on " + bg)
+                verify(contrast(t.text, bg) >= 7, "text on " + bg)
+                verify(contrast(t.placeholderText, bg) >= 3.5, "placeholderText on " + bg + " (light " + light + ")")
+                verify(contrast(t.brightText, bg) >= 4.5, "brightText on " + bg)
+            }
+        }
+        // The dark theme keeps the island's original look.
+        compare(L.themeColors(false).window, "#000000")
+        compare(L.themeColors(false).brightText, "#e8e2d0")
+    }
+
+    function test_island_opacity() {
+        compare(L.islandOpacity(-1, false), 100)
+        compare(L.islandOpacity(-1, true), 78)
+        compare(L.islandOpacity(55, true), 55)
+        compare(L.islandOpacity(55, false), 55)
+        compare(L.islandOpacity(5, false), 20)
+        compare(L.islandOpacity(300, false), 100)
+    }
+
+    function test_custom_colours_stay_readable() {
+        // A spread of hues and lightnesses, including awkward mid-tones.
+        const samples = ["#000000", "#ffffff", "#808080", "#767676", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff375f",
+                         "#0b1f33", "#1e1033", "#fff4dc", "#30d158", "#5e5ce6", "#ff9f0a", "#3a3a3c", "#c7c7cc", "#008080"]
+        for (const c of samples) {
+            const t = L.themeColors(false, c)
+            verify(L.contrastRatio(t.windowText, t.window) >= 4.5, "windowText on " + c)
+            verify(L.contrastRatio(t.windowText, t.base) >= 4.5, "windowText on base of " + c)
+            verify(L.contrastRatio(t.text, t.window) >= 3.5, "text on " + c)
+            verify(L.contrastRatio(t.placeholderText, t.window) >= 2.5, "placeholderText on " + c)
+            compare(Qt.color(t.window), Qt.color(c))
+        }
+        compare(L.wantsDarkText("#fff4dc"), true)
+        compare(L.wantsDarkText("#0b1f33"), false)
+    }
+
+    function test_bar_height() {
+        for (let i = 0; i < 4; ++i) {
+            compare(L.barHeight(0, i, 0), 3)
+            verify(L.barHeight(1, i, 0) <= 14)
+            verify(L.barHeight(1, i, 0) > 8)
+            // Out-of-range levels are clamped.
+            compare(L.barHeight(-1, i, 0), 3)
+            compare(L.barHeight(5, i, 1), L.barHeight(1, i, 1))
+        }
+        // Louder is taller; bars differ from each other.
+        verify(L.barHeight(0.8, 1, 0) > L.barHeight(0.2, 1, 0))
+        verify(L.barHeight(0.8, 0, 0) !== L.barHeight(0.8, 3, 0))
+        // The sway moves a bar over time.
+        verify(L.barHeight(0.8, 2, 0) !== L.barHeight(0.8, 2, 1.5))
+    }
+
+    function test_parse_lrc() {
+        const lines = L.parseLrc("[ar:CG5]\n[00:12.50]Second\n[00:03.2]First\n\n[01:00.00][02:00.00]Chorus\nno time here\n[00:20.123]")
+        compare(lines.length, 5)
+        compare(lines[0], { ms: 3200, text: "First" })
+        compare(lines[1], { ms: 12500, text: "Second" })
+        compare(lines[2], { ms: 20123, text: "" })
+        compare(lines[3], { ms: 60000, text: "Chorus" })
+        compare(lines[4], { ms: 120000, text: "Chorus" })
+        compare(L.parseLrc("").length, 0)
+        compare(L.parseLrc(null).length, 0)
+    }
+
+    function test_lyric_line() {
+        const lines = [{ ms: 1000 }, { ms: 5000 }, { ms: 9000 }]
+        compare(L.lyricLine(lines, 0), -1)
+        compare(L.lyricLine(lines, 1000), 0)
+        compare(L.lyricLine(lines, 4999), 0)
+        compare(L.lyricLine(lines, 5000), 1)
+        compare(L.lyricLine(lines, 99999), 2)
+        compare(L.lyricLine([], 5000), -1)
+    }
+
+    function test_lyrics_urls() {
+        compare(L.lyricsGetUrl("Maroon 5", "Girls Like You", "Red Pill Blues", 235400000),
+                "https://lrclib.net/api/get?artist_name=Maroon%205&track_name=Girls%20Like%20You&album_name=Red%20Pill%20Blues&duration=235")
+        compare(L.lyricsGetUrl("CG5", "Dancin'", "", 0), "https://lrclib.net/api/get?artist_name=CG5&track_name=Dancin'")
+        compare(L.lyricsSearchUrl("CG5", "Dancin (Official Video)"), "https://lrclib.net/api/search?artist_name=CG5&track_name=Dancin")
+    }
+
+    function test_pick_lyrics() {
+        const synced = { artistName: "CG5", trackName: "Dancin’", duration: 198, syncedLyrics: "[00:01.00]x", plainLyrics: "x" }
+        const plain = { artistName: "CG5", trackName: "Dancin'", duration: 196, syncedLyrics: null, plainLyrics: "x" }
+        const far = { artistName: "CG5", trackName: "Dancin", duration: 260, syncedLyrics: "[00:01.00]x" }
+        const other = { artistName: "Somebody", trackName: "Dancin", duration: 198, syncedLyrics: "[00:01.00]x" }
+        const empty = { artistName: "CG5", trackName: "Dancin", duration: 198 }
+        compare(L.pickLyrics([plain, synced], "CG5", "Dancin'", 197000000), synced)
+        compare(L.pickLyrics([plain, far], "CG5", "Dancin'", 197000000), plain)
+        compare(L.pickLyrics([far, other, empty], "CG5", "Dancin'", 197000000), null)
+        // Unknown length: duration isn't checked.
+        compare(L.pickLyrics([far], "CG5", "Dancin'", 0), far)
+        compare(L.pickLyrics(undefined, "CG5", "Dancin'", 0), null)
+    }
+
+    function test_distinct_players() {
+        const multiplexer = { objectName: "brave.instance1", identity: "Brave", tag: "mux" }
+        const brave = { objectName: "brave.instance1", identity: "Brave", tag: "real" }
+        const ctld = { objectName: "playerctld", identity: "Brave" }
+        const spotify = { objectName: "spotify", identity: "Spotify" }
+        const list = L.distinctPlayers([multiplexer, brave, ctld, spotify])
+        compare(list.length, 2)
+        compare(list[0].tag, "real")
+        compare(list[1].identity, "Spotify")
+        compare(L.distinctPlayers([]).length, 0)
+        compare(L.distinctPlayers(undefined).length, 0)
+    }
+
+    function test_pomodoro_message() {
+        compare(L.pomodoroMessage("work", "break", 5), { title: "Time for a break", body: "5 minutes" })
+        compare(L.pomodoroMessage("work", "longBreak", 15), { title: "Time for a break", body: "A long break: 15 minutes" })
+        compare(L.pomodoroMessage("break", "work", 25), { title: "Back to focus", body: "25 minutes of focus" })
+    }
+
+    function test_bluetooth_summary() {
+        compare(L.bluetoothSummary([]), { badge: "", label: "Bluetooth" })
+        compare(L.bluetoothSummary(undefined), { badge: "", label: "Bluetooth" })
+        compare(L.bluetoothSummary([{ name: "Mouse", battery: -1 }]), { badge: "", label: "Bluetooth · Mouse" })
+        compare(L.bluetoothSummary([{ name: "Earbuds", battery: 80 }, { name: "Mouse", battery: 35 }]),
+                { badge: "35", label: "Bluetooth · Earbuds 80%, Mouse 35%" })
+        compare(L.lowDevice([{ name: "A", battery: 14 }, { name: "B", battery: 9 }, { name: "C", battery: -1 }]).name, "B")
+        compare(L.lowDevice([{ name: "A", battery: 50 }]), null)
+    }
+
+    function test_holidays() {
+        compare(L.holidayCountry("auto", "en_IN"), "indian")
+        compare(L.holidayCountry("auto", "en_GB.UTF-8"), "uk")
+        compare(L.holidayCountry("auto", "C"), "")
+        compare(L.holidayCountry("", "en_IN"), "")
+        compare(L.holidayCountry("usa", "en_IN"), "usa")
+        compare(L.holidayLabel("indian"), "India")
+        compare(L.holidayUrl("indian"), "https://calendar.google.com/calendar/ical/en.indian%23holiday%40group.v.calendar.google.com/public/basic.ics")
+        compare(L.holidayUrl(""), "")
+        const evs = [{ title: "Diwali", note: "Public holiday", start: new Date(2026, 10, 8) }, { title: "Karva Chauth", note: "Observance", start: new Date(2026, 9, 29) }]
+        const all = L.holidayEvents(evs, true)
+        compare(all.length, 2)
+        compare(all[0].publicHoliday, true)
+        compare(all[1].publicHoliday, false)
+        verify(all.every(e => e.holiday))
+        compare(L.holidayEvents(evs, false).map(e => e.title), ["Diwali"])
+        const merged = L.mergeEvents(all, [{ title: "Standup", start: new Date(2026, 9, 30, 9) }])
+        compare(merged.map(e => e.title), ["Karva Chauth", "Standup", "Diwali"])
+    }
+
+    function test_pill_menu() {
+        const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
+        compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])
+        const flipped = L.pillMenu({ dnd: true, hidden: true }).map(r => r.key)
+        compare(flipped, ["dnd-off", "timers", "show", "settings"])
+        compare(L.pillMenu({}).find(r => r.key === "timers").minutes, [5, 10, 25])
+    }
+
+    function test_volume_after_steps() {
+        compare(L.volumeAfterSteps(32768, 1, 65536), 36045)
+        compare(L.volumeAfterSteps(32768, -2, 65536), 26214)
+        compare(L.volumeAfterSteps(64000, 3, 65536), 65536)
+        compare(L.volumeAfterSteps(1000, -1, 65536), 0)
+        // Above 100% (Plasma's raised maximum): scrolling up never pulls it down to 100%.
+        compare(L.volumeAfterSteps(85196, 1, 65536), 85196)
+        compare(L.volumeAfterSteps(85196, -1, 65536), 81919)
+    }
+
+    function test_timer_step_minutes() {
+        compare(L.timerStepMinutes(300000, 2), 2)
+        compare(L.timerStepMinutes(300000, -1), -1)
+        // 5 min left: at most 4 can come off, leaving 1.
+        compare(L.timerStepMinutes(300000, -9), -4)
+        compare(L.timerStepMinutes(90000, -1), 0)
+        compare(L.timerStepMinutes(30000, -1), 0)
+    }
+
+    function test_held_art() {
+        // A cover is taken as soon as it comes.
+        let h = L.heldArt(null, { key: "a", url: "file:///a.jpg" })
+        compare(h.url, "file:///a.jpg")
+        // The browser takes it away mid-song: keep it.
+        h = L.heldArt(h, { key: "a", url: "" })
+        compare(h.url, "file:///a.jpg")
+        // Skipped to a song with no cover yet: don't show the old one.
+        h = L.heldArt(h, { key: "b", url: "" })
+        compare(h.url, "")
+        // Its cover arrives later.
+        h = L.heldArt(h, { key: "b", url: "file:///b.jpg" })
+        compare(h.url, "file:///b.jpg")
+    }
+
+    function test_cover_search_url() {
+        compare(L.coverSearchUrl("CG5", "Dancin’ (Official Video)"),
+                "https://itunes.apple.com/search?media=music&entity=song&limit=10&term=CG5%20Dancin%E2%80%99")
+    }
+
+    function test_pick_cover() {
+        const art = "https://x/Cover.jpg/100x100bb.jpg"
+        const big = "https://x/Cover.jpg/600x600bb.jpg"
+        // Curly and straight apostrophes match; the 600 px version is used.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin’"), big)
+        // Remix and edit tags are ignored on both sides.
+        compare(L.pickCover([{ artistName: "OMI", trackName: "Cheerleader (Felix Jaehn Remix) [Radio Edit]", artworkUrl100: art }],
+                            "OMI", "Cheerleader (Felix Jaehn Remix) (Radio Edit)"), big)
+        // A featured artist on iTunes still matches.
+        compare(L.pickCover([{ artistName: "Maroon 5 & Cardi B", trackName: "Girls Like You", artworkUrl100: art }], "Maroon 5", "Girls Like You"), big)
+        // The first result that matches wins over earlier ones that don't.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Other Song", artworkUrl100: "https://x/o/100x100bb.jpg" },
+                             { artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin'"), big)
+        // Same artist, different song, or different artist: no cover rather than a wrong one.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Other Song", artworkUrl100: art }], "CG5", "Dancin'"), "")
+        compare(L.pickCover([{ artistName: "Somebody", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin'"), "")
+        compare(L.pickCover([], "CG5", "Dancin'"), "")
+        compare(L.pickCover(undefined, "CG5", "Dancin'"), "")
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "", "Dancin'"), "")
     }
 }
