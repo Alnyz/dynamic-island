@@ -344,7 +344,7 @@ Item {
     // island closes when the pointer stays away for a moment instead.
     Timer {
         interval: 300
-        running: island.openOnHover && island.hovered && !island.open && !island.menuOpen
+        running: island.openOnHover && island.hovered && !island.open && !island.menuOpen && island.mode !== "tour"
         onTriggered: island.open = true
     }
 
@@ -412,32 +412,16 @@ Item {
         }
     }
 
-    // A click on the music turn waits this long for a second click, which skips the song.
-    property int doubleClickMs: 250
     readonly property bool musicShown: activity === "music" && player !== null && (mode === "compact" || mode === "peek")
     property real verticalAccum: 0
-    Timer {
-        id: clickDelay
-        interval: island.doubleClickMs
-        onTriggered: island.open = true
-    }
-
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-        onDoubleClicked: mouse => {
-            if (mouse.button === Qt.LeftButton && clickDelay.running) {
-                clickDelay.stop()
-                if (island.player.canGoNext !== false)
-                    island.player.Next()
-            }
-        }
         onClicked: mouse => {
             if (island.mode === "tour")
                 return
             if (mouse.button === Qt.RightButton) {
                 if (!island.open) {
-                    clickDelay.stop()
                     island.menuOpen = !island.menuOpen
                 }
                 return
@@ -464,10 +448,6 @@ Item {
                 if (island.alert.ok && island.alert.folder)
                     island.linkRequested(island.alert.folder)
                 island.alert = null
-                return
-            }
-            if (island.musicShown) {
-                clickDelay.restart()
                 return
             }
             island.open = true

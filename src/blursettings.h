@@ -27,7 +27,7 @@ public:
     static QString groupFor(const QString &effect);
 
     QString effect() const { return m_effect; }
-    int strength() const;
+    int strength() const { return m_strength; }
     void setStrength(int value);
     Q_INVOKABLE void refresh();
 
@@ -38,4 +38,6 @@ private:
     QString m_config;
     QString m_effect;
     bool m_live = true;
+    int m_strength = kDefaultStrength;
+    void readStrength();
 };

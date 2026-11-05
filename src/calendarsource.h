@@ -1,5 +1,6 @@
 #pragma once
 
+#include <KCalendarCore/MemoryCalendar>
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
@@ -41,6 +42,10 @@ public:
     static QList<Occurrence> expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to);
     // Not-yet-ended events from the start of today to the end of tomorrow.
     static QList<Occurrence> upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count);
+    // The same, from calendars already parsed.
+    static KCalendarCore::MemoryCalendar::Ptr parse(const QByteArray &doc);
+    static QList<Occurrence> expand(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &from, const QDateTime &to);
+    static QList<Occurrence> upcoming(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &now, int count);
 
     QStringList urls() const { return m_urls; }
     void setUrls(const QStringList &urls);
@@ -65,8 +70,8 @@ private:
 
     QNetworkAccessManager *m_net;
     QStringList m_urls;
-    // Last good download per link, kept when a later fetch fails.
-    QHash<QString, QByteArray> m_docs;
+    // Last good download per link, parsed, kept when a later fetch fails.
+    QHash<QString, KCalendarCore::MemoryCalendar::Ptr> m_calendars;
     bool m_ok = false;
     bool m_loaded = false;
     int m_pending = 0;

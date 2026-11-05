@@ -514,19 +514,10 @@ Item {
             compare(island.open, false)
         }
 
-        function test_double_click_skips() {
-            const { island } = make({})
-            mouseDoubleClickSequence(island, 10, 10)
-            compare(stage.calls.next, 1)
-            wait(400)
-            compare(island.open, false)
-        }
-
-        function test_single_click_on_music_still_opens() {
+        function test_click_on_music_opens_at_once() {
             const { island } = make({})
             mouseClick(island, 10, 10)
-            compare(island.open, false)
-            tryCompare(island, "open", true, 1000)
+            compare(island.open, true)
             compare(stage.calls.next, 0)
         }
 

@@ -13,9 +13,13 @@ UpdatesWatcher::UpdatesWatcher(QObject *parent)
     auto *watcher = new QFileSystemWatcher(this);
     watcher->addPath(QStringLiteral("/var/lib/pacman/local"));
     // Only while the count is wanted: otherwise every install would run checkupdates for nothing.
+    // An upgrade changes it once per package, so wait until it has been quiet for a few seconds.
+    m_settle.setSingleShot(true);
+    m_settle.setInterval(5000);
+    connect(&m_settle, &QTimer::timeout, this, &UpdatesWatcher::check);
     connect(watcher, &QFileSystemWatcher::directoryChanged, this, [this] {
         if (enabled())
-            check();
+            m_settle.start();
     });
 
     connect(&m_proc, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
@@ -25,6 +29,11 @@ UpdatesWatcher::UpdatesWatcher(QObject *parent)
         if (n == m_count)
             Q_EMIT countChanged(); // the list may have changed with the same count
         setCount(n);
+        // The database changed while that run was going, so its answer may be out of date.
+        if (m_again) {
+            m_again = false;
+            check();
+        }
     });
     connect(&m_proc, &QProcess::errorOccurred, this, [this](QProcess::ProcessError e) {
         if (e == QProcess::FailedToStart)
@@ -41,6 +50,8 @@ void UpdatesWatcher::setEnabled(bool on)
         check();
     } else {
         m_timer.stop();
+        m_settle.stop();
+        m_again = false;
         m_packages.clear();
         setCount(-1);
     }
@@ -51,6 +62,8 @@ void UpdatesWatcher::check()
 {
     if (m_proc.state() == QProcess::NotRunning)
         m_proc.start(QStringLiteral("checkupdates"), {});
+    else
+        m_again = true;
 }
 
 void UpdatesWatcher::setCount(int n)

@@ -106,7 +106,7 @@ QtObject {
                 if (k !== lyrics.key)
                     return
                 // A network failure isn't remembered, so it's tried again next time.
-                if (err && err2) {
+                if (err2) {
                     show({ state: "none" })
                     return
                 }

@@ -4,7 +4,8 @@
 #include <KConfigGroup>
 #include <QDBusConnection>
 #include <QDBusMessage>
-#include <QDBusReply>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 
 namespace
 {
@@ -27,6 +28,7 @@ BlurSettings::BlurSettings(const QString &configFile, const QString &effect, QOb
     , m_effect(effect)
     , m_live(false)
 {
+    readStrength();
 }
 
 QString BlurSettings::groupFor(const QString &effect)
@@ -40,26 +42,36 @@ void BlurSettings::refresh()
 {
     if (!m_live)
         return;
-    QString found;
-    for (const QString &id : {QStringLiteral("better_blur_dx"), QStringLiteral("forceblur"), QStringLiteral("blur")}) {
-        const QDBusReply<bool> loaded = QDBusConnection::sessionBus().call(effects(QStringLiteral("isEffectLoaded")) << id);
-        if (loaded.isValid() && loaded.value()) {
-            found = id;
-            break;
+    // Asked without waiting, so a slow KWin at login doesn't hold up the island.
+    QDBusMessage get = QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"), QStringLiteral("/Effects"),
+                                                      QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
+    get << QStringLiteral("org.kde.kwin.Effects") << QStringLiteral("loadedEffects");
+    auto *watch = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(get), this);
+    connect(watch, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *w) {
+        w->deleteLater();
+        const QDBusPendingReply<QDBusVariant> reply = *w;
+        const QStringList loaded = reply.isValid() ? reply.value().variant().toStringList() : QStringList();
+        QString found;
+        for (const QString &id : {QStringLiteral("better_blur_dx"), QStringLiteral("forceblur"), QStringLiteral("blur")}) {
+            if (loaded.contains(id)) {
+                found = id;
+                break;
+            }
         }
-    }
-    if (found != m_effect) {
         m_effect = found;
+        readStrength();
         Q_EMIT changed();
-    }
+    });
 }
 
-int BlurSettings::strength() const
+void BlurSettings::readStrength()
 {
-    if (m_effect.isEmpty())
-        return kDefaultStrength;
+    if (m_effect.isEmpty()) {
+        m_strength = kDefaultStrength;
+        return;
+    }
     KConfig config(m_config, KConfig::SimpleConfig);
-    return qBound(1, config.group(groupFor(m_effect)).readEntry("BlurStrength", kDefaultStrength), 15);
+    m_strength = qBound(1, config.group(groupFor(m_effect)).readEntry("BlurStrength", kDefaultStrength), 15);
 }
 
 void BlurSettings::setStrength(int value)
@@ -73,8 +85,9 @@ void BlurSettings::setStrength(int value)
     KConfigGroup group = config.group(groupFor(m_effect));
     group.writeEntry("BlurStrength", value);
     config.sync();
+    m_strength = value;
     // KWin rereads the effect's settings straight away.
     if (m_live)
-        QDBusConnection::sessionBus().call(effects(QStringLiteral("reconfigureEffect")) << m_effect);
+        QDBusConnection::sessionBus().asyncCall(effects(QStringLiteral("reconfigureEffect")) << m_effect);
     Q_EMIT changed();
 }

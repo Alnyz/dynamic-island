@@ -34,7 +34,8 @@ Row {
             radius: 1
             color: bars.color
             anchors.bottom: parent.bottom
-            height: bars.live ? L.barHeight(bars.level, bar.index, bars.phase) : 3
+            // Reads running so it settles back to 3 when the loop stops; an assignment would break the binding.
+            height: bars.live ? L.barHeight(bars.level, bar.index, bars.phase) : (bars.running, 3)
             Behavior on height {
                 enabled: bars.live
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
@@ -54,8 +55,6 @@ Row {
                     duration: [380, 520, 430, 490][bar.index]
                     easing.type: Easing.InOutSine
                 }
-
-                onRunningChanged: if (!running && !bars.live) bar.height = 3
             }
         }
     }
