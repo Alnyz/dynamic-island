@@ -364,8 +364,8 @@ Item {
             tryCompare(island, "height", 32)
             compare(findChild(island, "bars").running, true)
             const paused = make({ playbackStatus: L.Status.Paused }).island
-            compare(paused.mode, "compact")
-            compare(findChild(paused, "bars").running, false)
+            // A paused player no longer takes a turn; the pill goes back to idle.
+            compare(paused.mode, "idle")
         }
 
         function test_hover_peek() {
