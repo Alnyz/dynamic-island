@@ -880,6 +880,29 @@ Item {
             compare(findChild(island, "lyricsToggle").visible, false)
         }
 
+        function test_bars_follow_sound_level() {
+            const { island } = make({})
+            compare(island.wantsLevel, true)
+            const bar = findChild(island, "bar1")
+            island.audioLevel = 0
+            tryCompare(bar, "height", 3)
+            island.audioLevel = 1
+            tryVerify(() => bar.height > 8)
+            island.audioLevel = 0
+            tryCompare(bar, "height", 3)
+            // Paused: no level wanted and the bars rest.
+            const paused = make({ playbackStatus: L.Status.Paused }).island
+            compare(paused.wantsLevel, false)
+        }
+
+        function test_level_only_wanted_while_bars_show() {
+            const { island } = make({})
+            compare(island.wantsLevel, true)
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            compare(island.wantsLevel, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

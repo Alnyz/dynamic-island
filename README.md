@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 ### Closed pill
 
-- Cover art and a small level meter while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
+- Cover art and a small level meter that follows the sound while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
 - When nothing is going on, it shows a glance (an event starting soon, low battery, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Scroll up or down on it to change the volume, or the minutes left while the timer shows. Middle-click plays or pauses, and double-clicking the music turn skips the song.

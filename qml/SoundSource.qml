@@ -16,6 +16,9 @@ QtObject {
     readonly property var defaultInput: inputs.find(d => d.default) || null
     readonly property var defaultOutput: outputs.find(d => d.default) || null
     readonly property real micLevel: monitorMic && monitor.available ? monitor.volume : -1
+    // The speakers' level for the pill's bars, measured only while they're shown.
+    property bool monitorOutput: false
+    readonly property real outputLevel: monitorOutput && outputMonitor.available ? outputMonitor.volume : -1
 
     function collect(list) {
         const out = []
@@ -58,5 +61,8 @@ QtObject {
 
     property VolumeMonitor monitor: VolumeMonitor {
         target: sound.monitorMic ? sound.defaultInput : null
+    }
+    property VolumeMonitor outputMonitor: VolumeMonitor {
+        target: sound.monitorOutput ? sound.defaultOutput : null
     }
 }

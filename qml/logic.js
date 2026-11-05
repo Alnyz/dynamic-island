@@ -359,6 +359,16 @@ function pillMenu(s) {
     ]
 }
 
+// Height (3..14 px) of one of the pill's four level bars for a sound level of 0..1. Each bar has
+// its own reach, swayed by phase so they don't move as one. Peaks are lifted (square root)
+// since music rarely sits near full scale.
+function barHeight(level, index, phase) {
+    const reach = [0.85, 1.0, 0.92, 0.78][index % 4]
+    const sway = 0.85 + 0.15 * Math.sin(phase + index * 1.7)
+    const v = Math.sqrt(Math.max(0, Math.min(1, level))) * reach * sway
+    return 3 + Math.round(v * 11 * 10) / 10
+}
+
 // --- Lyrics (LRCLIB) ---
 
 // The exact lookup: LRCLIB matches title, artist and length (within a couple of seconds).

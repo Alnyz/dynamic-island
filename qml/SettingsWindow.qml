@@ -241,6 +241,12 @@ QQC.ApplicationWindow {
                         checked: win.prefs.style.coverTint
                         onToggled: win.prefs.style.coverTint = checked
                     }
+                    QQC.CheckBox {
+                        objectName: "liveBars"
+                        text: "Level bars follow the sound"
+                        checked: win.prefs.style.liveBars
+                        onToggled: win.prefs.style.liveBars = checked
+                    }
                     ColorDialog {
                         id: accentDialog
                         title: "Choose an accent colour"

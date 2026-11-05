@@ -12,6 +12,9 @@ Item {
     // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
     property string artUrl: ""
     // The cover's colour (CoverColor), when there is one; music controls use musicTint.
+    // The speakers' level (0..1) for the bars, or -1; wantsLevel says when it's needed.
+    property real audioLevel: -1
+    readonly property bool wantsLevel: playing && mode === "compact" && activity === "music"
     property bool coverTinted: false
     property color coverTint: "transparent"
     readonly property color musicTint: coverTinted ? coverTint : palette.accent
@@ -799,6 +802,7 @@ Item {
             objectName: "bars"
             visible: island.mode === "compact"
             running: island.playing
+            level: island.audioLevel
             color: island.coverTinted ? island.coverTint : "#e8e2d0"
             anchors.right: parent.right
             anchors.rightMargin: 10 + island.indicatorWidth

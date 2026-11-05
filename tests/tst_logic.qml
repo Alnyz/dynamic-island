@@ -484,6 +484,22 @@ TestCase {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
     }
 
+    function test_bar_height() {
+        for (let i = 0; i < 4; ++i) {
+            compare(L.barHeight(0, i, 0), 3)
+            verify(L.barHeight(1, i, 0) <= 14)
+            verify(L.barHeight(1, i, 0) > 8)
+            // Out-of-range levels are clamped.
+            compare(L.barHeight(-1, i, 0), 3)
+            compare(L.barHeight(5, i, 1), L.barHeight(1, i, 1))
+        }
+        // Louder is taller; bars differ from each other.
+        verify(L.barHeight(0.8, 1, 0) > L.barHeight(0.2, 1, 0))
+        verify(L.barHeight(0.8, 0, 0) !== L.barHeight(0.8, 3, 0))
+        // The sway moves a bar over time.
+        verify(L.barHeight(0.8, 2, 0) !== L.barHeight(0.8, 2, 1.5))
+    }
+
     function test_parse_lrc() {
         const lines = L.parseLrc("[ar:CG5]\n[00:12.50]Second\n[00:03.2]First\n\n[01:00.00][02:00.00]Chorus\nno time here\n[00:20.123]")
         compare(lines.length, 5)

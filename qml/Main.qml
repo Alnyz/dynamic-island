@@ -34,7 +34,10 @@ Window {
 
     MprisPlayers { id: mpris }
 
-    SoundSource { id: soundSource }
+    SoundSource {
+        id: soundSource
+        monitorOutput: prefs.style.liveBars && island.wantsLevel
+    }
 
     ClipboardHistory { id: clipboardHistory }
 
@@ -270,6 +273,7 @@ Window {
             out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
         }
         artUrl: source.artUrl
+        audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"
         timer: timerModel

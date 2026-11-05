@@ -8,7 +8,7 @@ QtObject {
     required property string location
 
     readonly property var defaults: ({
-        style: { look: "notch", accent: "#0a84ff", coverTint: true },
+        style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
         behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
@@ -28,6 +28,8 @@ QtObject {
         property string accent: prefs.defaults.style.accent
         // Music controls take the cover's main colour.
         property bool coverTint: prefs.defaults.style.coverTint
+        // The pill's level bars follow the sound instead of a loop.
+        property bool liveBars: prefs.defaults.style.liveBars
     }
 
     property Settings shape: Settings {
