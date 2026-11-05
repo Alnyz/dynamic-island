@@ -1,5 +1,6 @@
 import QtQuick
 import QtCore
+import org.kde.kirigami as Kirigami
 import Island
 import "logic.js" as L
 
@@ -14,6 +15,10 @@ Window {
 
     function updateInputRegion() {
         InputRegion.set(root, island.inputRect)
+        updateBlur()
+    }
+    function updateBlur() {
+        InputRegion.setBlur(root, island.inputRect, island.blurRadius, island.translucent && island.height > 0.5)
     }
 
     Prefs {
@@ -273,6 +278,10 @@ Window {
             out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
         }
         artUrl: source.artUrl
+        lightTheme: prefs.style.theme === "light" || (prefs.style.theme === "system" && Kirigami.Theme.backgroundColor.hslLightness > 0.5)
+        translucent: prefs.style.translucent
+        onBlurRadiusChanged: root.updateBlur()
+        onTranslucentChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"

@@ -903,6 +903,31 @@ Item {
             compare(island.wantsLevel, false)
         }
 
+        function test_light_theme_reaches_everything() {
+            const { island } = make({})
+            const fill = findChild(island, "islandFill")
+            compare(fill.fillColor, Qt.color("#000000"))
+            island.lightTheme = true
+            compare(island.palette.window, Qt.color(L.themeColors(true).window))
+            compare(fill.fillColor, Qt.color(L.themeColors(true).window))
+            // A faint edge keeps a light pill from melting into a light wallpaper.
+            compare(fill.strokeWidth, 1)
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            // Children inherit the palette: the panel's tabs and text follow.
+            const panel = findChild(island, "homePanel")
+            compare(panel.palette.windowText, Qt.color(L.themeColors(true).windowText))
+        }
+
+        function test_translucent_fill() {
+            const { island } = make(null)
+            island.translucent = true
+            const fill = findChild(island, "islandFill")
+            verify(Math.abs(fill.fillColor.a - 0.78) < 0.01)
+            island.translucent = false
+            compare(fill.fillColor.a, 1)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

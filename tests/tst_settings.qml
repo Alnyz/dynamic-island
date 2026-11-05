@@ -133,4 +133,17 @@ TestCase {
         mouseClick(box)
         compare(prefs.style.coverTint, false)
     }
+
+    function test_theme_settings() {
+        const { prefs, win } = make()
+        win.page = 0
+        const picker = findChild(win.contentItem, "themePicker")
+        compare(picker.currentValue, "dark")
+        prefs.style.theme = "light"
+        compare(picker.currentValue, "light")
+        const box = findChild(win.contentItem, "translucent")
+        verify(!box.checked)
+        mouseClick(box)
+        compare(prefs.style.translucent, true)
+    }
 }

@@ -9,7 +9,7 @@ Item {
     property var player: null
     property string artUrl: ""
     // Fill for music progress and volume, and the colour of active music toggles.
-    property color musicTint: "#e8e2d0"
+    property color musicTint: palette.brightText
     property color accentTint: palette.accent
     // While the pill's cover flies into the panel, the panel's own cover stays hidden.
     property bool coverHidden: false
@@ -188,7 +188,7 @@ Item {
             visible: panel.showTime
             anchors.baseline: parent.children[1].baseline
             text: Qt.formatTime(panel.clock, "HH:mm")
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 15
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -198,7 +198,7 @@ Item {
             // Dropped when a wide open tab leaves no room beside the time.
             visible: panel.showDate && clockRow.gap >= (panel.showTime ? parent.children[0].implicitWidth + 8 : 0) + implicitWidth + 24
             text: Qt.formatDate(panel.clock, "ddd d MMM")
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 13
         }
     }
@@ -208,7 +208,7 @@ Item {
         width: tabsRow.implicitWidth + 8
         height: tabsRow.implicitHeight + 8
         radius: height / 2
-        color: "#141414"
+        color: palette.base
 
         Row {
             id: tabsRow
@@ -231,10 +231,10 @@ Item {
                     height: modelData.divider ? 16 : 30
                     anchors.verticalCenter: parent.verticalCenter
                     radius: modelData.divider ? 0 : 15
-                    color: modelData.divider ? "#2a2a2a"
-                         : lit ? "#2a2a2a"
-                         : tabArea.containsMouse && !selected ? "#1c1c1c"
-                         : Qt.rgba(0x2a / 255, 0x2a / 255, 0x2a / 255, grow)
+                    color: modelData.divider ? palette.button
+                         : lit ? palette.button
+                         : tabArea.containsMouse && !selected ? palette.alternateBase
+                         : Qt.rgba(palette.button.r, palette.button.g, palette.button.b, grow)
 
                     Row {
                         id: tabRow
@@ -246,7 +246,7 @@ Item {
                             width: 15
                             height: 15
                             source: modelData.icon || ""
-                            color: selected || tabArea.containsMouse || (modelData.key === "more" && panel.menuOpen) ? "#ffffff" : "#9aa3ad"
+                            color: selected || tabArea.containsMouse || (modelData.key === "more" && panel.menuOpen) ? palette.windowText : palette.placeholderText
                             isMask: true
                         }
                         Text {
@@ -256,7 +256,7 @@ Item {
                             clip: true
                             opacity: grow
                             text: modelData.label || ""
-                            color: "#ffffff"
+                            color: palette.windowText
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
                         }
@@ -326,13 +326,13 @@ Item {
         width: 30
         height: 30
         radius: 15
-        color: settingsArea.containsMouse ? "#2a2a2a" : "#141414"
+        color: settingsArea.containsMouse ? palette.button : palette.base
         Kirigami.Icon {
             anchors.centerIn: parent
             width: 15
             height: 15
             source: "configure"
-            color: "#ffffff"
+            color: palette.windowText
             isMask: true
         }
         MouseArea {
@@ -545,8 +545,8 @@ Item {
         width: undoRow.implicitWidth + 28
         height: 34
         radius: 17
-        color: "#262626"
-        border.color: "#3a3a3a"
+        color: palette.button
+        border.color: palette.dark
         Row {
             id: undoRow
             anchors.centerIn: parent
@@ -555,7 +555,7 @@ Item {
                 objectName: "undoText"
                 anchors.verticalCenter: parent.verticalCenter
                 text: panel.pendingUndo ? panel.pendingUndo.text : ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
             }
             Text {
@@ -595,8 +595,8 @@ Item {
         width: 150
         height: menuColumn.height + 12
         radius: 16
-        color: "#161616"
-        border.color: "#262626"
+        color: palette.base
+        border.color: palette.button
 
         Column {
             id: menuColumn
@@ -611,7 +611,7 @@ Item {
                     width: menuColumn.width
                     height: 36
                     radius: 10
-                    color: itemArea.containsMouse ? "#222222" : "transparent"
+                    color: itemArea.containsMouse ? palette.button : "transparent"
                     Row {
                         x: 8
                         anchors.verticalCenter: parent.verticalCenter
@@ -620,20 +620,20 @@ Item {
                             width: 24
                             height: 24
                             radius: 7
-                            color: panel.extraTool === modelData.key ? palette.accent : "#232323"
+                            color: panel.extraTool === modelData.key ? palette.accent : palette.button
                             Kirigami.Icon {
                                 anchors.centerIn: parent
                                 width: 14
                                 height: 14
                                 source: modelData.icon
-                                color: "#ffffff"
+                                color: panel.extraTool === modelData.key ? "#ffffff" : palette.windowText
                                 isMask: true
                             }
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.label
-                            color: "#ffffff"
+                            color: palette.windowText
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
                         }

@@ -50,7 +50,7 @@ Column {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: cal.monthNames[cal.month0] + " " + cal.year
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
@@ -76,7 +76,7 @@ Column {
                 width: parent.cellW
                 horizontalAlignment: Text.AlignHCenter
                 text: modelData
-                color: "#8a929c"
+                color: palette.mid
                 font.pixelSize: 10
             }
         }
@@ -113,7 +113,8 @@ Column {
                 Text {
                     anchors.centerIn: parent
                     text: modelData.d
-                    color: isToday ? "#ffffff" : modelData.inMonth ? "#ffffff" : "#8a929c"
+                    // White on the accent circle in either theme.
+                    color: isToday ? "#ffffff" : modelData.inMonth ? palette.windowText : palette.mid
                     font.pixelSize: 12
                     font.weight: isToday ? Font.Bold : Font.Normal
                 }

@@ -29,7 +29,7 @@ Item {
         height: 16
         Text {
             text: "SHELF"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -60,15 +60,15 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         radius: 16
-        color: drop.containsDrag ? "#0b1a2e" : "#0a0a0a"
-        border.color: drop.containsDrag ? palette.accent : "#262626"
+        color: drop.containsDrag ? "#0b1a2e" : palette.base
+        border.color: drop.containsDrag ? palette.accent : palette.button
 
         Text {
             objectName: "shelfEmpty"
             visible: tab.files.length === 0
             anchors.centerIn: parent
             text: "Drag files here to keep them for later"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 13
         }
 
@@ -102,7 +102,7 @@ Item {
                             width: 56
                             height: 56
                             radius: 12
-                            color: dragArea.containsMouse ? "#1f1f1f" : "#161616"
+                            color: dragArea.containsMouse ? palette.alternateBase : palette.base
                             clip: true
                             Image {
                                 visible: tab.isImage(file.modelData)
@@ -125,7 +125,7 @@ Item {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             text: tab.nameOf(file.modelData)
-                            color: "#e5e9f0"
+                            color: palette.text
                             font.pixelSize: 12
                             elide: Text.ElideMiddle
                         }
@@ -145,13 +145,13 @@ Item {
                         width: 20
                         height: 20
                         radius: 10
-                        color: "#2a2a2a"
+                        color: palette.button
                         Kirigami.Icon {
                             anchors.centerIn: parent
                             width: 10
                             height: 10
                             source: "window-close-symbolic"
-                            color: "#ffffff"
+                            color: palette.windowText
                             isMask: true
                         }
                         MouseArea {

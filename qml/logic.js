@@ -347,6 +347,17 @@ var TOUR = [
     { icon: "configure", title: "Quick menu and settings", body: "Right-click for timers, do not disturb or hiding. The gear in the panel opens Settings." }
 ]
 
+// The island's colours for each theme, as Qt palette roles.
+function themeColors(light) {
+    return light ? {
+        window: "#f2f2f7", windowText: "#1c1c1e", text: "#2c2c2e", placeholderText: "#6e6e73", mid: "#8e8e93",
+        base: "#ffffff", alternateBase: "#e9e9ee", button: "#dedee3", dark: "#c7c7cc", brightText: "#7a5c12"
+    } : {
+        window: "#000000", windowText: "#ffffff", text: "#e5e9f0", placeholderText: "#9aa3ad", mid: "#8a929c",
+        base: "#141414", alternateBase: "#1c1c1c", button: "#262626", dark: "#333333", brightText: "#e8e2d0"
+    }
+}
+
 // Rows of the right-click menu on the pill. s: { dnd, hidden }.
 function pillMenu(s) {
     return [

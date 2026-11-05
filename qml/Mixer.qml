@@ -86,7 +86,7 @@ Item {
             width: parent.width - 88
             height: 3
             radius: 1.5
-            color: "#1a1a1a"
+            color: palette.alternateBase
             Rectangle {
                 width: parent.width * Math.min(1, Math.max(0, mixer.micLevel))
                 height: parent.height
@@ -127,7 +127,7 @@ Item {
             visible: mixer.apps.length === 0
             topPadding: 6
             text: "No apps are playing sound"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
 
@@ -155,7 +155,7 @@ Item {
                     Text {
                         width: parent.width
                         text: row.appName
-                        color: row.modelData.muted ? "#8a929c" : "#ffffff"
+                        color: row.modelData.muted ? palette.mid : palette.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -163,7 +163,7 @@ Item {
                     Text {
                         width: parent.width
                         text: row.modelData.muted ? "Muted" : row.modelData.corked ? "Paused" : row.modelData.name
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -181,7 +181,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     horizontalAlignment: Text.AlignRight
                     text: Math.round(row.modelData.volume / mixer.full * 100) + "%"
-                    color: "#9aa3ad"
+                    color: palette.placeholderText
                     font.pixelSize: 12
                     font.features: { "tnum": 1 }
                 }
@@ -195,7 +195,7 @@ Item {
     }
 
     component Heading: Text {
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
         font.weight: Font.DemiBold
         font.letterSpacing: 0.6
@@ -209,7 +209,7 @@ Item {
         width: 28
         height: 28
         radius: 14
-        color: muted ? "#3a1d1d" : muteArea.containsMouse ? "#1a1a1a" : "transparent"
+        color: muted ? "#3a1d1d" : muteArea.containsMouse ? palette.alternateBase : "transparent"
         Kirigami.Icon {
             anchors.centerIn: parent
             width: 15
@@ -240,7 +240,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             icon: dv.icon
             muted: dv.device ? dv.device.muted : false
-            color: muted ? "#3a1d1d" : "#141414"
+            color: muted ? "#3a1d1d" : palette.base
             onClicked: mixer.setMuted(dv.device, !dv.device.muted)
         }
         VolumeSlider {
@@ -256,7 +256,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignRight
             text: dv.device ? Math.round(dv.device.volume / mixer.full * 100) + "%" : ""
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.features: { "tnum": 1 }
         }

@@ -111,7 +111,7 @@ Item {
                 y: Math.floor(index / cat.cols) * cat.pixel
                 width: cat.pixel
                 height: cat.pixel
-                color: "#ffffff"
+                color: palette.windowText
                 visible: cat.frames[cat.frame][Math.floor(index / cat.cols)][index % cat.cols] === "#"
             }
         }

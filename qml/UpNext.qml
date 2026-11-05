@@ -23,7 +23,7 @@ Column {
 
     Text {
         text: "UP NEXT"
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
         font.weight: Font.DemiBold
         font.letterSpacing: 0.6
@@ -38,7 +38,7 @@ Column {
             Text {
                 width: 48
                 text: L.eventWhen(modelData)
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 font.features: { "tnum": 1 }
                 topPadding: 1
@@ -49,14 +49,14 @@ Column {
                 Text {
                     width: parent.width
                     text: modelData.title
-                    color: "#ffffff"
+                    color: palette.windowText
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
                 Text {
                     text: L.eventDetail(modelData, new Date())
-                    color: "#9aa3ad"
+                    color: palette.placeholderText
                     font.pixelSize: 12
                 }
             }
@@ -75,7 +75,7 @@ Column {
         width: parent.width
         visible: up.events.length === 0
         wrapMode: Text.WordWrap
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
         text: !up.calendar || !up.calendar.configured ? "Add your Google Calendar link to see events here"
             : !up.calendar.loaded ? "Loading events…"

@@ -484,6 +484,36 @@ TestCase {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
     }
 
+    // WCAG contrast ratio, for checking the theme stays readable.
+    function contrast(a, b) {
+        const lum = c => {
+            const ch = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+            const q = Qt.color(c)
+            return 0.2126 * ch(q.r) + 0.7152 * ch(q.g) + 0.0722 * ch(q.b)
+        }
+        const x = lum(a), y = lum(b)
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+    }
+
+    function test_theme_colors() {
+        const roles = ["window", "windowText", "text", "placeholderText", "mid", "base", "alternateBase", "button", "dark", "brightText"]
+        for (const light of [false, true]) {
+            const t = L.themeColors(light)
+            for (const r of roles)
+                verify(t[r] !== undefined, r)
+            // Body text and secondary text stay readable on the background and on panels.
+            for (const bg of [t.window, t.base, t.alternateBase]) {
+                verify(contrast(t.windowText, bg) >= 7, "windowText on " + bg)
+                verify(contrast(t.text, bg) >= 7, "text on " + bg)
+                verify(contrast(t.placeholderText, bg) >= 3.5, "placeholderText on " + bg + " (light " + light + ")")
+                verify(contrast(t.brightText, bg) >= 4.5, "brightText on " + bg)
+            }
+        }
+        // The dark theme keeps the island's original look.
+        compare(L.themeColors(false).window, "#000000")
+        compare(L.themeColors(false).brightText, "#e8e2d0")
+    }
+
     function test_bar_height() {
         for (let i = 0; i < 4; ++i) {
             compare(L.barHeight(0, i, 0), 3)

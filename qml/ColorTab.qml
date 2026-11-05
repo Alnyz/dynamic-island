@@ -37,8 +37,8 @@ Item {
             width: 200
             height: 200
             radius: 22
-            color: tab.current || "#0d0d0d"
-            border.color: tab.current ? Qt.rgba(1, 1, 1, 0.12) : "#262626"
+            color: tab.current || palette.base
+            border.color: tab.current ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : palette.button
             Text {
                 visible: !tab.current
                 anchors.centerIn: parent
@@ -46,7 +46,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 text: "Pick any colour on your screen"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 13
             }
         }
@@ -79,13 +79,13 @@ Item {
                 width: parent.width
                 height: 50
                 radius: 14
-                color: rowArea.containsMouse && tab.formats ? "#1c1c1c" : "#121212"
-                border.color: "#222222"
+                color: rowArea.containsMouse && tab.formats ? palette.alternateBase : palette.base
+                border.color: palette.button
                 Text {
                     x: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData.label
-                    color: "#9aa3ad"
+                    color: palette.placeholderText
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.6
@@ -94,7 +94,7 @@ Item {
                     x: 70
                     anchors.verticalCenter: parent.verticalCenter
                     text: parent.value
-                    color: tab.formats ? "#ffffff" : "#5b636c"
+                    color: tab.formats ? palette.windowText : palette.mid
                     font.pixelSize: 14
                     font.features: { "tnum": 1 }
                 }
@@ -116,7 +116,7 @@ Item {
                         width: 15
                         height: 15
                         source: tab.copiedKey === modelData.key ? "checkmark-symbolic" : "edit-copy-symbolic"
-                        color: tab.copiedKey === modelData.key ? palette.accent : "#9aa3ad"
+                        color: tab.copiedKey === modelData.key ? palette.accent : palette.placeholderText
                         isMask: true
                     }
                 }
@@ -136,7 +136,7 @@ Item {
         Text {
             visible: tab.colors.length > 0
             text: "RECENT"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -155,7 +155,7 @@ Item {
                     radius: 16
                     color: modelData
                     border.width: modelData === tab.current ? 2 : 1
-                    border.color: modelData === tab.current ? "#ffffff" : Qt.rgba(1, 1, 1, 0.14)
+                    border.color: modelData === tab.current ? palette.windowText : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor

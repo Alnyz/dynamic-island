@@ -10,7 +10,7 @@ Item {
     property var lines: []
     property string plain: ""
     property real positionMs: 0
-    property color tint: "#ffffff"
+    property color tint: palette.windowText
     signal seekRequested(real ms)
 
     readonly property int current: state === "synced" ? L.lyricLine(lines, positionMs) : -1
@@ -23,7 +23,7 @@ Item {
             : view.state === "instrumental" ? "Instrumental"
             : view.state === "off" ? "Lyrics are off in Settings"
             : "No lyrics found for this song"
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 13
     }
 
@@ -47,7 +47,7 @@ Item {
             objectName: "lyricLine" + index
             width: ListView.view.width
             text: modelData.text || "♪"
-            color: index === view.current ? view.tint : index < view.current ? "#6b737c" : "#c4cad1"
+            color: index === view.current ? view.tint : index < view.current ? palette.mid : palette.text
             font.pixelSize: index === view.current ? 15 : 13
             font.weight: index === view.current ? Font.DemiBold : Font.Normal
             wrapMode: Text.WordWrap
@@ -76,7 +76,7 @@ Item {
             objectName: "lyricsPlain"
             width: view.width - 12
             text: view.plain
-            color: "#c4cad1"
+            color: palette.text
             font.pixelSize: 13
             lineHeight: 1.2
             wrapMode: Text.WordWrap

@@ -6,7 +6,7 @@ Item {
 
     property string iconName
     property int iconSize: 20
-    property color iconColor: "#ffffff"
+    property color iconColor: palette.windowText
     signal clicked()
 
     width: iconSize + 12

@@ -36,7 +36,7 @@ Item {
             height: 16
             source: view.a.kind === "brightness" ? "brightness-high-symbolic"
                   : view.a.muted ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic"
-            color: "#ffffff"
+            color: palette.windowText
             isMask: true
         }
         Rectangle {
@@ -44,12 +44,12 @@ Item {
             width: parent.width - 16 - levelText.width - 2 * parent.spacing
             height: 6
             radius: 3
-            color: "#262626"
+            color: palette.button
             Rectangle {
                 width: parent.width * Math.min(1, Math.max(0, (view.a.value || 0) / 100))
                 height: parent.height
                 radius: 3
-                color: view.a.muted ? "#5a616a" : "#ffffff"
+                color: view.a.muted ? palette.mid : palette.windowText
                 Behavior on width { NumberAnimation { duration: 120 } }
             }
         }
@@ -60,7 +60,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignRight
             text: Math.round(view.a.value || 0)
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -92,7 +92,7 @@ Item {
                 objectName: "jobAlertTitle"
                 width: parent.width
                 text: view.a.title || ""
-                color: view.a.ok ? "#ffffff" : "#ff8a8a"
+                color: view.a.ok ? palette.windowText : "#ff8a8a"
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -101,7 +101,7 @@ Item {
                 objectName: "jobAlertBody"
                 width: parent.width
                 text: view.a.body || ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
@@ -134,7 +134,7 @@ Item {
                 objectName: "alertTitle"
                 width: parent.width
                 text: view.a.title || ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -143,7 +143,7 @@ Item {
                 visible: text !== ""
                 width: parent.width
                 text: view.a.body || ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
@@ -154,7 +154,7 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: 2
             text: "now"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
     }
@@ -176,13 +176,13 @@ Item {
                 width: Math.min(150, label.implicitWidth + 24)
                 height: 26
                 radius: 13
-                color: buttonArea.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.12)
+                color: buttonArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.22) : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12)
                 Text {
                     id: label
                     anchors.centerIn: parent
                     width: Math.min(implicitWidth, 126)
                     text: modelData.label
-                    color: "#ffffff"
+                    color: palette.windowText
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -209,19 +209,19 @@ Item {
             height: 16
             radius: 8
             color: view.a.kind === "color" ? view.a.value : "transparent"
-            border.color: Qt.rgba(1, 1, 1, 0.25)
+            border.color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.25)
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: view.a.kind === "color" ? String(view.a.value).toUpperCase() : ""
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             font.weight: Font.DemiBold
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: "Copied"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
     }
@@ -237,13 +237,13 @@ Item {
             width: 16
             height: 16
             source: "battery-" + parent.level + (view.a.plugged ? "-charging" : "")
-            color: view.a.plugged ? "#4ade80" : "#ffffff"
+            color: view.a.plugged ? "#4ade80" : palette.windowText
             isMask: true
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: Math.round(view.a.value || 0) + "%"
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -251,7 +251,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: !view.a.plugged ? "On battery" : view.a.value >= 100 ? "Plugged in, full" : "Charging"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
     }
@@ -267,14 +267,14 @@ Item {
             height: 16
             source: view.a.on ? "caps-on" : "caps-off"
             fallback: "input-keyboard-symbolic"
-            color: view.a.on ? "#ff9f0a" : "#ffffff"
+            color: view.a.on ? "#ff9f0a" : palette.windowText
             isMask: true
         }
         Text {
             objectName: "capsLockAlertText"
             anchors.verticalCenter: parent.verticalCenter
             text: view.a.on ? "Caps Lock on" : "Caps Lock off"
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             font.weight: Font.DemiBold
         }
@@ -298,7 +298,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(implicitWidth, 140)
             text: view.a.app || ""
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             font.weight: Font.DemiBold
             elide: Text.ElideRight
@@ -307,7 +307,7 @@ Item {
             objectName: "privacyAlertText"
             anchors.verticalCenter: parent.verticalCenter
             text: view.a.device === "camera" ? "is using the camera" : "is using the microphone"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
     }
@@ -326,15 +326,15 @@ Item {
             width: 44
             height: 44
             radius: 22
-            color: parent.on ? "#0b2a52" : "#141414"
-            border.color: parent.on ? "#2a5c99" : "#2a2a2a"
+            color: parent.on ? "#0b2a52" : palette.base
+            border.color: parent.on ? "#2a5c99" : palette.button
             Kirigami.Icon {
                 anchors.centerIn: parent
                 width: 20
                 height: 20
                 source: (view.a.icon || "preferences-system-bluetooth") + "-symbolic"
                 fallback: "preferences-system-bluetooth"
-                color: deviceCircle.parent.on ? "#5aa9ff" : "#6b7280"
+                color: deviceCircle.parent.on ? "#5aa9ff" : palette.mid
                 isMask: true
             }
         }
@@ -349,7 +349,7 @@ Item {
                 objectName: "deviceName"
                 width: parent.width
                 text: view.a.name || ""
-                color: deviceCircle.parent.on ? "#ffffff" : "#9aa3ad"
+                color: deviceCircle.parent.on ? palette.windowText : palette.placeholderText
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -360,7 +360,7 @@ Item {
                 width: chipRow.implicitWidth + 16
                 height: 22
                 radius: 11
-                color: "#161616"
+                color: palette.base
                 Row {
                     id: chipRow
                     anchors.centerIn: parent
@@ -371,21 +371,21 @@ Item {
                         height: 8
                         radius: 2
                         color: "transparent"
-                        border.color: chipRow.parent.low ? "#ff6b6b" : "#8a929c"
+                        border.color: chipRow.parent.low ? "#ff6b6b" : palette.mid
                         Rectangle {
                             x: 1.5
                             y: 1.5
                             width: Math.max(1, (parent.width - 3) * Math.max(0, view.a.battery) / 100)
                             height: parent.height - 3
                             radius: 1
-                            color: chipRow.parent.low ? "#ff6b6b" : "#ffffff"
+                            color: chipRow.parent.low ? "#ff6b6b" : palette.windowText
                         }
                     }
                     Text {
                         objectName: "deviceBattery"
                         anchors.verticalCenter: parent.verticalCenter
                         text: view.a.battery + "%"
-                        color: chipRow.parent.low ? "#ff8a8a" : "#ffffff"
+                        color: chipRow.parent.low ? "#ff8a8a" : palette.windowText
                         font.pixelSize: 12
                         font.features: { "tnum": 1 }
                     }
@@ -399,13 +399,13 @@ Item {
             width: 22
             height: 22
             radius: 11
-            color: parent.on ? "#30d158" : "#2a2a2a"
+            color: parent.on ? "#30d158" : palette.button
             Kirigami.Icon {
                 anchors.centerIn: parent
                 width: 12
                 height: 12
                 source: badge.parent.on ? "checkmark-symbolic" : "window-close-symbolic"
-                color: badge.parent.on ? "#000000" : "#9aa3ad"
+                color: badge.parent.on ? "#000000" : palette.placeholderText
                 isMask: true
             }
         }

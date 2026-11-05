@@ -241,6 +241,21 @@ QQC.ApplicationWindow {
                         checked: win.prefs.style.coverTint
                         onToggled: win.prefs.style.coverTint = checked
                     }
+                    QQC.ComboBox {
+                        objectName: "themePicker"
+                        Kirigami.FormData.label: "Colours:"
+                        textRole: "label"
+                        valueRole: "key"
+                        model: [{ key: "dark", label: "Dark" }, { key: "light", label: "Light" }, { key: "system", label: "Follow Plasma" }]
+                        currentIndex: Math.max(0, model.findIndex(m => m.key === win.prefs.style.theme))
+                        onActivated: win.prefs.style.theme = currentValue
+                    }
+                    QQC.CheckBox {
+                        objectName: "translucent"
+                        text: "See-through, blurring what's behind"
+                        checked: win.prefs.style.translucent
+                        onToggled: win.prefs.style.translucent = checked
+                    }
                     QQC.CheckBox {
                         objectName: "liveBars"
                         text: "Level bars follow the sound"

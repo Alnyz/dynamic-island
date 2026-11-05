@@ -34,7 +34,7 @@ Column {
             objectName: "todoInput"
             width: parent.width - 70
             height: 32
-            color: "#ffffff"
+            color: palette.windowText
             leftPadding: 10
             rightPadding: 10
             clip: true
@@ -44,9 +44,9 @@ Column {
 
             Rectangle {
                 anchors.fill: parent
-                color: "#1a1a1a"
+                color: palette.alternateBase
                 radius: 6
-                border.color: taskInput.activeFocus ? palette.accent : "#333333"
+                border.color: taskInput.activeFocus ? palette.accent : palette.dark
                 z: -1
             }
             Text {
@@ -54,7 +54,7 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 x: 10
                 text: "Add a task"
-                color: "#6b737d"
+                color: palette.mid
                 font.pixelSize: 12
             }
         }
@@ -85,7 +85,7 @@ Column {
     Text {
         visible: todo.items.length === 0
         text: "Nothing to do. Add a task above; the next one shows on the idle pill."
-        color: "#9aa3ad"
+        color: palette.placeholderText
         font.pixelSize: 12
     }
 
@@ -135,7 +135,7 @@ Column {
                 objectName: "todoText" + row.index
                 width: parent.width - 18 - 24 - 2 * parent.spacing
                 text: row.modelData.text
-                color: row.modelData.done ? "#8a929c" : "#ffffff"
+                color: row.modelData.done ? palette.mid : palette.windowText
                 font.strikeout: row.modelData.done
                 font.pixelSize: 12
                 elide: Text.ElideRight
@@ -153,7 +153,7 @@ Column {
                 Text {
                     anchors.centerIn: parent
                     text: "✕"
-                    color: deleteArea.containsMouse ? "#ff8a8a" : "#8a929c"
+                    color: deleteArea.containsMouse ? "#ff8a8a" : palette.mid
                     font.pixelSize: 12
                 }
 
@@ -172,7 +172,7 @@ Column {
         objectName: "todoClearDone"
         visible: todo.doneCount > 0
         text: "Clear " + todo.doneCount + " done"
-        color: clearArea.containsMouse ? "#ffffff" : "#9aa3ad"
+        color: clearArea.containsMouse ? palette.windowText : palette.placeholderText
         font.pixelSize: 12
         MouseArea {
             id: clearArea

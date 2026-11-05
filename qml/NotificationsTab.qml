@@ -28,14 +28,14 @@ Item {
             Text {
                 anchors.baseline: parent.children[1].baseline
                 text: "Notifications"
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
             }
             Text {
                 objectName: "notifHeader"
                 text: tab.newCount ? tab.newCount + " new" : "all seen"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -46,12 +46,12 @@ Item {
             width: clearText.implicitWidth + 12
             height: 24
             radius: 6
-            color: clearArea.containsMouse ? "#141414" : "transparent"
+            color: clearArea.containsMouse ? palette.base : "transparent"
             Text {
                 id: clearText
                 anchors.centerIn: parent
                 text: "Clear all"
-                color: clearArea.containsMouse ? "#ffffff" : "#9aa3ad"
+                color: clearArea.containsMouse ? palette.windowText : palette.placeholderText
                 font.pixelSize: 12
             }
             MouseArea {
@@ -106,14 +106,14 @@ Item {
             objectName: "notifEmptyTitle"
             anchors.horizontalCenter: parent.horizontalCenter
             text: "No notifications"
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "New ones will be saved here."
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 13
         }
     }
@@ -124,7 +124,7 @@ Item {
         width: parent.width
         height: cardColumn.height + 20
         radius: 16
-        color: "#141414"
+        color: palette.base
 
         Column {
             id: cardColumn
@@ -152,7 +152,7 @@ Item {
                     anchors.rightMargin: 8
                     anchors.verticalCenter: appIcon.verticalCenter
                     text: card.modelData.app
-                    color: "#dfe3e8"
+                    color: palette.text
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -163,7 +163,7 @@ Item {
                     anchors.rightMargin: 6
                     anchors.verticalCenter: appIcon.verticalCenter
                     text: card.modelData.rows.length > 1 ? card.modelData.rows.length : ""
-                    color: "#9aa3ad"
+                    color: palette.placeholderText
                     font.pixelSize: 12
                 }
             }
@@ -178,7 +178,7 @@ Item {
                     width: cardColumn.width
                     height: 46
                     radius: 10
-                    color: hover.hovered ? "#1f1f21" : "transparent"
+                    color: hover.hovered ? palette.alternateBase : "transparent"
 
                     HoverHandler { id: hover }
                     MouseArea {
@@ -202,7 +202,7 @@ Item {
                         y: 7
                         width: timeText.x - x - 10
                         text: row.modelData.title
-                        color: row.isNew ? "#ffffff" : "#c5cad0"
+                        color: row.isNew ? palette.windowText : palette.text
                         font.pixelSize: 12
                         font.weight: row.isNew ? Font.DemiBold : Font.Normal
                         elide: Text.ElideRight
@@ -214,7 +214,7 @@ Item {
                         anchors.rightMargin: 8
                         anchors.baseline: titleText.baseline
                         text: L.ago(row.modelData.time, tab.now())
-                        color: "#6c737c"
+                        color: palette.mid
                         font.pixelSize: 11
                         font.features: { "tnum": 1 }
                     }
@@ -224,7 +224,7 @@ Item {
                         anchors.topMargin: 3
                         width: removeButton.x - x - 10
                         text: row.modelData.body
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -239,13 +239,13 @@ Item {
                         width: 20
                         height: 20
                         radius: 10
-                        color: removeArea.containsMouse ? "#2c2c2e" : "transparent"
+                        color: removeArea.containsMouse ? palette.button : "transparent"
                         Kirigami.Icon {
                             anchors.centerIn: parent
                             width: 11
                             height: 11
                             source: "window-close-symbolic"
-                            color: removeArea.containsMouse ? "#ffffff" : "#9aa3ad"
+                            color: removeArea.containsMouse ? palette.windowText : palette.placeholderText
                             isMask: true
                         }
                         MouseArea {

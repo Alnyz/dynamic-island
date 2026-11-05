@@ -12,6 +12,22 @@ Item {
     // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
     property string artUrl: ""
     // The cover's colour (CoverColor), when there is one; music controls use musicTint.
+    // Theme: light or dark colours for everything inside, and a see-through fill KWin blurs behind.
+    property bool lightTheme: false
+    property bool translucent: false
+    readonly property var theme: L.themeColors(lightTheme)
+    palette.window: theme.window
+    palette.windowText: theme.windowText
+    palette.text: theme.text
+    palette.placeholderText: theme.placeholderText
+    palette.mid: theme.mid
+    palette.base: theme.base
+    palette.alternateBase: theme.alternateBase
+    palette.button: theme.button
+    palette.dark: theme.dark
+    palette.brightText: theme.brightText
+    // What the window's blur should cover: the island's shape while it's visible.
+    readonly property real blurRadius: notch.r
     // The speakers' level (0..1) for the bars, or -1; wantsLevel says when it's needed.
     property real audioLevel: -1
     readonly property bool wantsLevel: playing && mode === "compact" && activity === "music"
@@ -346,10 +362,12 @@ Item {
         preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
-            fillColor: "#000000"
-            // A thin edge in the cover's colour while the music turn shows.
-            strokeWidth: island.coverTinted && island.musicShown ? 1 : -1
-            strokeColor: Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55)
+            objectName: "islandFill"
+            fillColor: Qt.rgba(island.palette.window.r, island.palette.window.g, island.palette.window.b, island.translucent ? 0.78 : 1)
+            // A thin edge in the cover's colour while the music turn shows; a faint one in the light theme.
+            readonly property bool tintEdge: island.coverTinted && island.musicShown
+            strokeWidth: tintEdge || island.lightTheme ? 1 : -1
+            strokeColor: tintEdge ? Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55) : Qt.rgba(0, 0, 0, 0.14)
             startX: notch.topR - notch.ear; startY: 0
             PathLine { x: island.width + notch.ear - notch.topR; y: 0 }
             PathArc { x: island.width; y: notch.corner; radiusX: notch.corner; radiusY: notch.corner; direction: notch.turn }
@@ -466,7 +484,7 @@ Item {
             anchors.horizontalCenterOffset: -(island.indicatorWidth + island.historyChipWidth) / 2 - (batteryRing.visible ? 10 : 0)
             spacing: 7
             readonly property string kind: island.glance.kind
-            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : "#ffffff"
+            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : palette.windowText
 
             // The next task: tick the circle to mark it done.
             Rectangle {
@@ -511,7 +529,7 @@ Item {
                 width: Math.min(implicitWidth, island.width - 110 - island.historyChipWidth)
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.title || ""
-                color: parent.kind === "batteryLow" ? "#ff8a8a" : "#ffffff"
+                color: parent.kind === "batteryLow" ? "#ff8a8a" : palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -522,7 +540,7 @@ Item {
                 visible: parent.kind !== "clock"
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.detail || ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
 
@@ -556,7 +574,7 @@ Item {
                 visible: parent.kind === "clock" && island.glance.showTime
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.time || ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -566,7 +584,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
                 height: 12
-                color: "#333333"
+                color: palette.dark
             }
             Kirigami.Icon {
                 visible: parent.kind === "clock" && island.glance.showWeather
@@ -574,7 +592,7 @@ Item {
                 width: 14
                 height: 14
                 source: W.describe(island.weather ? island.weather.code : -1).icon
-                color: "#ffffff"
+                color: palette.windowText
                 isMask: true
             }
             Text {
@@ -582,7 +600,7 @@ Item {
                 visible: parent.kind === "clock" && island.glance.showWeather
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.weather ? island.weather.temperature + "°" : ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -592,7 +610,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
                 height: 12
-                color: "#333333"
+                color: palette.dark
             }
             Kirigami.Icon {
                 visible: parent.kind === "clock" && island.glance.updates > 0
@@ -601,7 +619,7 @@ Item {
                 height: 14
                 source: "update-none"
                 fallback: "view-refresh"
-                color: "#ffffff"
+                color: palette.windowText
                 isMask: true
             }
             Text {
@@ -609,7 +627,7 @@ Item {
                 visible: parent.kind === "clock" && island.glance.updates > 0
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.updates || ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -629,13 +647,13 @@ Item {
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: "#2b2f35"
+                strokeColor: palette.dark
                 strokeWidth: 2.2
                 PathAngleArc { centerX: 7; centerY: 7; radiusX: 5.5; radiusY: 5.5; startAngle: 0; sweepAngle: 360 }
             }
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: island.charging ? "#30d158" : "#ffffff"
+                strokeColor: island.charging ? "#30d158" : palette.windowText
                 strokeWidth: 2.2
                 capStyle: ShapePath.RoundCap
                 PathAngleArc {
@@ -803,7 +821,7 @@ Item {
             visible: island.mode === "compact"
             running: island.playing
             level: island.audioLevel
-            color: island.coverTinted ? island.coverTint : "#e8e2d0"
+            color: island.coverTinted ? island.coverTint : palette.brightText
             anchors.right: parent.right
             anchors.rightMargin: 10 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
@@ -821,7 +839,7 @@ Item {
                 objectName: "title"
                 width: parent.width
                 text: island.player ? island.player.track : ""
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -830,7 +848,7 @@ Item {
                 objectName: "artist"
                 width: parent.width
                 text: island.player ? island.player.artist : ""
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
@@ -856,14 +874,14 @@ Item {
                 width: parent.width
                 height: seekArea.containsMouse || seekArea.pressed ? 4 : 2
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.18)
+                color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.18)
                 Behavior on height { NumberAnimation { duration: 120 } }
                 Rectangle {
                     objectName: "peekSeekFill"
                     width: parent.width * peekSeek.fraction
                     height: parent.height
                     radius: parent.radius
-                    color: island.coverTinted ? island.coverTint : "#ffffff"
+                    color: island.coverTinted ? island.coverTint : palette.windowText
                 }
             }
             Rectangle {
@@ -873,7 +891,7 @@ Item {
                 radius: 4.5
                 x: peekSeek.fraction * peekSeek.width - width / 2
                 anchors.verticalCenter: parent.verticalCenter
-                color: "#ffffff"
+                color: palette.windowText
             }
             MouseArea {
                 id: seekArea
@@ -923,7 +941,7 @@ Item {
             width: side
             height: side
             source: "chronometer"
-            color: "#ffffff"
+            color: palette.windowText
             isMask: true
         }
 
@@ -935,7 +953,7 @@ Item {
             anchors.rightMargin: 12 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
             text: island.timerText
-            color: "#e8e2d0"
+            color: palette.brightText
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -948,13 +966,13 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 text: island.timerActive && island.timer.paused ? "Timer paused" : "Timer"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
             Text {
                 objectName: "peekTimerText"
                 text: island.timerText
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -995,7 +1013,7 @@ Item {
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             text: island.jobs.count === 1 ? L.jobName(island.jobs.shown[0]) : island.jobs.count + " jobs"
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             elide: Text.ElideRight
@@ -1008,7 +1026,7 @@ Item {
             anchors.rightMargin: 12 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
             text: island.jobs.percent + "%"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.features: { "tnum": 1 }
         }
@@ -1023,7 +1041,7 @@ Item {
             anchors.bottomMargin: 1
             height: 2
             radius: 1
-            color: "#24282d"
+            color: palette.button
             Rectangle {
                 objectName: "jobsLine"
                 width: parent.width * island.jobs.percent / 100
@@ -1058,7 +1076,7 @@ Item {
                         Text {
                             width: parent.width
                             text: L.jobName(row.modelData)
-                            color: "#ffffff"
+                            color: palette.windowText
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
@@ -1070,7 +1088,7 @@ Item {
                                   ? L.formatSize(row.modelData.processedBytes || 0) + " of " + L.formatSize(row.modelData.totalBytes)
                                     + (row.modelData.speed > 0 ? " · " + L.formatSize(row.modelData.speed) + "/s" : "") + (timeLeft ? " · " + timeLeft + " left" : "")
                                   : L.jobVerb(row.modelData) + (timeLeft ? " · " + timeLeft + " left" : "")
-                            color: "#9aa3ad"
+                            color: palette.placeholderText
                             font.pixelSize: 11
                             elide: Text.ElideRight
                         }
@@ -1078,7 +1096,7 @@ Item {
                             width: parent.width
                             height: 3
                             radius: 1.5
-                            color: "#24282d"
+                            color: palette.button
                             Rectangle {
                                 width: parent.width * (row.modelData.percent || 0) / 100
                                 height: parent.height
@@ -1092,7 +1110,7 @@ Item {
                         anchors.right: parent.right
                         y: 4
                         text: (row.modelData.percent || 0) + "%"
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 12
                         font.features: { "tnum": 1 }
                     }
@@ -1105,7 +1123,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: 28
                 text: "+" + (island.jobs.count - 3) + " more"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -1126,7 +1144,7 @@ Item {
                 width: 4
                 height: 4
                 radius: 2
-                color: dot.index === island.current % island.activities.length ? "#ffffff" : "#5a616a"
+                color: dot.index === island.current % island.activities.length ? palette.windowText : palette.mid
             }
         }
     }
@@ -1155,7 +1173,7 @@ Item {
                 objectName: "tourTitle"
                 width: parent.width
                 text: parent.parent.step.title
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
             }
@@ -1163,7 +1181,7 @@ Item {
                 objectName: "tourBody"
                 width: parent.width
                 text: parent.parent.step.body
-                color: "#c4cad1"
+                color: palette.text
                 font.pixelSize: 12
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
@@ -1183,7 +1201,7 @@ Item {
                     width: index === island.tourStep ? 14 : 6
                     height: 6
                     radius: 3
-                    color: index === island.tourStep ? "#ffffff" : Qt.rgba(1, 1, 1, 0.3)
+                    color: index === island.tourStep ? palette.windowText : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.3)
                     Behavior on width { NumberAnimation { duration: 150 } }
                 }
             }
@@ -1200,8 +1218,8 @@ Item {
                 width: skipText.implicitWidth + 22
                 height: 26
                 radius: 13
-                color: skipArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: "#9aa3ad"; font.pixelSize: 12 }
+                color: skipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
+                Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: palette.placeholderText; font.pixelSize: 12 }
                 MouseArea { id: skipArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.skipTour() }
             }
             Rectangle {
@@ -1231,7 +1249,7 @@ Item {
         width: parent ? parent.width : 0
         height: 32
         radius: 10
-        color: rowArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        color: rowArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
         Kirigami.Icon {
             id: rowIcon
             x: 10
@@ -1239,7 +1257,7 @@ Item {
             width: 16
             height: 16
             source: row.icon
-            color: "#ffffff"
+            color: palette.windowText
             isMask: true
         }
         Text {
@@ -1249,7 +1267,7 @@ Item {
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             text: row.label
-            color: "#ffffff"
+            color: palette.windowText
             font.pixelSize: 13
             elide: Text.ElideRight
         }
@@ -1294,7 +1312,7 @@ Item {
                             width: 16
                             height: 16
                             source: entry.modelData.icon
-                            color: "#ffffff"
+                            color: palette.windowText
                             isMask: true
                         }
                         Item { width: 4; height: 1 }
@@ -1307,11 +1325,11 @@ Item {
                                 width: 64
                                 height: 26
                                 radius: 13
-                                color: chipArea.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.1)
+                                color: chipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.22) : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.1)
                                 Text {
                                     anchors.centerIn: parent
                                     text: parent.modelData + " min"
-                                    color: "#ffffff"
+                                    color: palette.windowText
                                     font.pixelSize: 12
                                     font.weight: Font.DemiBold
                                 }
@@ -1363,14 +1381,14 @@ Item {
                 width: 12
                 height: 12
                 source: "folder-download-symbolic"
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 isMask: true
             }
             Text {
                 objectName: "shelfCount"
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.shelf.length
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 11
                 font.features: { "tnum": 1 }
             }
@@ -1517,7 +1535,7 @@ Item {
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player
             artUrl: island.artUrl
-            musicTint: island.coverTinted ? island.coverTint : "#e8e2d0"
+            musicTint: island.coverTinted ? island.coverTint : palette.brightText
             accentTint: island.musicTint
             timer: island.timer
             weather: island.weather

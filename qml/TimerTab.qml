@@ -20,7 +20,7 @@ Item {
             readonly property int split: tab.clock.lastIndexOf(":")
             Text {
                 text: tab.clock.slice(0, parent.split)
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 84
                 font.weight: Font.ExtraLight
                 font.letterSpacing: -2
@@ -29,7 +29,7 @@ Item {
             Text {
                 anchors.baseline: parent.children[0].baseline
                 text: tab.clock.slice(parent.split)
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 40
                 font.weight: Font.Light
                 font.features: { "tnum": 1 }
@@ -41,7 +41,7 @@ Item {
             text: !tab.active ? "Drag the tape or scroll to set"
                 : tab.timer.paused ? "Paused"
                 : "Ends at " + Qt.formatTime(new Date(tab.timer.endMs), "HH:mm")
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
         }
 

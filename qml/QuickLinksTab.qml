@@ -18,7 +18,7 @@ Item {
         height: 16
         Text {
             text: "QUICK LINKS"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -50,7 +50,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Sites and folders you open every day, one click away"
-            color: "#9aa3ad"
+            color: palette.placeholderText
             font.pixelSize: 13
         }
         Pill {
@@ -80,8 +80,8 @@ Item {
                 width: (parent.width - 3 * 12) / 4
                 height: 64
                 radius: 16
-                color: tileArea.containsMouse ? "#1c1c1c" : "#121212"
-                border.color: tileArea.containsMouse ? "#333333" : "#222222"
+                color: tileArea.containsMouse ? palette.alternateBase : palette.base
+                border.color: tileArea.containsMouse ? palette.dark : palette.button
 
                 Rectangle {
                     id: badge
@@ -110,7 +110,7 @@ Item {
                     Text {
                         width: parent.width
                         text: tile.modelData.name || L.linkName(tile.modelData.url)
-                        color: "#ffffff"
+                        color: palette.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -118,7 +118,7 @@ Item {
                     Text {
                         width: parent.width
                         text: tile.folder ? decodeURIComponent(tile.modelData.url.substring(7)).replace(tab.home, "~") : L.linkName(tile.modelData.url)
-                        color: "#9aa3ad"
+                        color: palette.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideMiddle
                     }

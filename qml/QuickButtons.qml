@@ -17,7 +17,7 @@ Row {
         width: battRow.implicitWidth + 24
         height: 30
         radius: 15
-        color: "#141414"
+        color: palette.base
 
         Row {
             id: battRow
@@ -29,13 +29,13 @@ Row {
                 height: 16
                 readonly property int level: Math.round(SystemStatus.battery / 20) * 20
                 source: "battery-" + String(level).padStart(3, "0") + (SystemStatus.charging ? "-charging" : "")
-                color: "#ffffff"
+                color: palette.windowText
                 isMask: true
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: SystemStatus.battery + "%"
-                color: "#ffffff"
+                color: palette.windowText
                 font.pixelSize: 12
             }
         }
@@ -108,14 +108,14 @@ Row {
         width: 30
         height: 30
         radius: 15
-        color: on ? palette.accent : "#141414"
+        color: on ? palette.accent : palette.base
 
         Kirigami.Icon {
             anchors.centerIn: parent
             width: 15
             height: 15
             source: button.iconName
-            color: "#ffffff"
+            color: parent.on ? "#ffffff" : palette.windowText
             isMask: true
         }
         MouseArea {

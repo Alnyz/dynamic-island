@@ -239,6 +239,17 @@ private Q_SLOTS:
         QCOMPARE(InputRegion::maskRect(QRectF(300, 0, 300.4, 32)), QRect(300, 0, 301, 32));
     }
 
+    void blurRegionIsRounded()
+    {
+        const QRegion r = InputRegion::roundedRegion(QRectF(10, 0, 200, 40), 20);
+        QVERIFY(r.contains(QPoint(110, 20)));
+        // The corners are cut away.
+        QVERIFY(!r.contains(QPoint(11, 1)));
+        QVERIFY(!r.contains(QPoint(208, 38)));
+        QVERIFY(r.boundingRect().width() <= 201);
+        QVERIFY(InputRegion::roundedRegion(QRectF(0, 0, 0, 0), 10).isEmpty());
+    }
+
     void fullScreenWatcherWithoutServiceLoadsNothing()
     {
         // Another instance (here: the test) already owns the name, so this one must neither load

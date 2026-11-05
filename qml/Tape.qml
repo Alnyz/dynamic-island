@@ -27,7 +27,7 @@ Item {
             width: tape.pxPerMinute
             height: tape.height
 
-            Rectangle { width: 2; height: 24; radius: 1; x: -1; color: "#8a929c" }
+            Rectangle { width: 2; height: 24; radius: 1; x: -1; color: palette.mid }
             Repeater {
                 model: 3
                 delegate: Rectangle {
@@ -35,14 +35,14 @@ Item {
                     x: (index + 1) * tape.pxPerMinute / 4
                     width: 1
                     height: 12
-                    color: "#3a3a3a"
+                    color: palette.dark
                 }
             }
             Text {
                 x: -width / 2
                 y: 30
                 text: parent.minute
-                color: "#9aa3ad"
+                color: palette.placeholderText
                 font.pixelSize: 11
                 font.weight: Font.Medium
                 font.features: { "tnum": 1 }
@@ -56,7 +56,7 @@ Item {
         height: tape.height
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: "#000000" }
+            GradientStop { position: 0; color: palette.window }
             GradientStop { position: 1; color: "transparent" }
         }
     }
@@ -67,7 +67,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0; color: "transparent" }
-            GradientStop { position: 1; color: "#000000" }
+            GradientStop { position: 1; color: palette.window }
         }
     }
 

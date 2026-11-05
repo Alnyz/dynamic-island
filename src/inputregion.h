@@ -24,4 +24,8 @@ public:
     Q_INVOKABLE void setKeyboard(QWindow *window, bool on, bool exclusive = false);
     // Overlay sits above full-screen windows; Top, the usual layer, sits below them.
     Q_INVOKABLE void setLayer(QWindow *window, bool overlay);
+    // KWin blurs what's behind the island's rounded shape (for the see-through look), or nothing.
+    Q_INVOKABLE void setBlur(QWindow *window, const QRectF &rect, qreal radius, bool on);
+    // The blur region: rect with rounded corners, as KWin takes it.
+    static QRegion roundedRegion(const QRectF &rect, qreal radius);
 };

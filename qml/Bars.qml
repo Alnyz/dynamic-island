@@ -7,7 +7,7 @@ Row {
     id: bars
 
     property bool running: false
-    property color color: "#e8e2d0"
+    property color color: palette.brightText
     // The output's peak level, or -1 when it isn't being measured.
     property real level: -1
     readonly property bool live: running && level >= 0
