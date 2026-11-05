@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Closed pill
 
 - Cover art and a small level meter that follows the sound while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
-- When nothing is going on, it shows a glance (an event starting soon, low battery, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default; click the count to see the packages and update them in a terminal) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
+- When nothing is going on, it shows a glance (an event starting soon, low battery on the laptop or a Bluetooth device, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default; click the count to see the packages and update them in a terminal) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
 - Scroll up or down on it to change the volume, or the minutes left while the timer shows. Middle-click plays or pauses, and double-clicking the music turn skips the song.
 - Point at it to see the song title and a seek bar you can drag. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. With the panel open from the keyboard, 1–9 or Tab switch tabs, Space plays or pauses and ←/→ seek 5 seconds. Meta+Shift+V opens clipboard history with the search box ready. Both keys can be changed in System Settings → Shortcuts → Dynamic Island; to use Meta+V for clipboard history, first take it off Plasma's own clipboard popup there.
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 ### Quick buttons
 
-The panel has buttons for battery, volume, Wi-Fi, Bluetooth, do not disturb, keeping the screen awake, screenshot and lock.
+The panel has buttons for battery, volume, Wi-Fi, Bluetooth (with a badge for a connected device's battery), do not disturb, keeping the screen awake, screenshot and lock.
 
 ## Requirements
 

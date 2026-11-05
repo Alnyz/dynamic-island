@@ -77,6 +77,7 @@ Item {
     // TodoStore for the To-Do tab.
     property var todos: null
     property var updatePackages: []
+    property var btDevices: []
     signal upgradeRequested()
     property var shelf: []
     property bool showJoin: true
@@ -325,6 +326,12 @@ Item {
         target: quickSlot.item
         property: "hidden"
         value: panel.quickHidden
+        when: quickSlot.item !== null
+    }
+    Binding {
+        target: quickSlot.item
+        property: "devices"
+        value: panel.btDevices
         when: quickSlot.item !== null
     }
 

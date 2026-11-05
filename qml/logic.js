@@ -277,6 +277,9 @@ function idleGlance(o) {
     }
     if (o.show.battery && o.battery >= 0 && o.battery <= 15 && !o.charging)
         return { kind: "batteryLow", title: o.battery + "%", detail: "plug in" }
+    const low = lowDevice(o.devices)
+    if (o.show.battery && low)
+        return { kind: "deviceLow", title: low.name, detail: low.battery + "%", icon: low.icon || "bluetooth" }
     if (o.show.todo !== false && o.todo && o.todo.text)
         return { kind: "todo", id: o.todo.id, title: o.todo.text, detail: "" }
     const showTime = !!o.show.time
@@ -366,6 +369,24 @@ function pomodoroMessage(ended, next, minutes) {
     if (next === "work")
         return { title: "Back to focus", body: minutes + " minutes of focus" }
     return { title: ended === "work" ? "Time for a break" : "Break", body: (next === "longBreak" ? "A long break: " : "") + minutes + " minutes" }
+}
+
+// A connected Bluetooth device at 15% or less (the emptiest), or null.
+function lowDevice(devices) {
+    let low = null
+    for (const d of devices || [])
+        if (d.battery >= 0 && d.battery <= 15 && (!low || d.battery < low.battery))
+            low = d
+    return low
+}
+
+// The Bluetooth quick button's badge and tooltip: { badge: "80" or "", label }.
+function bluetoothSummary(devices) {
+    const list = devices || []
+    const withBattery = list.filter(d => d.battery >= 0)
+    const shown = withBattery.length ? withBattery.reduce((a, b) => (b.battery < a.battery ? b : a)) : null
+    const names = list.map(d => d.name + (d.battery >= 0 ? " " + d.battery + "%" : ""))
+    return { badge: shown ? String(shown.battery) : "", label: names.length ? "Bluetooth · " + names.join(", ") : "Bluetooth" }
 }
 
 // The island's colours for each theme, as Qt palette roles.

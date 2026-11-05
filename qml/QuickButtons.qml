@@ -10,6 +10,9 @@ Row {
     spacing: 6
     // objectName suffixes ("volume", "wifi", ...) of buttons to leave out.
     property var hidden: []
+    // Connected Bluetooth devices: the emptiest battery shows as a badge on the Bluetooth button.
+    property var devices: []
+    readonly property var btSummary: L.bluetoothSummary(devices)
 
     Rectangle {
         visible: SystemStatus.battery >= 0 && !quick.hidden.includes("battery")
@@ -63,7 +66,8 @@ Row {
     }
     QuickButton {
         objectName: "qb-bluetooth"
-        label: "Bluetooth"
+        label: quick.btSummary.label
+        badge: quick.btSummary.badge
         on: SystemStatus.bluetooth
         iconName: "network-bluetooth-activated"
         onClicked: SystemStatus.setBluetooth(!SystemStatus.bluetooth)
@@ -100,6 +104,7 @@ Row {
         property string iconName
         property string label
         property bool on: false
+        property string badge: ""
         signal clicked()
         signal scrolled(int delta)
 
@@ -117,6 +122,26 @@ Row {
             source: button.iconName
             color: parent.on ? "#ffffff" : palette.windowText
             isMask: true
+        }
+        Rectangle {
+            visible: button.badge !== ""
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: -4
+            anchors.bottomMargin: -3
+            width: Math.max(16, badgeText.implicitWidth + 6)
+            height: 13
+            radius: 6.5
+            color: Number(button.badge) <= 15 ? "#ff6b6b" : palette.button
+            border.color: palette.window
+            Text {
+                id: badgeText
+                anchors.centerIn: parent
+                text: button.badge
+                color: Number(button.badge) <= 15 ? "#ffffff" : palette.windowText
+                font.pixelSize: 8
+                font.weight: Font.Bold
+            }
         }
         MouseArea {
             id: area

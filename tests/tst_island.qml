@@ -1015,6 +1015,16 @@ Item {
             compare(island.open, false)
         }
 
+        function test_low_bluetooth_device_glance() {
+            const { island } = make(null)
+            island.btDevices = [{ name: "Noise Earbuds", battery: 9, icon: "audio-headset", path: "/x" }]
+            island.refreshGlance()
+            compare(island.glance.kind, "deviceLow")
+            compare(findChild(island, "glanceTitle").text, "Noise Earbuds")
+            compare(findChild(island, "glanceDetail").text, "9%")
+            tryCompare(island, "width", 230)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

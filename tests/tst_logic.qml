@@ -215,6 +215,15 @@ TestCase {
         compare(g({ battery: 12, charging: true }).kind, "clock")
         compare(g({ event: soon, battery: 12 }).kind, "event")
 
+        // A Bluetooth device running low comes after the laptop's battery, before tasks.
+        const buds = [{ name: "Noise Earbuds", battery: 12, icon: "audio-headset" }]
+        compare(g({ devices: buds }).kind, "deviceLow")
+        compare(g({ devices: buds }).title, "Noise Earbuds")
+        compare(g({ devices: buds }).detail, "12%")
+        compare(g({ devices: buds, battery: 12 }).kind, "batteryLow")
+        compare(g({ devices: buds, todo: { id: "t", text: "x" } }).kind, "deviceLow")
+        compare(g({ devices: [{ name: "Mouse", battery: 40 }] }).kind, "clock")
+
         // The next task comes after events and low battery, before the clock.
         const task = { id: "t1", text: "Send invoice", done: false }
         compare(g({ todo: task }).kind, "todo")
@@ -590,6 +599,16 @@ TestCase {
         compare(L.pomodoroMessage("work", "break", 5), { title: "Time for a break", body: "5 minutes" })
         compare(L.pomodoroMessage("work", "longBreak", 15), { title: "Time for a break", body: "A long break: 15 minutes" })
         compare(L.pomodoroMessage("break", "work", 25), { title: "Back to focus", body: "25 minutes of focus" })
+    }
+
+    function test_bluetooth_summary() {
+        compare(L.bluetoothSummary([]), { badge: "", label: "Bluetooth" })
+        compare(L.bluetoothSummary(undefined), { badge: "", label: "Bluetooth" })
+        compare(L.bluetoothSummary([{ name: "Mouse", battery: -1 }]), { badge: "", label: "Bluetooth · Mouse" })
+        compare(L.bluetoothSummary([{ name: "Earbuds", battery: 80 }, { name: "Mouse", battery: 35 }]),
+                { badge: "35", label: "Bluetooth · Earbuds 80%, Mouse 35%" })
+        compare(L.lowDevice([{ name: "A", battery: 14 }, { name: "B", battery: 9 }, { name: "C", battery: -1 }]).name, "B")
+        compare(L.lowDevice([{ name: "A", battery: 50 }]), null)
     }
 
     function test_pill_menu() {

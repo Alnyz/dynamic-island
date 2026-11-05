@@ -94,6 +94,8 @@ Item {
     // Repo packages waiting for an update; -1 while unknown. updatePackages lists them.
     property int updates: -1
     property var updatePackages: []
+    // Connected Bluetooth devices (BluetoothWatcher.devices).
+    property var btDevices: []
     signal upgradeRequested()
     // A file URL, or "builtin:<name>" for one of IdleArt's animations.
     property string idleAnimation: "builtin:aurora"
@@ -108,7 +110,7 @@ Item {
         return L.idleGlance({
             now: now(), show: glances, event: next.length ? next[0] : null,
             battery: battery, charging: charging,
-            temperature: weather ? weather.temperature : NaN, updates: updates,
+            temperature: weather ? weather.temperature : NaN, updates: updates, devices: btDevices,
             todo: todos && todos.nextOpen && todos.nextOpen.id ? todos.nextOpen : null
         })
     }
@@ -244,6 +246,7 @@ Item {
         idle: { w: (idleMode !== "glances" ? idleWidth
                     : glance.kind === "event" ? Math.max(idleWidth, glance.link ? 290 : 230)
                     : glance.kind === "todo" ? Math.max(idleWidth, 250)
+                    : glance.kind === "deviceLow" ? Math.max(idleWidth, 230)
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200) + (glance.updates > 0 ? 44 : 0)
                     : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
@@ -503,7 +506,7 @@ Item {
             anchors.horizontalCenterOffset: -(island.indicatorWidth + island.historyChipWidth) / 2 - (batteryRing.visible ? 10 : 0)
             spacing: 7
             readonly property string kind: island.glance.kind
-            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" ? "#ff6b6b" : palette.windowText
+            readonly property color tint: kind === "event" ? palette.accent : kind === "batteryLow" || kind === "deviceLow" ? "#ff6b6b" : palette.windowText
 
             // The next task: tick the circle to mark it done.
             Rectangle {
@@ -538,6 +541,7 @@ Item {
                 width: 14
                 height: 14
                 source: parent.kind === "event" ? "view-calendar"
+                      : parent.kind === "deviceLow" ? island.glance.icon
                       : "battery-010"
                 color: parent.tint
                 isMask: true
@@ -548,7 +552,7 @@ Item {
                 width: Math.min(implicitWidth, island.width - 110 - island.historyChipWidth)
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.glance.title || ""
-                color: parent.kind === "batteryLow" ? "#ff8a8a" : palette.windowText
+                color: parent.kind === "batteryLow" || parent.kind === "deviceLow" ? "#ff8a8a" : palette.windowText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
@@ -1562,6 +1566,7 @@ Item {
             notes: island.notes
             todos: island.todos
             updatePackages: island.updatePackages
+            btDevices: island.btDevices
             onUpgradeRequested: {
                 island.open = false
                 island.upgradeRequested()

@@ -239,6 +239,38 @@ private Q_SLOTS:
         QCOMPARE(InputRegion::maskRect(QRectF(300, 0, 300.4, 32)), QRect(300, 0, 301, 32));
     }
 
+    void connectedBluetoothDevices()
+    {
+        BluezObjects objects;
+        BluezInterfaces earbuds;
+        earbuds.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("Noise Earbuds")},
+                                                             {QStringLiteral("Icon"), QStringLiteral("audio-headset")},
+                                                             {QStringLiteral("Connected"), true}});
+        earbuds.insert(QStringLiteral("org.bluez.Battery1"), {{QStringLiteral("Percentage"), QVariant::fromValue<uchar>(12)}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_A")), earbuds);
+        BluezInterfaces mouse;
+        mouse.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("Mouse")},
+                                                           {QStringLiteral("Icon"), QStringLiteral("input-mouse")},
+                                                           {QStringLiteral("Connected"), true}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_B")), mouse);
+        BluezInterfaces speaker;
+        speaker.insert(QStringLiteral("org.bluez.Device1"), {{QStringLiteral("Alias"), QStringLiteral("JBL Go 3")}, {QStringLiteral("Connected"), false}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0/dev_C")), speaker);
+        BluezInterfaces adapter;
+        adapter.insert(QStringLiteral("org.bluez.Adapter1"), {{QStringLiteral("Alias"), QStringLiteral("anu-pc")}});
+        objects.insert(QDBusObjectPath(QStringLiteral("/org/bluez/hci0")), adapter);
+
+        const QVariantList list = BluetoothWatcher::connectedDevices(objects);
+        QCOMPARE(list.size(), 2);
+        // By name: Mouse, then Noise Earbuds.
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("Mouse"));
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("battery")).toInt(), -1);
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("Noise Earbuds"));
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("battery")).toInt(), 12);
+        QCOMPARE(list.at(1).toMap().value(QStringLiteral("path")).toString(), QStringLiteral("/org/bluez/hci0/dev_A"));
+        QVERIFY(!list.at(1).toMap().contains(QStringLiteral("connected")));
+    }
+
     void blurRegionIsRounded()
     {
         const QRegion r = InputRegion::roundedRegion(QRectF(10, 0, 200, 40), 20);

@@ -90,6 +90,7 @@ Window {
     }
 
     BluetoothWatcher {
+        id: btWatcher
         onDeviceChanged: d => {
             if (prefs.show.devices && !island.open)
                 root.alert(Object.assign({ kind: "device" }, d), 4000)
@@ -338,6 +339,7 @@ Window {
         glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count
         updatePackages: updatesWatcher.packages
+        btDevices: btWatcher.devices
         onUpgradeRequested: updatesWatcher.upgrade()
         idleAnimation: prefs.idle.animation || "builtin:aurora"
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
