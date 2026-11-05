@@ -1,6 +1,7 @@
 #include "todostore.h"
 
 #include <QFile>
+#include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -88,6 +89,43 @@ private Q_SLOTS:
         QCOMPARE(store.items().at(1).toMap().value(QStringLiteral("done")).toBool(), true);
         QVERIFY(store.items().at(0).toMap().value(QStringLiteral("id")) != store.items().at(1).toMap().value(QStringLiteral("id")));
         QCOMPARE(store.importJson(QStringLiteral("not json")), 0);
+    }
+
+    void importsTheLegacyFileOnce()
+    {
+        QTemporaryDir dir;
+        const QString legacy = dir.filePath(QStringLiteral("old.conf"));
+        {
+            QSettings old(legacy, QSettings::IniFormat);
+            old.setValue(QStringLiteral("TodoList/tasksJson"), QStringLiteral(R"([{"text":"from before","done":false}])"));
+            old.setValue(QStringLiteral("Other/keep"), 1);
+        }
+        TodoStore store(dir.filePath(QStringLiteral("todo.json")));
+        QCOMPARE(store.importLegacy(legacy), 1);
+        QCOMPARE(store.items().at(0).toMap().value(QStringLiteral("text")).toString(), QStringLiteral("from before"));
+        // The old entry is gone, so it never comes over twice; other keys stay.
+        QCOMPARE(store.importLegacy(legacy), 0);
+        QCOMPARE(store.items().size(), 1);
+        QSettings old(legacy, QSettings::IniFormat);
+        QVERIFY(!old.contains(QStringLiteral("TodoList/tasksJson")));
+        QCOMPARE(old.value(QStringLiteral("Other/keep")).toInt(), 1);
+    }
+
+    void legacyImportLeavesAFullStoreAndMissingFilesAlone()
+    {
+        QTemporaryDir dir;
+        TodoStore store(dir.filePath(QStringLiteral("todo.json")));
+        const QString missing = dir.filePath(QStringLiteral("nope/old.conf"));
+        QCOMPARE(store.importLegacy(missing), 0);
+        QVERIFY(!QFile::exists(missing));
+        store.add(QStringLiteral("current"));
+        const QString legacy = dir.filePath(QStringLiteral("old.conf"));
+        {
+            QSettings old(legacy, QSettings::IniFormat);
+            old.setValue(QStringLiteral("TodoList/tasksJson"), QStringLiteral(R"([{"text":"stale","done":false}])"));
+        }
+        QCOMPARE(store.importLegacy(legacy), 0);
+        QCOMPARE(store.items().size(), 1);
     }
 
     void brokenFileIsAnEmptyList()

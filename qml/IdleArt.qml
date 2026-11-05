@@ -16,12 +16,17 @@ Item {
         onTriggered: art.time += interval / 1000
     }
 
-    ShaderEffect {
+    // Only made for a real shader: an empty or unknown name would fall back to Qt's default shader,
+    // which wants a `source` texture and warns that there is none.
+    Loader {
+        objectName: "idleShader"
         anchors.fill: parent
-        visible: art.name !== "cat"
-        property real time: art.time
-        property size size: Qt.size(width, height)
-        fragmentShader: visible ? "qrc:/shaders/" + art.name + ".frag.qsb" : ""
+        active: art.visible && ["aurora", "wave", "fireflies"].indexOf(art.name) >= 0
+        sourceComponent: ShaderEffect {
+            property real time: art.time
+            property size size: Qt.size(width, height)
+            fragmentShader: "qrc:/shaders/" + art.name + ".frag.qsb"
+        }
     }
 
     PixelCat {
