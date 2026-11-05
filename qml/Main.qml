@@ -26,6 +26,10 @@ Window {
         prefs: prefs
         calendar: calendarSource
         appConfig: AppConfig
+        onTourRequested: {
+            settingsWindow.close()
+            island.startTour()
+        }
     }
 
     MprisPlayers { id: mpris }
@@ -298,6 +302,7 @@ Window {
         animateOnHoverOnly: prefs.idle.animateOnHoverOnly
         userIdle: SystemStatus.userIdle
         onSettingsRequested: root.showSettings()
+        onTourFinished: prefs.behaviour.tourSeen = true
         dnd: SystemStatus.dnd
         onMenuAction: key => {
             if (key === "dnd-hour") {
@@ -324,6 +329,13 @@ Window {
         onInputRectChanged: root.updateInputRegion()
         coveredByFullScreen: fullScreen.active
         onWantsFrontChanged: InputRegion.setLayer(root, wantsFront)
+    }
+
+    // The tour waits until startup's burst of alerts is over.
+    Timer {
+        interval: 4000
+        running: !prefs.behaviour.tourSeen
+        onTriggered: island.startTour()
     }
 
     function showSettings() {

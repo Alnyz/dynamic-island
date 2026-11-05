@@ -14,6 +14,7 @@ QQC.ApplicationWindow {
     property var calendar: null
     // The AppConfig singleton; passed in so the window also loads without the C++ module (tests).
     property var appConfig: null
+    signal tourRequested()
 
     title: "Dynamic Island settings"
     width: 760
@@ -745,6 +746,13 @@ QQC.ApplicationWindow {
                         enabled: win.appConfig !== null
                         checked: win.appConfig ? win.appConfig.autostart : false
                         onToggled: if (win.appConfig) win.appConfig.autostart = checked
+                    }
+                    QQC.Button {
+                        objectName: "tourAgain"
+                        Kirigami.FormData.label: "Getting started:"
+                        text: "Show the tour again"
+                        icon.name: "help-hint"
+                        onClicked: win.tourRequested()
                     }
                     QQC.Button {
                         text: "Reset to defaults"

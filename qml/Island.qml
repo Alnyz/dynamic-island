@@ -85,6 +85,29 @@ Item {
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
     signal notificationClicked(string desktopEntry)
+    // First-run tour: a card per step of L.TOUR, until finished or skipped.
+    property bool tourActive: false
+    property int tourStep: 0
+    signal tourFinished()
+    function startTour() {
+        open = false
+        menuOpen = false
+        tourStep = 0
+        tourActive = true
+    }
+    function nextTourStep() {
+        if (tourStep + 1 < L.TOUR.length) {
+            tourStep++
+        } else {
+            tourActive = false
+            tourFinished()
+        }
+    }
+    function skipTour() {
+        tourActive = false
+        tourFinished()
+    }
+
     // Right-click menu. Its timer rows start the timer here; the rest go out as menuAction(key).
     property bool menuOpen: false
     property bool dnd: false
@@ -168,7 +191,7 @@ Item {
     readonly property bool cyclePaused: swipePause.running
     property int wheelAccum: 0
     property bool swipeUsed: false
-    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null, menuOpen)
+    readonly property string mode: L.islandState(activities.length > 0, hovered, open, alert !== null, menuOpen, tourActive)
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
 
     readonly property var sizes: ({
@@ -181,6 +204,7 @@ Item {
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
         // 14 + 18: panelLoader's top and bottom margins.
+        tour: { w: 420, h: 116, r: 26 },
         menu: { w: 290, h: 16 + menuRows.length * 36, r: 22 },
         open: { w: 860, h: panelLoader.item && panelLoader.item.fitHeight > 0 ? panelLoader.item.fitHeight + 14 + 18 : 420, r: 30 }
     })
@@ -340,6 +364,8 @@ Item {
             }
         }
         onClicked: mouse => {
+            if (island.mode === "tour")
+                return
             if (mouse.button === Qt.RightButton) {
                 if (!island.open) {
                     clickDelay.stop()
@@ -1080,6 +1106,98 @@ Item {
                 height: 4
                 radius: 2
                 color: dot.index === island.current % island.activities.length ? "#ffffff" : "#5a616a"
+            }
+        }
+    }
+
+    Slide {
+        shown: island.mode === "tour"
+        readonly property var step: L.TOUR[Math.min(island.tourStep, L.TOUR.length - 1)]
+        Kirigami.Icon {
+            id: tourIcon
+            x: 18
+            y: 18
+            width: 28
+            height: 28
+            source: parent.step.icon
+            color: palette.accent
+            isMask: true
+        }
+        Column {
+            anchors.left: tourIcon.right
+            anchors.leftMargin: 14
+            anchors.right: parent.right
+            anchors.rightMargin: 18
+            y: 14
+            spacing: 3
+            Text {
+                objectName: "tourTitle"
+                width: parent.width
+                text: parent.parent.step.title
+                color: "#ffffff"
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+            }
+            Text {
+                objectName: "tourBody"
+                width: parent.width
+                text: parent.parent.step.body
+                color: "#c4cad1"
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+            }
+        }
+        Row {
+            x: 18 + 28 + 14
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 12
+            spacing: 5
+            Repeater {
+                model: L.TOUR.length
+                delegate: Rectangle {
+                    required property int index
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: index === island.tourStep ? 14 : 6
+                    height: 6
+                    radius: 3
+                    color: index === island.tourStep ? "#ffffff" : Qt.rgba(1, 1, 1, 0.3)
+                    Behavior on width { NumberAnimation { duration: 150 } }
+                }
+            }
+        }
+        Row {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 8
+            spacing: 6
+            Rectangle {
+                objectName: "tourSkip"
+                visible: island.tourStep + 1 < L.TOUR.length
+                width: skipText.implicitWidth + 22
+                height: 26
+                radius: 13
+                color: skipArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: "#9aa3ad"; font.pixelSize: 12 }
+                MouseArea { id: skipArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.skipTour() }
+            }
+            Rectangle {
+                objectName: "tourNext"
+                width: nextText.implicitWidth + 26
+                height: 26
+                radius: 13
+                color: nextArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+                Text {
+                    id: nextText
+                    anchors.centerIn: parent
+                    text: island.tourStep + 1 < L.TOUR.length ? "Next" : "Got it"
+                    color: "#ffffff"
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                }
+                MouseArea { id: nextArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.nextTourStep() }
             }
         }
     }

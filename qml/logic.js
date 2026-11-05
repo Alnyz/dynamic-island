@@ -139,9 +139,11 @@ function pickPlayer(entries, nowMs, timeoutMs) {
     return best >= 0 ? best : bestPaused
 }
 
-function islandState(hasPlayer, hovered, open, hasAlert, menu) {
+function islandState(hasPlayer, hovered, open, hasAlert, menu, tour) {
     if (open)
         return "open"
+    if (tour)
+        return "tour"
     if (menu)
         return "menu"
     if (hasAlert)
@@ -338,6 +340,13 @@ function clipRows(items, query, kind) {
 }
 
 // The pill's size while it shows an alert.
+// The first-run tour, one card per step.
+var TOUR = [
+    { icon: "input-keyboard", title: "Open the panel", body: "Click the island, or press Meta+N from anywhere. Esc or Meta+N closes it." },
+    { icon: "input-touchpad", title: "Gestures on the pill", body: "Swipe sideways to switch turns; scroll for volume. Middle-click plays or pauses, double-click skips." },
+    { icon: "configure", title: "Quick menu and settings", body: "Right-click for timers, do not disturb or hiding. The gear in the panel opens Settings." }
+]
+
 // Rows of the right-click menu on the pill. s: { dnd, hidden }.
 function pillMenu(s) {
     return [

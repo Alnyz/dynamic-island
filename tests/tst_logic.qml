@@ -71,6 +71,7 @@ TestCase {
         compare(L.islandState(false, false, true, true), "open")
         compare(L.islandState(true, true, false, true, true), "menu")
         compare(L.islandState(true, true, true, false, true), "open")
+        compare(L.islandState(true, true, false, true, true, true), "tour")
     }
 
     function test_alert_size() {

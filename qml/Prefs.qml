@@ -46,6 +46,8 @@ QtObject {
         property int pausedMinutes: prefs.defaults.behaviour.pausedMinutes
         property bool openOnHover: prefs.defaults.behaviour.openOnHover
         property bool coverLookup: prefs.defaults.behaviour.coverLookup
+        // The first-run tour has been seen or skipped.
+        property bool tourSeen: false
     }
 
     // Calendar links are not part of reset: they are the user's data, not a look.

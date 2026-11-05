@@ -559,6 +559,60 @@ Item {
             tryCompare(island, "height", 32)
         }
 
+        function test_tour_steps_through_and_finishes() {
+            const { island } = make({})
+            let finished = 0
+            island.tourFinished.connect(() => finished++)
+            island.startTour()
+            compare(island.mode, "tour")
+            tryCompare(island, "height", 116)
+            compare(findChild(island, "tourTitle").text, L.TOUR[0].title)
+            mouseClick(findChild(island, "tourNext"))
+            compare(island.tourStep, 1)
+            compare(findChild(island, "tourTitle").text, L.TOUR[1].title)
+            mouseClick(findChild(island, "tourNext"))
+            compare(findChild(island, "tourSkip").visible, false)
+            mouseClick(findChild(island, "tourNext"))
+            compare(island.tourActive, false)
+            compare(finished, 1)
+            tryCompare(island, "mode", "compact")
+        }
+
+        function test_tour_text_fits() {
+            const { island } = make(null)
+            island.startTour()
+            tryCompare(island, "height", 116)
+            for (let i = 0; i < L.TOUR.length; ++i) {
+                island.tourStep = i
+                wait(0)
+                compare(findChild(island, "tourBody").truncated, false, "step " + i)
+            }
+        }
+
+        function test_tour_skip_and_no_accidental_open() {
+            const { island } = make(null)
+            let finished = 0
+            island.tourFinished.connect(() => finished++)
+            island.startTour()
+            tryCompare(island, "height", 116)
+            // A click on the card's text area does nothing.
+            mouseClick(island, 100, 30)
+            wait(300)
+            compare(island.open, false)
+            compare(island.mode, "tour")
+            mouseClick(findChild(island, "tourSkip"))
+            compare(finished, 1)
+            compare(island.mode, "idle")
+        }
+
+        function test_tour_closes_open_panel() {
+            const { island } = make(null)
+            island.open = true
+            island.startTour()
+            compare(island.open, false)
+            compare(island.mode, "tour")
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)
