@@ -441,6 +441,11 @@ Window {
         interval: 3600000
         onTriggered: SystemStatus.setDnd(false)
     }
+    // Turned off elsewhere (Plasma's tray): the hour is over, so it can't end a later pause.
+    Connections {
+        target: SystemStatus
+        function onChanged() { if (!SystemStatus.dnd) dndHour.stop() }
+    }
     Timer {
         id: hideHour
         interval: 3600000

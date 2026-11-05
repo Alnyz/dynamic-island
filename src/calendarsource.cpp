@@ -194,8 +194,14 @@ void CalendarSource::parseLater(const QString &url, const QByteArray &doc)
     connect(watcher, &QFutureWatcher<Parsed>::finished, this, [this, watcher, url, generation] {
         watcher->deleteLater();
         --m_parsing;
-        if (generation == m_generation && m_urls.contains(url))
-            m_parsed.insert(url, watcher->result());
+        if (generation == m_generation && m_urls.contains(url)) {
+            // Not iCal (a sign-in page instead of the calendar, say): a failed round, and the last
+            // good calendar stays.
+            if (const Parsed calendar = watcher->result())
+                m_parsed.insert(url, calendar);
+            else
+                m_roundFailed = true;
+        }
         finishRound();
     });
     watcher->setFuture(QtConcurrent::run(&CalendarSource::parse, doc));

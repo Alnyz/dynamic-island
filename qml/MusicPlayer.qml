@@ -53,12 +53,6 @@ Item {
 
     implicitHeight: 330
 
-    // Strips browser tab suffixes like "| YouTube Music" from the title.
-    function formatTrack(title) {
-        if (!title) return ""
-        return title.replace(/\s*[\|-]\s*(YouTube Music|YouTube)\s*$/i, "")
-    }
-
     Text {
         visible: music.player === null
         anchors.centerIn: parent
@@ -150,7 +144,7 @@ Item {
                 Text {
                     objectName: "title"
                     width: parent.width
-                    text: music.player ? music.formatTrack(music.player.track) : ""
+                    text: music.player ? L.displayTitle(music.player.track) : ""
                     color: palette.windowText
                     font.pixelSize: 26
                     font.weight: Font.Bold

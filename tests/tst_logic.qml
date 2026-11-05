@@ -705,6 +705,9 @@ TestCase {
         compare(L.volumeAfterSteps(32768, -2, 65536), 26214)
         compare(L.volumeAfterSteps(64000, 3, 65536), 65536)
         compare(L.volumeAfterSteps(1000, -1, 65536), 0)
+        // Above 100% (Plasma's raised maximum): scrolling up never pulls it down to 100%.
+        compare(L.volumeAfterSteps(85196, 1, 65536), 85196)
+        compare(L.volumeAfterSteps(85196, -1, 65536), 81919)
     }
 
     function test_timer_step_minutes() {

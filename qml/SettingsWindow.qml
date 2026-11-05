@@ -315,7 +315,12 @@ QQC.ApplicationWindow {
                         text: "Blur what shows through"
                         enabled: L.islandOpacity(win.prefs.style.opacity, win.prefs.style.translucent) < 100
                         checked: win.prefs.style.translucent
-                        onToggled: win.prefs.style.translucent = checked
+                        onToggled: {
+                            // Old configs have no opacity yet; keep the one they see instead of letting it follow this box.
+                            if (win.prefs.style.opacity < 0)
+                                win.prefs.style.opacity = L.islandOpacity(-1, win.prefs.style.translucent)
+                            win.prefs.style.translucent = checked
+                        }
                     }
                     SliderRow {
                         objectName: "blurStrength"

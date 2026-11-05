@@ -194,6 +194,30 @@ private Q_SLOTS:
         QCOMPARE(source.isOk(), false);
         QCOMPARE(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size(), 1);
     }
+
+    void testNotICalFailsAndKeepsEvents()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("cal.ics"));
+        auto write = [&](const QByteArray &data) {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            file.write(data);
+        };
+        write(ics(kSingle));
+        CalendarSource source;
+        QSignalSpy spy(&source, &CalendarSource::changed);
+        source.setUrls({QUrl::fromLocalFile(path).toString()});
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), true);
+        // A sign-in page where the calendar should be.
+        write("<html><body>Sign in</body></html>");
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), false);
+        QCOMPARE(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size(), 1);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestCalendar)

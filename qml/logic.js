@@ -102,16 +102,23 @@ function coverWords(s) {
         .replace(/\s+/g, " ").trim()
 }
 
-// A title without "(Official Video)", "[Radio Edit]", "| YouTube Music" and the like.
+// A title without a browser tab's "| YouTube Music" suffix, as shown on screen.
+function displayTitle(title) {
+    return String(title || "").replace(/\s*[|-]\s*(YouTube Music|YouTube)\s*$/i, "")
+}
+
+// The title to search for: also without "(Official Video)", "[Radio Edit]" and the like.
+function searchTitle(title) {
+    return displayTitle(title).replace(/\s*[(\[][^)\]]*[)\]]/g, "").trim()
+}
+
 function coverBaseTitle(title) {
-    return coverWords(String(title || "")
-        .replace(/\s*[|-]\s*(YouTube Music|YouTube)\s*$/i, "")
-        .replace(/\s*[(\[][^)\]]*[)\]]/g, ""))
+    return coverWords(searchTitle(title))
 }
 
 // iTunes search for a song that came without a cover. Only the artist and title are sent.
 function coverSearchUrl(artist, title) {
-    const term = (String(artist || "") + " " + String(title || "").replace(/\s*[(\[][^)\]]*[)\]]/g, "")).trim()
+    const term = (String(artist || "") + " " + searchTitle(title)).trim()
     return "https://itunes.apple.com/search?media=music&entity=song&limit=10&term=" + encodeURIComponent(term)
 }
 
@@ -302,10 +309,11 @@ function countdownText(ms) {
 }
 
 // Touchpads send many small wheel deltas; step once per 120 units (one mouse notch).
-// Speaker volume after scrolling over the pill: 5% per step, between silent and 100%.
+// Speaker volume after scrolling over the pill: 5% per step, between silent and 100%
+// (or the current volume, if Plasma's raised maximum already put it above 100%).
 // normal is the device's 100% (PulseAudio's PA_VOLUME_NORM, 65536).
 function volumeAfterSteps(volume, steps, normal) {
-    return Math.round(Math.max(0, Math.min(normal, volume + steps * normal * 0.05)))
+    return Math.round(Math.max(0, Math.min(Math.max(normal, volume), volume + steps * normal * 0.05)))
 }
 
 // Minutes to add when scrolling over the timer; taking time off never leaves less than a minute.
@@ -459,7 +467,7 @@ function clipRows(items, query, kind) {
 // The first-run tour, one card per step.
 var TOUR = [
     { icon: "input-keyboard", title: "Open the panel", body: "Click the island, or press Meta+N from anywhere. Esc or Meta+N closes it." },
-    { icon: "input-touchpad", title: "Gestures on the pill", body: "Swipe sideways to switch turns; scroll for volume. Middle-click plays or pauses, double-click skips." },
+    { icon: "input-touchpad", title: "Gestures on the pill", body: "Swipe sideways to switch turns; scroll for volume. Middle-click plays or pauses." },
     { icon: "configure", title: "Quick menu and settings", body: "Right-click for timers, do not disturb or hiding. The gear in the panel opens Settings." }
 ]
 
@@ -577,8 +585,7 @@ function lyricsGetUrl(artist, title, album, lengthUs) {
 
 // The fallback when the exact lookup finds nothing: a looser search.
 function lyricsSearchUrl(artist, title) {
-    const t = String(title || "").replace(/\s*[|-]\s*(YouTube Music|YouTube)\s*$/i, "").replace(/\s*[(\[][^)\]]*[)\]]/g, "")
-    return "https://lrclib.net/api/search?artist_name=" + encodeURIComponent(artist || "") + "&track_name=" + encodeURIComponent(t.trim())
+    return "https://lrclib.net/api/search?artist_name=" + encodeURIComponent(artist || "") + "&track_name=" + encodeURIComponent(searchTitle(title))
 }
 
 // The best search result: same artist and title, length within 10 s when known, timed lyrics first.

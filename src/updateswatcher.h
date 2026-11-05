@@ -45,6 +45,8 @@ private:
     void setCount(int n);
 
     QTimer m_timer;
+    QTimer m_settle;
+    bool m_again = false;
     QProcess m_proc;
     int m_count = -1;
     QVariantList m_packages;
