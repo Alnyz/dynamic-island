@@ -747,6 +747,8 @@ Item {
     readonly property bool showJobs: activity === "jobs" && (mode === "compact" || mode === "peek")
     readonly property color jobInk: Qt.lighter(palette.accent, 1.45)
     readonly property color jobTile: Qt.rgba(palette.accent.r, palette.accent.g, palette.accent.b, 0.22)
+    // Pomodoro phases colour the countdown: tomato while focusing, green on a break.
+    readonly property color timerTint: timer && timer.pomodoro ? (timer.phase === "work" ? "#ff6b5a" : "#30d158") : palette.brightText
     readonly property string timerText: timerActive ? L.countdownText(timer.paused ? timer.pausedRemainingMs : timer.remainingMs) : ""
 
     // Jobs never use a circle, so they can't be mistaken for the idle battery ring.
@@ -958,7 +960,7 @@ Item {
             width: side
             height: side
             source: "chronometer"
-            color: palette.windowText
+            color: island.timer && island.timer.pomodoro ? island.timerTint : palette.windowText
             isMask: true
         }
 
@@ -970,7 +972,7 @@ Item {
             anchors.rightMargin: 12 + island.indicatorWidth
             anchors.verticalCenter: parent.verticalCenter
             text: island.timerText
-            color: palette.brightText
+            color: island.timerTint
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.features: { "tnum": 1 }
@@ -989,7 +991,7 @@ Item {
             Text {
                 objectName: "peekTimerText"
                 text: island.timerText
-                color: palette.windowText
+                color: island.timer && island.timer.pomodoro ? island.timerTint : palette.windowText
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }

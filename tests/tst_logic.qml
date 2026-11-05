@@ -586,6 +586,12 @@ TestCase {
         compare(L.distinctPlayers(undefined).length, 0)
     }
 
+    function test_pomodoro_message() {
+        compare(L.pomodoroMessage("work", "break", 5), { title: "Time for a break", body: "5 minutes" })
+        compare(L.pomodoroMessage("work", "longBreak", 15), { title: "Time for a break", body: "A long break: 15 minutes" })
+        compare(L.pomodoroMessage("break", "work", 25), { title: "Back to focus", body: "25 minutes of focus" })
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])

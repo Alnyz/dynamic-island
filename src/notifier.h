@@ -13,5 +13,5 @@ public:
     using QObject::QObject;
 
     // Critical urgency so it still shows (with sound) while do-not-disturb is on.
-    Q_INVOKABLE void timerDone();
+    Q_INVOKABLE void timerDone(const QString &title = QStringLiteral("Timer done"), const QString &body = QString());
 };

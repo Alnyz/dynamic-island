@@ -227,6 +227,10 @@ Window {
     TimerModel {
         id: timerModel
         onFinished: Notifier.timerDone()
+        onPhaseFinished: (ended, next) => {
+            const m = L.pomodoroMessage(ended, next, next === "work" ? workMinutes : next === "longBreak" ? longBreakMinutes : breakMinutes)
+            Notifier.timerDone(m.title, m.body)
+        }
     }
 
     WeatherSource {

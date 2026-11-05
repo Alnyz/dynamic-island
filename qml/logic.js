@@ -361,6 +361,13 @@ var TOUR = [
     { icon: "configure", title: "Quick menu and settings", body: "Right-click for timers, do not disturb or hiding. The gear in the panel opens Settings." }
 ]
 
+// What a Pomodoro phase change says: { title, body } for the notification.
+function pomodoroMessage(ended, next, minutes) {
+    if (next === "work")
+        return { title: "Back to focus", body: minutes + " minutes of focus" }
+    return { title: ended === "work" ? "Time for a break" : "Break", body: (next === "longBreak" ? "A long break: " : "") + minutes + " minutes" }
+}
+
 // The island's colours for each theme, as Qt palette roles.
 function themeColors(light) {
     return light ? {

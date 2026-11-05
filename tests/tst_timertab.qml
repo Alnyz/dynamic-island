@@ -30,6 +30,25 @@ Item {
             return createTemporaryObject(comp, stage)
         }
 
+        function test_pomodoro_button_and_skip() {
+            const h = make()
+            mouseClick(findChild(h.tab, "pomodoroStart"))
+            compare(h.model.pomodoro, true)
+            compare(h.model.phase, "work")
+            const label = findChild(h.tab, "pomodoroPhase")
+            verify(label.visible)
+            compare(label.text, "Focus · round 1")
+            // Clicks closer together than the double-click time merge into one in tests.
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(findChild(h.tab, "pomodoroSkip"))
+            compare(h.model.phase, "break")
+            compare(label.text, "Break · round 1")
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(findChild(h.tab, "timerReset"))
+            compare(h.model.pomodoro, false)
+            compare(label.visible, false)
+        }
+
         function test_preset_sets_without_starting() {
             const h = make()
             mouseClick(findChild(h.tab, "preset-10"))

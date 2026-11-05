@@ -82,6 +82,24 @@ Item {
                 primary: true
                 onClicked: tab.timer.start(tab.setMinutes)
             }
+            Pill {
+                objectName: "pomodoroStart"
+                height: 30
+                text: "Pomodoro"
+                toolTip: "25 minutes of focus, then a 5 minute break; every fourth break is 15 minutes"
+                onClicked: tab.timer.startPomodoro()
+            }
+        }
+
+        Text {
+            objectName: "pomodoroPhase"
+            visible: tab.active && tab.timer.pomodoro === true
+            anchors.horizontalCenter: parent.horizontalCenter
+            bottomPadding: 10
+            text: !tab.timer.pomodoro ? "" : (tab.timer.phase === "work" ? "Focus" : tab.timer.phase === "longBreak" ? "Long break" : "Break") + " · round " + tab.timer.round
+            color: tab.timer.phase === "work" ? "#ff6b5a" : "#30d158"
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
         }
 
         Row {
@@ -110,6 +128,13 @@ Item {
                 objectName: "timerAdd5"
                 text: "+5 min"
                 onClicked: tab.timer.addMinutes(5)
+            }
+            Pill {
+                objectName: "pomodoroSkip"
+                visible: tab.timer.pomodoro === true
+                text: "Skip"
+                toolTip: "End this phase and start the next"
+                onClicked: tab.timer.skipPhase()
             }
         }
     }

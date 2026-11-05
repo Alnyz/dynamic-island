@@ -50,6 +50,8 @@ Item {
             function pause() { pauseCalls++ }
             function addMinutes(m) { addedMinutes += m; remainingMs += m * 60000 }
             property real startedMinutes: 0
+            property bool pomodoro: false
+            property string phase: ""
             function start(m) { startedMinutes = m }
             function resume() {}
         }
@@ -975,6 +977,17 @@ Item {
             island.openTabFromKeyboard("clipboard")
             compare(island.open, true)
             compare(panel.tab, "clipboard")
+        }
+
+        function test_pomodoro_colours_the_countdown() {
+            const { island, timer } = make(null, true)
+            const text = findChild(island, "timerText")
+            compare(text.color, island.palette.brightText)
+            timer.pomodoro = true
+            timer.phase = "work"
+            compare(text.color, Qt.color("#ff6b5a"))
+            timer.phase = "break"
+            compare(text.color, Qt.color("#30d158"))
         }
 
         function test_peek_shows_current_activity() {
