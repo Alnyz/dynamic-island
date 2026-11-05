@@ -777,6 +777,55 @@ Item {
             compare(findChild(island, "cardProgressFill").color, Qt.color("#e8e2d0"))
         }
 
+        function test_cover_flies_into_the_panel() {
+            const { island } = make({})
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            island.open = true
+            const flyer = findChild(stage, "coverFlyer")
+            verify(flyer)
+            compare(flyer.visible, true)
+            const panel = findChild(island, "homePanel")
+            compare(panel.coverHidden, true)
+            compare(findChild(island, "cardCover").opacity, 0)
+            // It lands on the card's cover and hands over to it.
+            tryCompare(flyer, "visible", false, 2000)
+            compare(panel.coverHidden, false)
+            compare(findChild(island, "cardCover").opacity, 1)
+            const card = findChild(island, "cardCover").mapToItem(stage, 0, 0)
+            compare(Math.round(flyer.x), Math.round(card.x))
+            compare(Math.round(flyer.y), Math.round(card.y))
+            compare(Math.round(flyer.width), 56)
+        }
+
+        function test_closing_mid_flight_drops_the_flyer() {
+            const { island } = make({})
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            island.open = true
+            const flyer = findChild(stage, "coverFlyer")
+            compare(flyer.visible, true)
+            island.open = false
+            compare(flyer.visible, false)
+        }
+
+        function test_no_flight_without_music() {
+            const { island } = make(null)
+            island.open = true
+            const flyer = findChild(stage, "coverFlyer")
+            compare(flyer.visible, false)
+            compare(findChild(island, "homePanel").coverHidden, false)
+        }
+
+        function test_no_flight_to_a_tab_without_cover() {
+            const { island } = make({})
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            island.requestedTab = "timer"
+            island.open = true
+            compare(findChild(stage, "coverFlyer").visible, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

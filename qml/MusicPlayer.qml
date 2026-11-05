@@ -10,6 +10,7 @@ Item {
     property var player: null
     property string artUrl: ""
     property color tint: "#e8e2d0"
+    property bool coverHidden: false
     property color accentTint: palette.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
@@ -98,6 +99,8 @@ Item {
                     color: Qt.rgba(0, 0, 0, 0.6)
                 }
                 CoverArt {
+                    objectName: "musicCover"
+                    opacity: music.coverHidden ? 0 : 1
                     anchors.fill: parent
                     radius: 16
                     source: music.player ? music.artUrl : ""

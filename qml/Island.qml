@@ -166,6 +166,8 @@ Item {
             menuOpen = false
         } else {
             requestedTab = ""
+            if (flyer.visible)
+                landCover()
         }
     }
     Timer {
@@ -235,7 +237,13 @@ Item {
     Behavior on height { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
 
     // The position timer only runs while playing, so fetch once on open.
-    onModeChanged: if ((mode === "open" || mode === "peek") && player && player.updatePosition) player.updatePosition()
+    onModeChanged: {
+        if ((mode === "open" || mode === "peek") && player && player.updatePosition)
+            player.updatePosition()
+        // Whether the cover was on the pill just before the panel opened, for its flight in.
+        if (mode !== "open" && mode !== "alert")
+            musicWasShown = musicShown
+    }
 
     function step(dir) {
         if (activities.length > 1)
@@ -1388,9 +1396,86 @@ Item {
         onDropped: drop => island.addToShelf(drop.urls.map(u => String(u)))
     }
 
+    // Opening from the music turn: the pill's cover flies to its place in the panel while the
+    // island grows. It lives on the window, so the centred island's growth doesn't drag it.
+    property bool animateOpen: true
+    Item {
+        id: flyer
+        objectName: "coverFlyer"
+        parent: island.parent
+        z: 1000
+        visible: false
+        property real progress: 0
+        property int frame: 0
+        property rect from: Qt.rect(0, 0, 0, 0)
+        property var target: null
+        // Re-read every frame: the panel's layout keeps moving while the island grows.
+        readonly property rect to: {
+            progress
+            frame
+            if (!target || !target.width)
+                return from
+            const p = target.mapToItem(flyer.parent, 0, 0)
+            return Qt.rect(p.x, p.y, target.width, target.height)
+        }
+        x: from.x + (to.x - from.x) * progress
+        y: from.y + (to.y - from.y) * progress
+        width: from.width + (to.width - from.width) * progress
+        height: width
+        CoverArt {
+            anchors.fill: parent
+            radius: Math.round(width * 0.2)
+            source: island.player ? island.artUrl : ""
+            fallbackIcon: island.player ? island.player.iconName || island.player.desktopEntry || "" : ""
+        }
+        NumberAnimation on progress {
+            id: flight
+            running: false
+            from: 0
+            to: 1
+            duration: 380
+            easing.type: Easing.OutCubic
+        }
+        FrameAnimation {
+            running: flyer.visible
+            onTriggered: {
+                flyer.frame++
+                // Lands once it has arrived and the island has stopped growing.
+                if (!flight.running && island.width === island.size.w && island.height === island.size.h)
+                    island.landCover()
+            }
+        }
+    }
+    function landCover() {
+        // Freeze where it landed, letting go of the panel's cover (it goes when the panel closes).
+        flyer.from = flyer.to
+        flyer.progress = 0
+        flyer.target = null
+        flyer.visible = false
+        if (panelLoader.item)
+            panelLoader.item.coverHidden = false
+    }
+    property bool musicWasShown: false
+    onMusicShownChanged: if (musicShown) musicWasShown = true
+    function flyCoverIn() {
+        if (!animateOpen || !musicWasShown || !panelLoader.item || !island.parent)
+            return
+        const target = panelLoader.item.coverTarget()
+        if (!target)
+            return
+        const p = art.mapToItem(island.parent, 0, 0)
+        flyer.from = Qt.rect(p.x, p.y, art.width, art.height)
+        flyer.target = target
+        flyer.progress = 0
+        panelLoader.item.coverHidden = true
+        flyer.visible = true
+        flight.restart()
+    }
+
     Loader {
         id: panelLoader
         active: island.open
+        onLoaded: island.flyCoverIn()
         focus: true
         anchors.fill: parent
         anchors.margins: 18

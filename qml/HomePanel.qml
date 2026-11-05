@@ -11,6 +11,28 @@ Item {
     // Fill for music progress and volume, and the colour of active music toggles.
     property color musicTint: "#e8e2d0"
     property color accentTint: palette.accent
+    // While the pill's cover flies into the panel, the panel's own cover stays hidden.
+    property bool coverHidden: false
+    // The cover the pill's cover lands on: the Home card's or the Music tab's, or null.
+    function coverTarget() {
+        if (tab === "home")
+            return findCover(homeTab, "cardCover")
+        if (tab === "music")
+            return findCover(musicTab, "musicCover")
+        return null
+    }
+    function findCover(item, name) {
+        if (!item)
+            return null
+        if (item.objectName === name)
+            return item
+        for (let i = 0; i < item.children.length; ++i) {
+            const found = findCover(item.children[i], name)
+            if (found)
+                return found
+        }
+        return null
+    }
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -344,6 +366,7 @@ Item {
                     player: panel.player
                     artUrl: panel.artUrl
                     tint: panel.musicTint
+                    coverHidden: panel.coverHidden
                 }
                 MonthCalendar {
                     width: parent.width
@@ -376,6 +399,8 @@ Item {
             }
         }
         MusicPlayer {
+            id: musicTab
+            coverHidden: panel.coverHidden
             anchors.fill: parent
             visible: panel.tab === "music"
             player: panel.player

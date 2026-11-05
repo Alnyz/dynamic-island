@@ -7,6 +7,7 @@ Column {
     property var player: null
     property string artUrl: ""
     property color tint: "#ffffff"
+    property bool coverHidden: false
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property bool hasLength: player !== null && player.length > 0
 
@@ -16,6 +17,9 @@ Column {
         width: parent.width
         spacing: 12
         CoverArt {
+            objectName: "cardCover"
+            // Hidden while the pill's cover flies in to take its place.
+            opacity: card.coverHidden ? 0 : 1
             width: 56
             height: 56
             radius: 10
