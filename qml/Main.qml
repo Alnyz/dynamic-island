@@ -232,6 +232,15 @@ Window {
         refreshMinutes: prefs.calendar.refreshMinutes
     }
 
+    LyricsSource {
+        id: lyricsSource
+        enabled: prefs.behaviour.lyrics
+        artist: source.player ? source.player.artist || "" : ""
+        title: source.player ? source.player.track || "" : ""
+        album: source.player ? source.player.album || "" : ""
+        lengthUs: source.player ? source.player.length || 0 : 0
+    }
+
     CoverColor {
         id: coverColor
         source: prefs.style.coverTint ? source.artUrl : ""
@@ -276,6 +285,7 @@ Window {
         clipboard: clipboardHistory
         notes: notesStore
         todos: todoStore
+        lyrics: lyricsSource
         onTodoDone: id => todoStore.setDone(id, true)
         history: history
         newNotifications: history.newCount

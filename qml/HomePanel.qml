@@ -13,6 +13,7 @@ Item {
     property color accentTint: palette.accent
     // While the pill's cover flies into the panel, the panel's own cover stays hidden.
     property bool coverHidden: false
+    property var lyrics: null
     // The cover the pill's cover lands on: the Home card's or the Music tab's, or null.
     function coverTarget() {
         if (tab === "home")
@@ -400,7 +401,9 @@ Item {
         }
         MusicPlayer {
             id: musicTab
+            objectName: "musicPlayer"
             coverHidden: panel.coverHidden
+            lyrics: panel.lyrics
             anchors.fill: parent
             visible: panel.tab === "music"
             player: panel.player

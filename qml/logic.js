@@ -359,6 +359,88 @@ function pillMenu(s) {
     ]
 }
 
+// --- Lyrics (LRCLIB) ---
+
+// The exact lookup: LRCLIB matches title, artist and length (within a couple of seconds).
+function lyricsGetUrl(artist, title, album, lengthUs) {
+    let url = "https://lrclib.net/api/get?artist_name=" + encodeURIComponent(artist || "") + "&track_name=" + encodeURIComponent(title || "")
+    if (album)
+        url += "&album_name=" + encodeURIComponent(album)
+    if (lengthUs > 0)
+        url += "&duration=" + Math.round(lengthUs / 1e6)
+    return url
+}
+
+// The fallback when the exact lookup finds nothing: a looser search.
+function lyricsSearchUrl(artist, title) {
+    const t = String(title || "").replace(/\s*[|-]\s*(YouTube Music|YouTube)\s*$/i, "").replace(/\s*[(\[][^)\]]*[)\]]/g, "")
+    return "https://lrclib.net/api/search?artist_name=" + encodeURIComponent(artist || "") + "&track_name=" + encodeURIComponent(t.trim())
+}
+
+// The best search result: same artist and title, length within 10 s when known, timed lyrics first.
+function pickLyrics(results, artist, title, lengthUs) {
+    const a = coverWords(artist)
+    const t = coverBaseTitle(title)
+    const len = lengthUs > 0 ? lengthUs / 1e6 : 0
+    let best = null
+    let bestScore = -1
+    for (const r of results || []) {
+        const ra = coverWords(r.artistName)
+        if (!a || !ra || !(ra.includes(a) || a.includes(ra)) || coverBaseTitle(r.trackName) !== t)
+            continue
+        if (!r.syncedLyrics && !r.plainLyrics && !r.instrumental)
+            continue
+        const off = len > 0 && r.duration > 0 ? Math.abs(r.duration - len) : 0
+        if (off > 10)
+            continue
+        const score = (r.syncedLyrics ? 100 : 0) + (r.plainLyrics ? 10 : 0) - off
+        if (score > bestScore) {
+            best = r
+            bestScore = score
+        }
+    }
+    return best
+}
+
+// "[01:02.50]Words" lines -> [{ ms, text }] by time. A line may carry several time tags;
+// tags like [ar:...] and lines without a time are skipped.
+function parseLrc(text) {
+    const out = []
+    const tag = /\[(\d+):(\d{1,2})(?:[.:](\d{1,3}))?\]/g
+    for (const raw of String(text || "").split(/\r?\n/)) {
+        const times = []
+        let m
+        let last = 0
+        tag.lastIndex = 0
+        while ((m = tag.exec(raw)) !== null) {
+            const frac = m[3] ? Number((m[3] + "00").slice(0, 3)) : 0
+            times.push(Number(m[1]) * 60000 + Number(m[2]) * 1000 + frac)
+            last = tag.lastIndex
+        }
+        if (!times.length)
+            continue
+        const words = raw.slice(last).trim()
+        for (const ms of times)
+            out.push({ ms: ms, text: words })
+    }
+    return out.sort((x, y) => x.ms - y.ms)
+}
+
+// Index of the line being sung at ms: the last one that has started, or -1 before the first.
+function lyricLine(lines, ms) {
+    let lo = 0, hi = lines.length - 1, found = -1
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1
+        if (lines[mid].ms <= ms) {
+            found = mid
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+    return found
+}
+
 // a: the alert itself, for kinds whose size depends on it (a notification with buttons is taller).
 function alertSize(kind, barHeight, radius, a) {
     if (kind === "notification" && a && a.buttons && a.buttons.length > 0)

@@ -484,6 +484,49 @@ TestCase {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
     }
 
+    function test_parse_lrc() {
+        const lines = L.parseLrc("[ar:CG5]\n[00:12.50]Second\n[00:03.2]First\n\n[01:00.00][02:00.00]Chorus\nno time here\n[00:20.123]")
+        compare(lines.length, 5)
+        compare(lines[0], { ms: 3200, text: "First" })
+        compare(lines[1], { ms: 12500, text: "Second" })
+        compare(lines[2], { ms: 20123, text: "" })
+        compare(lines[3], { ms: 60000, text: "Chorus" })
+        compare(lines[4], { ms: 120000, text: "Chorus" })
+        compare(L.parseLrc("").length, 0)
+        compare(L.parseLrc(null).length, 0)
+    }
+
+    function test_lyric_line() {
+        const lines = [{ ms: 1000 }, { ms: 5000 }, { ms: 9000 }]
+        compare(L.lyricLine(lines, 0), -1)
+        compare(L.lyricLine(lines, 1000), 0)
+        compare(L.lyricLine(lines, 4999), 0)
+        compare(L.lyricLine(lines, 5000), 1)
+        compare(L.lyricLine(lines, 99999), 2)
+        compare(L.lyricLine([], 5000), -1)
+    }
+
+    function test_lyrics_urls() {
+        compare(L.lyricsGetUrl("Maroon 5", "Girls Like You", "Red Pill Blues", 235400000),
+                "https://lrclib.net/api/get?artist_name=Maroon%205&track_name=Girls%20Like%20You&album_name=Red%20Pill%20Blues&duration=235")
+        compare(L.lyricsGetUrl("CG5", "Dancin'", "", 0), "https://lrclib.net/api/get?artist_name=CG5&track_name=Dancin'")
+        compare(L.lyricsSearchUrl("CG5", "Dancin (Official Video)"), "https://lrclib.net/api/search?artist_name=CG5&track_name=Dancin")
+    }
+
+    function test_pick_lyrics() {
+        const synced = { artistName: "CG5", trackName: "Dancin’", duration: 198, syncedLyrics: "[00:01.00]x", plainLyrics: "x" }
+        const plain = { artistName: "CG5", trackName: "Dancin'", duration: 196, syncedLyrics: null, plainLyrics: "x" }
+        const far = { artistName: "CG5", trackName: "Dancin", duration: 260, syncedLyrics: "[00:01.00]x" }
+        const other = { artistName: "Somebody", trackName: "Dancin", duration: 198, syncedLyrics: "[00:01.00]x" }
+        const empty = { artistName: "CG5", trackName: "Dancin", duration: 198 }
+        compare(L.pickLyrics([plain, synced], "CG5", "Dancin'", 197000000), synced)
+        compare(L.pickLyrics([plain, far], "CG5", "Dancin'", 197000000), plain)
+        compare(L.pickLyrics([far, other, empty], "CG5", "Dancin'", 197000000), null)
+        // Unknown length: duration isn't checked.
+        compare(L.pickLyrics([far], "CG5", "Dancin'", 0), far)
+        compare(L.pickLyrics(undefined, "CG5", "Dancin'", 0), null)
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])

@@ -10,7 +10,7 @@ QtObject {
     readonly property var defaults: ({
         style: { look: "notch", accent: "#0a84ff", coverTint: true },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
-        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true },
+        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
@@ -48,6 +48,7 @@ QtObject {
         property int pausedMinutes: prefs.defaults.behaviour.pausedMinutes
         property bool openOnHover: prefs.defaults.behaviour.openOnHover
         property bool coverLookup: prefs.defaults.behaviour.coverLookup
+        property bool lyrics: prefs.defaults.behaviour.lyrics
         // The first-run tour has been seen or skipped.
         property bool tourSeen: false
     }

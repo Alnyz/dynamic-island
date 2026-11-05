@@ -11,6 +11,38 @@ Item {
     property string artUrl: ""
     property color tint: "#e8e2d0"
     property bool coverHidden: false
+    // LyricsSource; the lyrics button only shows when it's on.
+    property var lyrics: null
+    property bool showLyrics: false
+    readonly property bool lyricsOn: lyrics !== null && lyrics.enabled
+    onShowLyricsChanged: {
+        syncPosition()
+        if (lyrics)
+            lyrics.wanted = showLyrics && visible
+    }
+    onPlayerChanged: syncPosition()
+    Component.onCompleted: syncPosition()
+    onVisibleChanged: if (lyrics) lyrics.wanted = showLyrics && visible
+    Component.onDestruction: if (lyrics) lyrics.wanted = false
+    // The player's position only updates once a second; between updates it's counted on here.
+    property real positionMs: 0
+    property real positionAt: 0
+    Connections {
+        target: music.player
+        ignoreUnknownSignals: true
+        function onPositionChanged() { music.syncPosition() }
+    }
+    function syncPosition() {
+        positionMs = player ? player.position / 1000 : 0
+        positionAt = Date.now()
+    }
+    property real lyricsPositionMs: positionMs
+    Timer {
+        interval: 100
+        repeat: true
+        running: music.showLyrics && music.visible
+        onTriggered: music.lyricsPositionMs = music.positionMs + (music.playing ? Date.now() - music.positionAt : 0)
+    }
     property color accentTint: palette.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
@@ -129,7 +161,26 @@ Item {
                     font.pixelSize: 14
                     elide: Text.ElideRight
                 }
+                LyricsView {
+                    objectName: "lyricsView"
+                    visible: music.showLyrics && music.lyricsOn
+                    width: parent.width
+                    height: 112
+                    state: music.lyrics ? music.lyrics.state : "off"
+                    lines: music.lyrics ? music.lyrics.lines : []
+                    plain: music.lyrics ? music.lyrics.plain : ""
+                    positionMs: music.lyricsPositionMs
+                    tint: music.accentTint
+                    onSeekRequested: ms => {
+                        if (music.player && music.player.canSeek !== false) {
+                            music.player.position = Math.round(ms * 1000)
+                            music.positionMs = ms
+                            music.positionAt = Date.now()
+                        }
+                    }
+                }
                 Item {
+                    visible: !(music.showLyrics && music.lyricsOn)
                     width: parent.width
                     height: 34 + 28
 
@@ -275,6 +326,14 @@ Item {
                 iconName: music.player && music.player.loopStatus === L.Loop.Track ? "media-repeat-single" : "media-playlist-repeat"
                 iconColor: music.player && music.player.loopStatus > L.Loop.None ? music.accentTint : "#6b737c"
                 onClicked: music.player.loopStatus = L.nextLoop(music.player.loopStatus)
+            }
+            ControlButton {
+                objectName: "lyricsToggle"
+                anchors.verticalCenter: parent.verticalCenter
+                visible: music.lyricsOn
+                iconName: "view-media-lyrics"
+                iconColor: music.showLyrics ? music.accentTint : "#6b737c"
+                onClicked: music.showLyrics = !music.showLyrics
             }
         }
     }

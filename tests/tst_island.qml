@@ -826,6 +826,60 @@ Item {
             compare(findChild(stage, "coverFlyer").visible, false)
         }
 
+        Component {
+            id: lyricsFake
+            QtObject {
+                property bool enabled: true
+                property bool wanted: false
+                property string state: "synced"
+                property var lines: [{ ms: 0, text: "First line" }, { ms: 30000, text: "Second line" }, { ms: 90000, text: "Third line" }]
+                property string plain: ""
+            }
+        }
+
+        function test_lyrics_toggle_and_seek() {
+            const { island } = make({ position: 40000000, length: 200000000, canSeek: true })
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            island.animateOpen = false
+            const panel = openTab(island, "music")
+            const toggle = findChild(island, "lyricsToggle")
+            verify(toggle.visible)
+            compare(findChild(island, "lyricsView").visible, false)
+            mouseClick(toggle)
+            compare(lyrics.wanted, true)
+            const view = findChild(island, "lyricsView")
+            verify(view.visible)
+            // 40 s into the song: the second line is current.
+            tryCompare(view, "current", 1)
+            const third = findChild(island, "lyricLine2")
+            verify(third)
+            // Two clicks within the double-click time count as one double-click in tests, wherever they land.
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            // Jump ahead so the list starts scrolling, then click a line straight away, mid-scroll.
+            view.positionMs = 95000
+            compare(view.current, 2)
+            const area = findChild(island, "lyricsClickArea")
+            const p = third.mapToItem(area, third.width / 2, third.height / 2)
+            mouseClick(area, p.x, p.y)
+            // The Music tab holds its own copy of the fake.
+            compare(findChild(island, "musicPlayer").player.position, 90000000)
+            // Closing the panel stops asking for lyrics.
+            island.open = false
+            compare(lyrics.wanted, false)
+        }
+
+        function test_lyrics_button_hidden_when_off() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            lyrics.enabled = false
+            island.lyrics = lyrics
+            island.requestedTab = "music"
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            compare(findChild(island, "lyricsToggle").visible, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

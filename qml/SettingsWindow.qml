@@ -321,6 +321,13 @@ QQC.ApplicationWindow {
                         checked: win.prefs.behaviour.coverLookup
                         onToggled: win.prefs.behaviour.coverLookup = checked
                     }
+                    QQC.CheckBox {
+                        objectName: "lyricsSwitch"
+                        Kirigami.FormData.label: "Lyrics:"
+                        text: "Show lyrics in the Music tab (sends the song to lrclib.net when shown)"
+                        checked: win.prefs.behaviour.lyrics
+                        onToggled: win.prefs.behaviour.lyrics = checked
+                    }
                     QQC.ButtonGroup { id: openGroup }
                     QQC.RadioButton {
                         Kirigami.FormData.label: "Open the panel:"

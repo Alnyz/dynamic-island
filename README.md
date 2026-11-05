@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 ### Panel tabs
 
 - Home: music, the month calendar, weather for the next few hours, upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
-- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look).
+- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
 - Timer: drag the minute tape or pick a preset.
 - Sound mixer: output and input devices, mic level, and per-app volume.
 - Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.
@@ -94,6 +94,8 @@ Open Settings with the gear button in the panel. It covers the style and accent 
 For calendar events, paste a calendar's secret iCal address (Google Calendar → Settings → your calendar → Integrate calendar → Secret address in iCal format). The address is kept in the config file and never shown or logged.
 
 Browsers often leave out the cover of a song you skip to. When one is missing, the island looks the song up on the iTunes Search API, sending only the artist and title. Turn this off in Settings → Behaviour.
+
+Lyrics come from [LRCLIB](https://lrclib.net), only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
 
 Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings.
 

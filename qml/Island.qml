@@ -23,6 +23,7 @@ Item {
     property var clipboard: null
     property var notes: null
     property var todos: null
+    property var lyrics: null
     // Ticks a task off from the idle pill.
     signal todoDone(string id)
     // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
@@ -1500,6 +1501,7 @@ Item {
             clipboard: island.clipboard
             notes: island.notes
             todos: island.todos
+            lyrics: island.lyrics
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
