@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 ### Panel tabs
 
-- Home: music, the month calendar (click a day to see its events), weather for the next few hours (click it for the full forecast on weather.com), upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
+- Home: music, the month calendar (click a day to see its events; public holidays in orange, festivals with an orange dot), weather for the next few hours (click it for the full forecast on weather.com), upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
 - Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. With more than one player open, chips pick which one the island follows. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
 - Timer: drag the minute tape or pick a preset, or start a Pomodoro (25 minutes of focus, 5 minute breaks, a long one every fourth). The pill's countdown turns red while focusing and green on a break.
 - Sound mixer: output and input devices, mic level, and per-app volume.
@@ -91,6 +91,8 @@ cd build && ctest
 ## Settings
 
 Open Settings with the gear button in the panel. It covers the style and accent colour, sizes, behaviour, which alerts to show, the idle pill, calendars, weather, quick buttons and quick links.
+
+Public holidays and festivals come from Google's public holiday calendar for your country, picked from your system language (for example en_IN gives India). Choose another country, turn festivals off, or turn holidays off in Settings → Calendar.
 
 For calendar events, paste a calendar's secret iCal address (Google Calendar → Settings → your calendar → Integrate calendar → Secret address in iCal format). The address is kept in the config file and never shown or logged.
 

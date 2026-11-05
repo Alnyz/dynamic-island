@@ -31,6 +31,8 @@ public:
         bool allDay = false;
         // Google Meet, Zoom or Teams link found in the event, if any.
         QString link;
+        // The description's first line, short ("Public holiday" or "Observance" in Google's holiday calendars).
+        QString note;
     };
 
     explicit CalendarSource(QObject *parent = nullptr);

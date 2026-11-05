@@ -5,6 +5,9 @@ Column {
     id: up
 
     property var calendar: null
+    // The holiday calendar (CalendarSource), and whether observances show too.
+    property var holidays: null
+    property bool observances: true
     property var events: []
     property bool showJoin: true
     // A day picked on the month calendar: its events instead of what's next. null for up next.
@@ -16,12 +19,16 @@ Column {
     signal dayCleared()
 
     function load() {
-        if (!calendar)
-            events = []
-        else if (day)
-            events = calendar.occurrences(day, day)
-        else
-            events = calendar.upNext(2)
+        const mine = !calendar ? [] : day ? calendar.occurrences(day, day) : calendar.upNext(2)
+        // Holidays: the picked day's, or today's and tomorrow's ahead of what's next.
+        const hol = !holidays ? [] : L.holidayEvents(day ? holidays.occurrences(day, day) : holidays.upNext(3), observances)
+        events = L.mergeEvents(day ? hol : hol.slice(0, 2), mine)
+    }
+    onHolidaysChanged: load()
+    onObservancesChanged: load()
+    Connections {
+        target: up.holidays
+        function onChanged() { up.load() }
     }
     readonly property var shown: day ? events.slice(0, dayLimit) : events
 
@@ -74,8 +81,8 @@ Column {
             spacing: 10
             Text {
                 width: 48
-                text: L.eventWhen(modelData)
-                color: palette.placeholderText
+                text: modelData.holiday ? (modelData.publicHoliday ? "Holiday" : "Festival") : L.eventWhen(modelData)
+                color: modelData.holiday ? "#ff9f0a" : palette.placeholderText
                 font.pixelSize: 12
                 font.features: { "tnum": 1 }
                 topPadding: 1

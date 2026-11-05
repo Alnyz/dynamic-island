@@ -245,6 +245,14 @@ Window {
         fahrenheit: prefs.weather.fahrenheit
     }
 
+    // Public holidays and festivals, from Google's calendar for the chosen country.
+    readonly property string holidayCountry: L.holidayCountry(prefs.calendar.holidays, Qt.locale().name)
+    CalendarSource {
+        id: holidaySource
+        urls: root.holidayCountry ? [L.holidayUrl(root.holidayCountry)] : []
+        refreshMinutes: 24 * 60
+    }
+
     CalendarSource {
         id: calendarSource
         urls: L.toList(prefs.calendar.icsUrls).filter(u => !L.toList(prefs.calendar.disabled).includes(u))
@@ -315,6 +323,8 @@ Window {
         notes: notesStore
         todos: todoStore
         lyrics: lyricsSource
+        holidays: holidaySource
+        observances: prefs.calendar.observances
         onTodoDone: id => todoStore.setDone(id, true)
         history: history
         newNotifications: history.newCount

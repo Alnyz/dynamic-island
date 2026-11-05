@@ -16,6 +16,8 @@ Item {
     // While the pill's cover flies into the panel, the panel's own cover stays hidden.
     property bool coverHidden: false
     property var lyrics: null
+    property var holidays: null
+    property bool observances: true
     // The cover the pill's cover lands on: the Home card's or the Music tab's, or null.
     function coverTarget() {
         if (tab === "home")
@@ -390,6 +392,8 @@ Item {
                     id: monthCalendar
                     width: parent.width
                     calendar: panel.calendar
+                    holidays: panel.holidays
+                    observances: panel.observances
                     onDayPicked: day => upNext.day = day
                 }
             }
@@ -408,6 +412,8 @@ Item {
                     objectName: "upNext"
                     width: parent.width
                     calendar: panel.calendar
+                    holidays: panel.holidays
+                    observances: panel.observances
                     onDayCleared: {
                         day = null
                         monthCalendar.selected = null

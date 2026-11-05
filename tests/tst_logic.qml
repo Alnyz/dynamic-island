@@ -642,6 +642,26 @@ TestCase {
         compare(L.lowDevice([{ name: "A", battery: 50 }]), null)
     }
 
+    function test_holidays() {
+        compare(L.holidayCountry("auto", "en_IN"), "indian")
+        compare(L.holidayCountry("auto", "en_GB.UTF-8"), "uk")
+        compare(L.holidayCountry("auto", "C"), "")
+        compare(L.holidayCountry("", "en_IN"), "")
+        compare(L.holidayCountry("usa", "en_IN"), "usa")
+        compare(L.holidayLabel("indian"), "India")
+        compare(L.holidayUrl("indian"), "https://calendar.google.com/calendar/ical/en.indian%23holiday%40group.v.calendar.google.com/public/basic.ics")
+        compare(L.holidayUrl(""), "")
+        const evs = [{ title: "Diwali", note: "Public holiday", start: new Date(2026, 10, 8) }, { title: "Karva Chauth", note: "Observance", start: new Date(2026, 9, 29) }]
+        const all = L.holidayEvents(evs, true)
+        compare(all.length, 2)
+        compare(all[0].publicHoliday, true)
+        compare(all[1].publicHoliday, false)
+        verify(all.every(e => e.holiday))
+        compare(L.holidayEvents(evs, false).map(e => e.title), ["Diwali"])
+        const merged = L.mergeEvents(all, [{ title: "Standup", start: new Date(2026, 9, 30, 9) }])
+        compare(merged.map(e => e.title), ["Karva Chauth", "Standup", "Diwali"])
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])

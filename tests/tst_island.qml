@@ -1091,6 +1091,49 @@ Item {
             compare(island.open, true)
         }
 
+        function fakeHolidays() {
+            const t = new Date()
+            const on = (day, title, note) => ({ title: title, note: note, allDay: true, link: "",
+                                                 start: new Date(t.getFullYear(), t.getMonth(), day), end: new Date(t.getFullYear(), t.getMonth(), day + 1) })
+            const today = { title: "Festival Today", note: "Observance", allDay: true, link: "",
+                            start: new Date(t.getFullYear(), t.getMonth(), t.getDate()), end: new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1) }
+            const all = [on(8, "Diwali", "Public holiday"), on(15, "Guru Nanak Jayanti", "Public holiday"), on(15, "Some Observance", "Observance"), on(20, "Chhath Puja", "Observance")]
+            return {
+                upNext: n => [today],
+                occurrences: (from, to) => {
+                    const a = new Date(from), b = new Date(to)
+                    return all.filter(e => e.start >= new Date(a.getFullYear(), a.getMonth(), a.getDate()) && e.start <= new Date(b.getFullYear(), b.getMonth(), b.getDate()))
+                }
+            }
+        }
+
+        function test_holidays_on_the_calendar_and_up_next() {
+            const { island } = make(null)
+            island.calendar = fakeCalendar()
+            island.holidays = fakeHolidays()
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            mouseMove(island, island.width - 30, island.height - 30)
+            const upNext = findChild(island, "upNext")
+            // Today's festival leads Up next.
+            compare(upNext.events[0].title, "Festival Today")
+            const now = new Date()
+            const y = now.getFullYear(), m = now.getMonth() + 1
+            // Public holidays show in orange on the month; festivals get an orange dot.
+            verify(findChild(island, "festivalDot") !== null || now.getDate() === 20)
+            // Picking the 15th lists both its holidays, tagged, with its own events.
+            mouseClick(findChild(island, "day-" + y + "-" + m + "-15"))
+            const titles = upNext.events.map(e => e.title)
+            verify(titles.indexOf("Guru Nanak Jayanti") >= 0)
+            verify(titles.indexOf("Some Observance") >= 0)
+            verify(titles.indexOf("Event 9") >= 0)
+            // Festivals switched off: only the public holiday stays.
+            island.observances = false
+            const after = upNext.events.map(e => e.title)
+            verify(after.indexOf("Guru Nanak Jayanti") >= 0)
+            compare(after.indexOf("Some Observance"), -1)
+        }
+
         function test_empty_day_says_so() {
             const { island } = make(null)
             island.calendar = fakeCalendar()

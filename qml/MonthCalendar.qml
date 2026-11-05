@@ -6,6 +6,11 @@ Column {
 
     readonly property color accent: palette.accent
     property var calendar: null
+    // The holiday calendar (another CalendarSource), and whether observances count too.
+    property var holidays: null
+    property bool observances: true
+    // Day key -> "public" or "observance".
+    property var holidayDays: ({})
     property int year: new Date().getFullYear()
     property int month0: new Date().getMonth()
     readonly property var cells: L.monthGrid(year, month0)
@@ -43,6 +48,24 @@ Column {
             }
         }
         eventDays = days
+        const hol = {}
+        if (holidays) {
+            const first = cells[0]
+            const last = cells[cells.length - 1]
+            for (const ev of L.holidayEvents(holidays.occurrences(new Date(first.y, first.m, first.d), new Date(last.y, last.m, last.d)), observances)) {
+                const s = new Date(ev.start)
+                const k = key(s.getFullYear(), s.getMonth(), s.getDate())
+                if (hol[k] !== "public")
+                    hol[k] = ev.publicHoliday ? "public" : "observance"
+            }
+        }
+        holidayDays = hol
+    }
+    onHolidaysChanged: loadDots()
+    onObservancesChanged: loadDots()
+    Connections {
+        target: cal.holidays
+        function onChanged() { cal.loadDots() }
     }
 
     onCellsChanged: loadDots()
@@ -132,18 +155,36 @@ Column {
                     anchors.centerIn: parent
                     text: modelData.d
                     // White on the accent circle in either theme.
-                    color: isToday ? "#ffffff" : modelData.inMonth ? palette.windowText : palette.mid
+                    readonly property string holiday: cal.holidayDays[cal.key(modelData.y, modelData.m, modelData.d)] || ""
+                    // Public holidays in orange; white on the accent circle in either theme.
+                    color: isToday ? "#ffffff" : holiday === "public" ? (modelData.inMonth ? "#ff9f0a" : Qt.darker("#ff9f0a", 1.6))
+                         : modelData.inMonth ? palette.windowText : palette.mid
                     font.pixelSize: 12
                     font.weight: isToday ? Font.Bold : Font.Normal
                 }
                 Rectangle {
                     visible: !isToday && cal.eventDays[cal.key(modelData.y, modelData.m, modelData.d)] === true
                     anchors.horizontalCenter: parent.horizontalCenter
+                    // Side by side with a festival's dot.
+                    anchors.horizontalCenterOffset: festivalDot.visible ? -3 : 0
                     anchors.bottom: parent.bottom
                     width: 3
                     height: 3
                     radius: 1.5
                     color: cal.accent
+                }
+                // An observance (festival, religious day): an orange dot.
+                Rectangle {
+                    id: festivalDot
+                    objectName: visible ? "festivalDot" : ""
+                    visible: !isToday && cal.holidayDays[cal.key(modelData.y, modelData.m, modelData.d)] === "observance"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: cal.eventDays[cal.key(modelData.y, modelData.m, modelData.d)] === true ? 3 : 0
+                    anchors.bottom: parent.bottom
+                    width: 3
+                    height: 3
+                    radius: 1.5
+                    color: "#ff9f0a"
                 }
             }
         }

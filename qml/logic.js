@@ -199,6 +199,59 @@ function eventWhen(ev) {
     return String(start.getHours()).padStart(2, "0") + ":" + String(start.getMinutes()).padStart(2, "0")
 }
 
+// Countries with a public holiday calendar from Google, and the region code that picks each
+// one automatically from the system's language setting (en_IN -> India).
+var HOLIDAY_COUNTRIES = [
+    { key: "indian", label: "India", region: "IN" }, { key: "usa", label: "United States", region: "US" },
+    { key: "uk", label: "United Kingdom", region: "GB" }, { key: "canadian", label: "Canada", region: "CA" },
+    { key: "australian", label: "Australia", region: "AU" }, { key: "new_zealand", label: "New Zealand", region: "NZ" },
+    { key: "irish", label: "Ireland", region: "IE" }, { key: "german", label: "Germany", region: "DE" },
+    { key: "french", label: "France", region: "FR" }, { key: "japanese", label: "Japan", region: "JP" },
+    { key: "china", label: "China", region: "CN" }, { key: "singapore", label: "Singapore", region: "SG" },
+    { key: "malaysia", label: "Malaysia", region: "MY" }, { key: "indonesian", label: "Indonesia", region: "ID" },
+    { key: "philippines", label: "Philippines", region: "PH" }, { key: "ae", label: "United Arab Emirates", region: "AE" },
+    { key: "pk", label: "Pakistan", region: "PK" }, { key: "bd", label: "Bangladesh", region: "BD" },
+    { key: "lk", label: "Sri Lanka", region: "LK" }, { key: "np", label: "Nepal", region: "NP" },
+    { key: "sa", label: "South Africa", region: "ZA" }
+]
+
+// The holiday calendar to show: pref is a country key, "" for none, or "auto" to go by the
+// locale name (like "en_IN").
+function holidayCountry(pref, localeName) {
+    if (pref !== "auto")
+        return pref || ""
+    const region = String(localeName || "").split(/[_.@-]/)[1] || ""
+    const c = HOLIDAY_COUNTRIES.find(x => x.region === region.toUpperCase())
+    return c ? c.key : ""
+}
+
+function holidayLabel(key) {
+    const c = HOLIDAY_COUNTRIES.find(x => x.key === key)
+    return c ? c.label : ""
+}
+
+// Google's public iCal feed of a country's holidays and observances.
+function holidayUrl(key) {
+    return key ? "https://calendar.google.com/calendar/ical/en." + key + "%23holiday%40group.v.calendar.google.com/public/basic.ics" : ""
+}
+
+// Holiday-calendar events tagged as such; observances (festivals, religious days) only when wanted.
+function holidayEvents(events, observances) {
+    const out = []
+    for (const e of events || []) {
+        const isPublic = e.note === "Public holiday"
+        if (!isPublic && !observances)
+            continue
+        out.push(Object.assign({}, e, { holiday: true, publicHoliday: isPublic, link: "" }))
+    }
+    return out
+}
+
+// Two event lists as one, in start order.
+function mergeEvents(a, b) {
+    return (a || []).concat(b || []).sort((x, y) => new Date(x.start) - new Date(y.start))
+}
+
 var WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 // "Today", "Tomorrow", "Yesterday", or "Thu 12 Nov" for any other day.

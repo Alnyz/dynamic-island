@@ -70,6 +70,10 @@ QtObject {
         property var icsUrls: []
         property var disabled: []
         property int refreshMinutes: 15
+        // A country key from L.HOLIDAY_COUNTRIES, "" for none, or "auto" (from the system language).
+        property string holidays: "auto"
+        // Festivals and religious days, besides public holidays.
+        property bool observances: true
     }
 
     // An empty city means: find the location from the internet connection.

@@ -47,7 +47,8 @@ QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray>
             if (incidence->type() != KCalendarCore::IncidenceBase::TypeEvent || incidence->status() == KCalendarCore::Incidence::StatusCanceled)
                 continue;
             const QString link = meetingLink(incidence->location() + QLatin1Char(' ') + incidence->description() + QLatin1Char(' ') + incidence->url().toString());
-            out.append({incidence->summary(), it.occurrenceStartDate(), it.occurrenceEndDate(), incidence->allDay(), link});
+            const QString note = incidence->description().section(QLatin1Char('\n'), 0, 0).trimmed().left(60);
+            out.append({incidence->summary(), it.occurrenceStartDate(), it.occurrenceEndDate(), incidence->allDay(), link, note});
         }
     }
     std::sort(out.begin(), out.end(), [](const Occurrence &a, const Occurrence &b) {
@@ -143,6 +144,7 @@ QVariantList CalendarSource::toVariant(const QList<Occurrence> &occ) const
             {QStringLiteral("end"), o.end},
             {QStringLiteral("allDay"), o.allDay},
             {QStringLiteral("link"), o.link},
+            {QStringLiteral("note"), o.note},
         });
     }
     return out;

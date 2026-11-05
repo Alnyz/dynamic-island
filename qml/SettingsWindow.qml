@@ -718,6 +718,24 @@ QQC.ApplicationWindow {
                 title: "Calendar"
                 Kirigami.FormLayout {
                     Layout.fillWidth: true
+                    QQC.ComboBox {
+                        objectName: "holidayCountry"
+                        Kirigami.FormData.label: "Holidays and festivals:"
+                        textRole: "label"
+                        valueRole: "key"
+                        readonly property string autoKey: L.holidayCountry("auto", Qt.locale().name)
+                        model: [{ key: "auto", label: "Automatic" + (autoKey ? " (" + L.holidayLabel(autoKey) + ")" : "") }, { key: "", label: "None" }]
+                               .concat(L.HOLIDAY_COUNTRIES.map(c => ({ key: c.key, label: c.label })))
+                        currentIndex: Math.max(0, model.findIndex(m => m.key === win.prefs.calendar.holidays))
+                        onActivated: win.prefs.calendar.holidays = currentValue
+                    }
+                    QQC.CheckBox {
+                        objectName: "observances"
+                        text: "Include festivals and religious days, not only public holidays"
+                        enabled: L.holidayCountry(win.prefs.calendar.holidays, Qt.locale().name) !== ""
+                        checked: win.prefs.calendar.observances
+                        onToggled: win.prefs.calendar.observances = checked
+                    }
                     SliderRow {
                         Kirigami.FormData.label: "Check for changes every:"
                         from: 5; to: 120; suffix: " min"

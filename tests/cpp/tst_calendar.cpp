@@ -37,6 +37,18 @@ private Q_SLOTS:
         QCOMPARE(occ[0].allDay, false);
     }
 
+    void testNoteIsTheDescriptionsFirstLine()
+    {
+        const QByteArray holiday =
+            "BEGIN:VEVENT\r\nUID:diwali@test\r\nDTSTART;VALUE=DATE:20261108\r\nDTEND;VALUE=DATE:20261109\r\nSUMMARY:Diwali/Deepavali\r\n"
+            "DESCRIPTION:Public holiday\\nTo hide observances, go to Google Calendar Settings\r\nEND:VEVENT\r\n";
+        const auto occ = CalendarSource::expand({ics(holiday)}, QDateTime(QDate(2026, 11, 1), QTime(0, 0)), QDateTime(QDate(2026, 11, 30), QTime(0, 0)));
+        QCOMPARE(occ.size(), 1);
+        QCOMPARE(occ.first().title, QStringLiteral("Diwali/Deepavali"));
+        QCOMPARE(occ.first().note, QStringLiteral("Public holiday"));
+        QVERIFY(occ.first().allDay);
+    }
+
     void testMeetingLink()
     {
         const QByteArray meet =

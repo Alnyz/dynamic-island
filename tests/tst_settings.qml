@@ -173,4 +173,20 @@ TestCase {
         // Without KWin's blur settings passed in, the strength row stays hidden.
         compare(findChild(win.contentItem, "blurStrength").visible, false)
     }
+
+    function test_holiday_settings() {
+        const { prefs, win } = make()
+        win.page = 4
+        const picker = findChild(win.contentItem, "holidayCountry")
+        prefs.calendar.holidays = "auto"
+        compare(picker.currentValue, "auto")
+        prefs.calendar.holidays = "indian"
+        compare(picker.currentText, "India")
+        prefs.calendar.holidays = ""
+        compare(picker.currentText, "None")
+        compare(findChild(win.contentItem, "observances").enabled, false)
+        prefs.calendar.holidays = "usa"
+        compare(findChild(win.contentItem, "observances").enabled, true)
+        prefs.calendar.holidays = "auto"
+    }
 }

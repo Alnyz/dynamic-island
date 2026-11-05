@@ -53,6 +53,9 @@ Item {
     property var notes: null
     property var todos: null
     property var lyrics: null
+    // Holiday calendar (CalendarSource) for the panel's calendar and Up next.
+    property var holidays: null
+    property bool observances: true
     // Ticks a task off from the idle pill.
     signal todoDone(string id)
     // NotificationHistory for the Notifications tab, and its new count for the tab's badge.
@@ -1260,6 +1263,8 @@ Item {
                 island.upgradeRequested()
             }
             lyrics: island.lyrics
+            holidays: island.holidays
+            observances: island.observances
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
