@@ -45,6 +45,55 @@ QQC.ApplicationWindow {
     }
 
     property int page: 0
+
+    // Search: matches the text of every label, switch, check box and button on the pages.
+    property string query: ""
+    // Filled when the query changes, not as a binding: the labels' text isn't bindable from here.
+    property var results: []
+    onQueryChanged: results = query.trim().length >= 2 ? searchFor(query) : []
+    function searchFor(q) {
+        const words = q.toLowerCase().trim().split(/\s+/)
+        const out = []
+        const seen = {}
+        for (let i = 0; i < stack.children.length; ++i) {
+            const pg = stack.children[i]
+            collectText(pg, i, pg.title, words, out, seen)
+        }
+        return out.slice(0, 40)
+    }
+    function collectText(item, pageIndex, pageTitle, words, out, seen) {
+        // Text fields hold what the user typed, not a setting's name.
+        const editable = item.cursorPosition !== undefined
+        if (!editable && typeof item.text === "string" && item.text.length > 1 && item.objectName !== "searchSkip") {
+            const label = item.text.replace(/:$/, "").replace(/&/g, "")
+            const hay = (label + " " + pageTitle).toLowerCase()
+            const key = pageIndex + "|" + label
+            if (!seen[key] && label !== pageTitle && words.every(w => hay.includes(w))) {
+                seen[key] = true
+                out.push({ label: label, page: pageIndex, pageTitle: pageTitle, item: item })
+            }
+        }
+        for (let c = 0; c < item.children.length; ++c)
+            collectText(item.children[c], pageIndex, pageTitle, words, out, seen)
+    }
+    // Opens a result's page, scrolls it into view and flashes it.
+    function reveal(r) {
+        query = ""
+        page = r.page
+        const pg = stack.children[r.page]
+        Qt.callLater(() => {
+            const flick = pg.contentItem
+            const p = r.item.mapToItem(flick.contentItem, 0, 0)
+            flick.contentY = Math.max(0, Math.min(p.y - 40, flick.contentHeight - flick.height))
+            const q = r.item.mapToItem(win.contentItem, 0, 0)
+            flash.x = q.x - 6
+            flash.y = q.y - 4
+            flash.width = r.item.width + 12
+            flash.height = r.item.height + 8
+            flash.target = r.item
+            flashAnim.restart()
+        })
+    }
     readonly property var pages: [
             { label: "Look", icon: "preferences-desktop-theme-global" },
             { label: "Behaviour", icon: "preferences-system-windows-behavior" },
@@ -62,9 +111,64 @@ QQC.ApplicationWindow {
         spacing: 0
 
         // One page per topic, so no single page turns into a long scroll.
-        QQC.ScrollView {
+        ColumnLayout {
             Layout.fillHeight: true
             Layout.preferredWidth: 190
+            Layout.maximumWidth: 190
+            spacing: 0
+        Kirigami.SearchField {
+            id: search
+            objectName: "settingsSearch"
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.smallSpacing
+            placeholderText: "Search settings"
+            text: win.query
+            onTextChanged: win.query = text
+            Keys.onReturnPressed: if (win.results.length) win.reveal(win.results[0])
+            Keys.onEscapePressed: win.query = ""
+        }
+        QQC.Label {
+            objectName: "searchEmpty"
+            visible: win.query.trim().length >= 2 && win.results.length === 0
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.largeSpacing
+            text: "Nothing matches."
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+        }
+        QQC.ScrollView {
+            visible: win.results.length > 0
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            ListView {
+                objectName: "searchResults"
+                model: win.results
+                delegate: QQC.ItemDelegate {
+                    required property var modelData
+                    required property int index
+                    objectName: "searchResult" + index
+                    width: ListView.view.width
+                    contentItem: Column {
+                        QQC.Label {
+                            width: parent.width
+                            text: modelData.label
+                            elide: Text.ElideRight
+                        }
+                        QQC.Label {
+                            width: parent.width
+                            text: modelData.pageTitle
+                            font: Kirigami.Theme.smallFont
+                            opacity: 0.7
+                        }
+                    }
+                    onClicked: win.reveal(modelData)
+                }
+            }
+        }
+        QQC.ScrollView {
+            visible: win.query.trim().length < 2
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             ListView {
                 topMargin: Kirigami.Units.smallSpacing
                 model: win.pages
@@ -79,8 +183,10 @@ QQC.ApplicationWindow {
                 }
             }
         }
+        }
         Kirigami.Separator { Layout.fillHeight: true }
         StackLayout {
+            id: stack
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: win.page
@@ -621,13 +727,13 @@ QQC.ApplicationWindow {
                     QQC.ButtonGroup { id: unitGroup }
                     QQC.RadioButton {
                         Kirigami.FormData.label: "Temperature:"
-                        text: "°C"
+                        text: "Celsius (°C)"
                         QQC.ButtonGroup.group: unitGroup
                         checked: !win.prefs.weather.fahrenheit
                         onToggled: win.prefs.weather.fahrenheit = false
                     }
                     QQC.RadioButton {
-                        text: "°F"
+                        text: "Fahrenheit (°F)"
                         QQC.ButtonGroup.group: unitGroup
                         checked: win.prefs.weather.fahrenheit
                         onToggled: win.prefs.weather.fahrenheit = true
@@ -792,6 +898,25 @@ QQC.ApplicationWindow {
         }
         xhr.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(name))
         xhr.send()
+    }
+
+    // The setting a search result led to, flashed for a moment.
+    Rectangle {
+        id: flash
+        property var target: null
+        parent: win.contentItem
+        z: 100
+        radius: 6
+        color: "transparent"
+        border.color: Kirigami.Theme.highlightColor
+        border.width: 2
+        opacity: 0
+        SequentialAnimation {
+            id: flashAnim
+            NumberAnimation { target: flash; property: "opacity"; to: 1; duration: 120 }
+            PauseAnimation { duration: 900 }
+            NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 400 }
+        }
     }
 
     component Page: QQC.ScrollView {

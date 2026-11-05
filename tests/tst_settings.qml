@@ -76,4 +76,52 @@ TestCase {
         prefs.history.days = 30
         compare(box.currentText, "30 days")
     }
+
+    function test_search_finds_and_reveals_a_setting() {
+        const { win } = make()
+        const field = findChild(win.contentItem, "settingsSearch")
+        mouseClick(field)
+        keyClick(Qt.Key_L); keyClick(Qt.Key_O); keyClick(Qt.Key_G); keyClick(Qt.Key_I); keyClick(Qt.Key_N)
+        compare(win.query, "login")
+        const hit = win.results.find(r => r.label === "Start at login")
+        verify(hit !== undefined)
+        compare(hit.pageTitle, "General")
+        const row = findChild(win.contentItem, "searchResult" + win.results.indexOf(hit))
+        verify(row)
+        mouseClick(row)
+        compare(win.page, 8)
+        compare(win.query, "")
+    }
+
+    function test_search_matches_words_in_any_order_and_page_names() {
+        const { win } = make()
+        win.query = "brightness volume"
+        verify(win.results.some(r => r.pageTitle === "Alerts" && r.label.indexOf("Volume and brightness") === 0))
+        // A page's name counts as part of each of its settings.
+        win.query = "weather fahrenheit"
+        verify(win.results.length > 0)
+        verify(win.results.every(r => r.pageTitle === "Weather"))
+    }
+
+    function test_search_nothing_matches() {
+        const { win } = make()
+        win.query = "zzqx"
+        compare(win.results.length, 0)
+        verify(findChild(win.contentItem, "searchEmpty").visible)
+        // One letter isn't a search yet.
+        win.query = "a"
+        compare(win.results.length, 0)
+        verify(!findChild(win.contentItem, "searchEmpty").visible)
+    }
+
+    function test_search_enter_opens_first_result() {
+        const { win } = make()
+        const field = findChild(win.contentItem, "settingsSearch")
+        mouseClick(field)
+        win.query = "tour"
+        verify(win.results.length > 0)
+        const first = win.results[0]
+        keyClick(Qt.Key_Return)
+        compare(win.page, first.page)
+    }
 }
