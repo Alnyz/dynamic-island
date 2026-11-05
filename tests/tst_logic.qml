@@ -147,6 +147,12 @@ TestCase {
         compare(L.eventWhen(ev(d(23), d(24), true)), "All day")
         compare(L.eventDetail(ev(d(23), d(24), true), now), "Today")
         compare(L.eventDetail(ev(d(24), d(25), true), now), "Tomorrow")
+        // Days further off are named, not called tomorrow.
+        compare(L.eventDetail(ev(d(27, 9), d(27, 10), false), now), L.dayName(d(27), now) + " · 1 h")
+        compare(L.dayName(d(22), now), "Yesterday")
+        compare(L.eventDetail(ev(d(27, 9), d(27, 10, 30), false), now, true), "1 h 30 min")
+        compare(L.eventDetail(ev(d(27), d(28), true), now, true), "All day")
+        compare(L.dayName(new Date(2026, 9, 30), now), "Fri 30 Oct")
     }
 
     function test_countdown_text_rounds_up() {

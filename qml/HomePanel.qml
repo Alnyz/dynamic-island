@@ -387,8 +387,10 @@ Item {
                     coverHidden: panel.coverHidden
                 }
                 MonthCalendar {
+                    id: monthCalendar
                     width: parent.width
                     calendar: panel.calendar
+                    onDayPicked: day => upNext.day = day
                 }
             }
 
@@ -396,12 +398,20 @@ Item {
                 width: parent.width - 300 - 200 - 2 * parent.spacing
                 spacing: 22
                 WeatherCard {
+                    objectName: "weatherCard"
                     width: parent.width
                     weather: panel.weather
+                    onForecastRequested: url => panel.linkRequested(url)
                 }
                 UpNext {
+                    id: upNext
+                    objectName: "upNext"
                     width: parent.width
                     calendar: panel.calendar
+                    onDayCleared: {
+                        day = null
+                        monthCalendar.selected = null
+                    }
                     showJoin: panel.showJoin
                     onLinkRequested: url => panel.linkRequested(url)
                 }

@@ -10,6 +10,16 @@ Column {
     property int month0: new Date().getMonth()
     readonly property var cells: L.monthGrid(year, month0)
     property var eventDays: ({})
+    // The day clicked to see its events ({y, m, d}), or null; a second click lets it go.
+    property var selected: null
+    signal dayPicked(var day)
+    function pick(cell) {
+        if (selected && selected.y === cell.y && selected.m === cell.m && selected.d === cell.d)
+            selected = null
+        else
+            selected = { y: cell.y, m: cell.m, d: cell.d }
+        dayPicked(selected ? new Date(selected.y, selected.m, selected.d) : null)
+    }
 
     readonly property var monthNames: ["January", "February", "March", "April", "May", "June", "July",
                                        "August", "September", "October", "November", "December"]
@@ -91,15 +101,23 @@ Column {
                 height: parent.sixWeeks ? 23 : 24
 
                 MouseArea {
+                    objectName: "day-" + modelData.y + "-" + (modelData.m + 1) + "-" + modelData.d
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        const year = modelData.y
-                        const month = modelData.m + 1 // Convert 0-indexed month to 1-12
-                        const day = modelData.d
-                        const targetUrl = "https://calendar.google.com/calendar/u/0/r/day/" + year + "/" + month + "/" + day
-                        Qt.openUrlExternally(targetUrl)
-                    }
+                    onClicked: cal.pick(modelData)
+                }
+                // The picked day's ring.
+                Rectangle {
+                    readonly property bool picked: cal.selected !== null && cal.selected.y === modelData.y && cal.selected.m === modelData.m && cal.selected.d === modelData.d
+                    objectName: picked ? "pickedDay" : ""
+                    visible: picked
+                    anchors.centerIn: parent
+                    width: 24
+                    height: 24
+                    radius: 12
+                    color: "transparent"
+                    border.color: cal.accent
+                    border.width: 1.5
                 }
 
                 Rectangle {

@@ -23,3 +23,20 @@ function nextHours(hourly, count) {
         out.push({ hour: hourly.time[i].slice(11, 13), temperature: Math.round(hourly.temperature_2m[i]) })
     return out
 }
+
+// Reverse geocoding for an IP location that came without a city (BigDataCloud's keyless lookup).
+function placeUrl(lat, lon) {
+    return "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=en"
+}
+
+// The best name for a place: the lookup's city or locality, else the IP location's region or country.
+function placeName(place, geo) {
+    const p = place || {}
+    const g = geo || {}
+    return p.city || p.locality || g.region || p.principalSubdivision || g.country || p.countryName || ""
+}
+
+// A full forecast (hourly and ten days) for a spot, to open in the browser.
+function forecastUrl(lat, lon) {
+    return "https://weather.com/weather/tenday/l/" + lat.toFixed(2) + "," + lon.toFixed(2)
+}

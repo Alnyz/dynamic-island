@@ -199,16 +199,32 @@ function eventWhen(ev) {
     return String(start.getHours()).padStart(2, "0") + ":" + String(start.getMinutes()).padStart(2, "0")
 }
 
-function eventDetail(ev, now) {
+var WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+// "Today", "Tomorrow", "Yesterday", or "Thu 12 Nov" for any other day.
+function dayName(date, now) {
+    const d = new Date(date)
+    const days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000)
+    if (days === 0)
+        return "Today"
+    if (days === 1)
+        return "Tomorrow"
+    if (days === -1)
+        return "Yesterday"
+    return WEEKDAYS[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()]
+}
+
+// "Today · 45 min"; without the day (a picked day's list has it in its heading) just "45 min".
+function eventDetail(ev, now, withoutDay) {
     const start = new Date(ev.start)
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    const day = start >= tomorrow ? "Tomorrow" : "Today"
+    const day = dayName(start, now)
     if (ev.allDay)
-        return day
+        return withoutDay ? "All day" : day
     const mins = Math.round((new Date(ev.end) - start) / 60000)
     const h = Math.floor(mins / 60)
     const m = mins % 60
-    return day + " · " + (h > 0 ? h + " h" + (m > 0 ? " " + m + " min" : "") : m + " min")
+    const length = h > 0 ? h + " h" + (m > 0 ? " " + m + " min" : "") : m + " min"
+    return withoutDay ? length : day + " · " + length
 }
 
 // Countdowns round up, so 4:59.9 still reads 5:00 and 0:00 only shows at the end.

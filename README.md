@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 ### Panel tabs
 
-- Home: music, the month calendar, weather for the next few hours, upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
+- Home: music, the month calendar (click a day to see its events), weather for the next few hours (click it for the full forecast on weather.com), upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
 - Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. With more than one player open, chips pick which one the island follows. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
 - Timer: drag the minute tape or pick a preset, or start a Pomodoro (25 minutes of focus, 5 minute breaks, a long one every fourth). The pill's countdown turns red while focusing and green on a break.
 - Sound mixer: output and input devices, mic level, and per-app volume.
@@ -98,7 +98,7 @@ Browsers often leave out the cover of a song you skip to. When one is missing, t
 
 Lyrics come from [LRCLIB](https://lrclib.net), only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
 
-Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings.
+Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings. When the IP lookup has no city name, the place is named from its coordinates through BigDataCloud.
 
 ## Where things are stored
 

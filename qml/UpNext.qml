@@ -7,11 +7,26 @@ Column {
     property var calendar: null
     property var events: []
     property bool showJoin: true
+    // A day picked on the month calendar: its events instead of what's next. null for up next.
+    property var day: null
+    property var now: () => new Date()
+    // A picked day shows this many events, then "+N more".
+    property int dayLimit: 4
     signal linkRequested(string url)
+    signal dayCleared()
 
-    function load() { events = calendar ? calendar.upNext(2) : [] }
+    function load() {
+        if (!calendar)
+            events = []
+        else if (day)
+            events = calendar.occurrences(day, day)
+        else
+            events = calendar.upNext(2)
+    }
+    readonly property var shown: day ? events.slice(0, dayLimit) : events
 
     onCalendarChanged: load()
+    onDayChanged: load()
     Connections {
         target: up.calendar
         function onChanged() { up.load() }
@@ -21,16 +36,38 @@ Column {
 
     spacing: 10
 
-    Text {
-        text: "UP NEXT"
-        color: palette.placeholderText
-        font.pixelSize: 12
-        font.weight: Font.DemiBold
-        font.letterSpacing: 0.6
+    Item {
+        width: parent.width
+        height: heading.implicitHeight
+        Text {
+            id: heading
+            objectName: "upNextHeading"
+            text: up.day ? L.dayName(up.day, up.now()).toUpperCase() : "UP NEXT"
+            color: palette.placeholderText
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+            font.letterSpacing: 0.6
+        }
+        Text {
+            objectName: "upNextBack"
+            visible: up.day !== null
+            anchors.right: parent.right
+            text: "Upcoming"
+            color: backArea.containsMouse ? palette.windowText : palette.accent
+            font.pixelSize: 12
+            MouseArea {
+                id: backArea
+                anchors.fill: parent
+                anchors.margins: -6
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: up.dayCleared()
+            }
+        }
     }
 
     Repeater {
-        model: up.events
+        model: up.shown
         delegate: Row {
             required property var modelData
             width: up.width
@@ -55,7 +92,7 @@ Column {
                     elide: Text.ElideRight
                 }
                 Text {
-                    text: L.eventDetail(modelData, new Date())
+                    text: L.eventDetail(modelData, new Date(), up.day !== null)
                     color: palette.placeholderText
                     font.pixelSize: 12
                 }
@@ -72,6 +109,15 @@ Column {
     }
 
     Text {
+        objectName: "upNextMore"
+        visible: up.day !== null && up.events.length > up.dayLimit
+        text: "+" + (up.events.length - up.dayLimit) + " more"
+        color: palette.placeholderText
+        font.pixelSize: 12
+    }
+
+    Text {
+        objectName: "upNextEmpty"
         width: parent.width
         visible: up.events.length === 0
         wrapMode: Text.WordWrap
@@ -82,6 +128,7 @@ Column {
             : !up.calendar.ok && up.calendar.lastSuccess.getTime() > 0
               ? "Couldn't reach Google Calendar · last updated " + Qt.formatTime(up.calendar.lastSuccess, "HH:mm")
             : !up.calendar.ok ? "Couldn't reach Google Calendar"
+            : up.day ? "Nothing on this day"
             : "Nothing else today or tomorrow"
     }
 }

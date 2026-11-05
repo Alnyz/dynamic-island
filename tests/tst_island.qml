@@ -1040,6 +1040,99 @@ Item {
             tryCompare(island, "width", 230)
         }
 
+        function fakeCalendar() {
+            const today = new Date()
+            const at = (dayOffset, h) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, h, 0)
+            const pickedDay = new Date(today.getFullYear(), today.getMonth(), 15)
+            const onPicked = h => ({ title: "Event " + h, start: new Date(pickedDay.getFullYear(), pickedDay.getMonth(), 15, h), end: new Date(pickedDay.getFullYear(), pickedDay.getMonth(), 15, h + 1), allDay: false, link: "" })
+            return {
+                configured: true, loaded: true, ok: true, lastSuccess: new Date(),
+                upNext: n => [{ title: "Standup", start: at(0, 23), end: at(0, 23), allDay: false, link: "" }],
+                // Six events on the 15th, none on other days.
+                occurrences: (from, to) => new Date(from).getDate() === 15 && new Date(to).getDate() === 15 ? [9, 10, 11, 12, 13, 14].map(onPicked)
+                    : new Date(from).getDate() !== new Date(to).getDate() ? [onPicked(9)] : []
+            }
+        }
+
+        function test_calendar_day_shows_its_events() {
+            const { island } = make(null)
+            island.calendar = fakeCalendar()
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            mouseMove(island, island.width - 30, island.height - 30)
+            const upNext = findChild(island, "upNext")
+            compare(findChild(island, "upNextHeading").text, "UP NEXT")
+            const now = new Date()
+            const day15 = findChild(island, "day-" + now.getFullYear() + "-" + (now.getMonth() + 1) + "-15")
+            verify(day15)
+            mouseClick(day15)
+            compare(upNext.day.getDate(), 15)
+            compare(upNext.events.length, 6)
+            // Four shown, then "+2 more".
+            compare(upNext.shown.length, 4)
+            compare(findChild(island, "upNextMore").text, "+2 more")
+            verify(findChild(island, "pickedDay").visible)
+            verify(findChild(island, "upNextBack").visible)
+            // The heading names the day.
+            compare(findChild(island, "upNextHeading").text, upNext.day.getDate() === now.getDate() ? "TODAY" : findChild(island, "upNextHeading").text)
+            // Clicking it again goes back to what's next.
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(day15)
+            compare(upNext.day, null)
+            compare(findChild(island, "upNextHeading").text, "UP NEXT")
+            // So does "Upcoming".
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(day15)
+            wait(Qt.styleHints.mouseDoubleClickInterval + 50)
+            mouseClick(findChild(island, "upNextBack"))
+            compare(upNext.day, null)
+            compare(findChild(island, "pickedDay"), null)
+            // The panel stayed open the whole time: nothing went to the browser.
+            compare(island.open, true)
+        }
+
+        function test_empty_day_says_so() {
+            const { island } = make(null)
+            island.calendar = fakeCalendar()
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            mouseMove(island, island.width - 30, island.height - 30)
+            const now = new Date()
+            mouseClick(findChild(island, "day-" + now.getFullYear() + "-" + (now.getMonth() + 1) + "-16"))
+            compare(findChild(island, "upNextEmpty").text, "Nothing on this day")
+        }
+
+        Component {
+            id: weatherFake
+            QtObject {
+                property real temperature: 31
+                property int code: 2
+                property real high: 33
+                property real low: 24
+                property string city: "Chhindwara"
+                property var hours: []
+                property bool ok: true
+                property string forecastUrl: "https://weather.com/weather/tenday/l/22.06,78.94"
+            }
+        }
+
+        function test_weather_click_opens_forecast() {
+            const { island } = make(null)
+            island.weather = createTemporaryObject(weatherFake, stage)
+            let opened = ""
+            island.linkRequested.connect(u => opened = u)
+            island.open = true
+            tryCompare(island, "height", island.size.h)
+            mouseMove(island, island.width - 30, island.height - 30)
+            const card = findChild(island, "homePanel")
+            // The temperature text sits in the card.
+            const deg = findChild(island, "weatherCard")
+            verify(deg)
+            mouseClick(deg, 20, 20)
+            compare(opened, "https://weather.com/weather/tenday/l/22.06,78.94")
+            compare(island.open, false)
+        }
+
         function test_peek_shows_current_activity() {
             const { island, timer } = make(null, true)
             mouseMove(island, 10, 10)

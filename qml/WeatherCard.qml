@@ -6,6 +6,8 @@ Column {
     id: card
 
     property var weather
+    // Clicking the card asks to open a full forecast.
+    signal forecastRequested(string url)
     readonly property var info: W.describe(weather ? weather.code : -1)
     readonly property bool hasData: weather !== null && weather !== undefined && !isNaN(weather.temperature)
 
@@ -86,5 +88,16 @@ Column {
         text: "Weather unavailable"
         color: palette.placeholderText
         font.pixelSize: 12
+    }
+
+    // Handlers, not a MouseArea: a Column places its children itself.
+    readonly property bool clickable: hasData && !!weather.forecastUrl
+    TapHandler {
+        enabled: card.clickable
+        onTapped: card.forecastRequested(card.weather.forecastUrl)
+    }
+    HoverHandler {
+        enabled: card.clickable
+        cursorShape: Qt.PointingHandCursor
     }
 }
