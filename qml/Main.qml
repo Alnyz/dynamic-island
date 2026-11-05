@@ -217,6 +217,7 @@ Window {
         id: source
         players: mpris.list
         pauseTimeoutMs: prefs.behaviour.pausedMinutes * 60000
+        coverLookup: prefs.behaviour.coverLookup
     }
 
     Island {
@@ -227,6 +228,7 @@ Window {
         pill: prefs.style.look === "pill"
         palette.accent: prefs.style.accent
         player: source.player
+        artUrl: source.artUrl
         timer: timerModel
         weather: weatherSource
         calendar: calendarSource

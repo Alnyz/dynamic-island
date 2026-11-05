@@ -67,6 +67,58 @@ function nextLoop(status) {
 
 var PAUSE_TIMEOUT_MS = 300000
 
+// The cover to show for the current song. Browsers (Plasma's browser integration) often send a
+// skipped-to song with no cover, and can take a cover away again moments after sending it, so a
+// cover is kept until the song changes. A new song never inherits the previous song's cover.
+// held: { key, url } from the last call; now: { key, url } as the player reports it.
+function heldArt(held, now) {
+    if (now.url)
+        return { key: now.key, url: now.url }
+    if (held && held.key === now.key)
+        return held
+    return { key: now.key, url: "" }
+}
+
+// Words without punctuation, so "Dancin’" and "Dancin'" compare equal. Letters of any script stay;
+// QML's JavaScript has no \p{L}, so punctuation is named by range: ASCII, Latin-1, General and CJK punctuation.
+function coverWords(s) {
+    return String(s || "").toLowerCase()
+        .replace(/['\u2018\u2019\u02bc]/g, "")
+        .replace(/[\u0000-\u002f\u003a-\u0040\u005b-\u0060\u007b-\u00bf\u2000-\u206f\u3000-\u303f]+/g, " ")
+        .replace(/\s+/g, " ").trim()
+}
+
+// A title without "(Official Video)", "[Radio Edit]", "| YouTube Music" and the like.
+function coverBaseTitle(title) {
+    return coverWords(String(title || "")
+        .replace(/\s*[|-]\s*(YouTube Music|YouTube)\s*$/i, "")
+        .replace(/\s*[(\[][^)\]]*[)\]]/g, ""))
+}
+
+// iTunes search for a song that came without a cover. Only the artist and title are sent.
+function coverSearchUrl(artist, title) {
+    const term = (String(artist || "") + " " + String(title || "").replace(/\s*[(\[][^)\]]*[)\]]/g, "")).trim()
+    return "https://itunes.apple.com/search?media=music&entity=song&limit=10&term=" + encodeURIComponent(term)
+}
+
+// The cover of the first result with the same artist and title, at 600 px; "" if none matches.
+// A wrong cover is worse than none, so a result from the right artist but another song is skipped.
+function pickCover(results, artist, title) {
+    const a = coverWords(artist)
+    const t = coverBaseTitle(title)
+    if (!a || !t)
+        return ""
+    for (const r of results || []) {
+        const ra = coverWords(r.artistName)
+        if (!ra || !(ra.includes(a) || a.includes(ra)))
+            continue
+        if (coverBaseTitle(r.trackName) !== t || !r.artworkUrl100)
+            continue
+        return String(r.artworkUrl100).replace(/\/\d+x\d+bb\./, "/600x600bb.")
+    }
+    return ""
+}
+
 function pickPlayer(entries, nowMs, timeoutMs) {
     if (timeoutMs === undefined)
         timeoutMs = PAUSE_TIMEOUT_MS

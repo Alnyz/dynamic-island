@@ -9,6 +9,8 @@ Item {
     id: island
 
     property var player: null
+    // The player's cover as PlayerSource holds it; player.artUrl itself can blink out.
+    property string artUrl: ""
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -625,7 +627,7 @@ Item {
             radius: Math.round(side * 0.36)
             x: island.mode === "peek" ? 12 : 8
             y: (island.height - side) / 2
-            source: island.player ? island.player.artUrl : ""
+            source: island.player ? island.artUrl : ""
             fallbackIcon: island.player ? island.player.iconName || island.player.desktopEntry || "" : ""
         }
 
@@ -1004,6 +1006,7 @@ Item {
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool
             player: island.player
+            artUrl: island.artUrl
             timer: island.timer
             weather: island.weather
             calendar: island.calendar

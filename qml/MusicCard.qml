@@ -5,6 +5,7 @@ Column {
     id: card
 
     property var player: null
+    property string artUrl: ""
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property bool hasLength: player !== null && player.length > 0
 
@@ -17,7 +18,7 @@ Column {
             width: 56
             height: 56
             radius: 10
-            source: card.player ? card.player.artUrl : ""
+            source: card.player ? card.artUrl : ""
             fallbackIcon: card.player ? card.player.iconName || card.player.desktopEntry || "" : ""
         }
         Column {

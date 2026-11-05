@@ -8,6 +8,7 @@ Item {
     id: music
 
     property var player: null
+    property string artUrl: ""
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
     readonly property color dim: Qt.rgba(1, 1, 1, 0.62)
@@ -36,7 +37,7 @@ Item {
         Image {
             id: glowSource
             anchors.fill: parent
-            source: music.player ? music.player.artUrl : ""
+            source: music.player ? music.artUrl : ""
             // A few pixels, smoothly stretched, is already a soft colour field; the blur only hides the seams.
             sourceSize: Qt.size(6, 6)
             smooth: true
@@ -97,7 +98,7 @@ Item {
                 CoverArt {
                     anchors.fill: parent
                     radius: 16
-                    source: music.player ? music.player.artUrl : ""
+                    source: music.player ? music.artUrl : ""
                     fallbackIcon: music.appIcon
                 }
             }

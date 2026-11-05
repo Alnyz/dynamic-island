@@ -468,4 +468,45 @@ TestCase {
     function test_privacy_alert_size() {
         compare(L.alertSize("privacy", 32, 12), { w: 330, h: 32, r: 12 })
     }
+
+    function test_held_art() {
+        // A cover is taken as soon as it comes.
+        let h = L.heldArt(null, { key: "a", url: "file:///a.jpg" })
+        compare(h.url, "file:///a.jpg")
+        // The browser takes it away mid-song: keep it.
+        h = L.heldArt(h, { key: "a", url: "" })
+        compare(h.url, "file:///a.jpg")
+        // Skipped to a song with no cover yet: don't show the old one.
+        h = L.heldArt(h, { key: "b", url: "" })
+        compare(h.url, "")
+        // Its cover arrives later.
+        h = L.heldArt(h, { key: "b", url: "file:///b.jpg" })
+        compare(h.url, "file:///b.jpg")
+    }
+
+    function test_cover_search_url() {
+        compare(L.coverSearchUrl("CG5", "Dancin’ (Official Video)"),
+                "https://itunes.apple.com/search?media=music&entity=song&limit=10&term=CG5%20Dancin%E2%80%99")
+    }
+
+    function test_pick_cover() {
+        const art = "https://x/Cover.jpg/100x100bb.jpg"
+        const big = "https://x/Cover.jpg/600x600bb.jpg"
+        // Curly and straight apostrophes match; the 600 px version is used.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin’"), big)
+        // Remix and edit tags are ignored on both sides.
+        compare(L.pickCover([{ artistName: "OMI", trackName: "Cheerleader (Felix Jaehn Remix) [Radio Edit]", artworkUrl100: art }],
+                            "OMI", "Cheerleader (Felix Jaehn Remix) (Radio Edit)"), big)
+        // A featured artist on iTunes still matches.
+        compare(L.pickCover([{ artistName: "Maroon 5 & Cardi B", trackName: "Girls Like You", artworkUrl100: art }], "Maroon 5", "Girls Like You"), big)
+        // The first result that matches wins over earlier ones that don't.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Other Song", artworkUrl100: "https://x/o/100x100bb.jpg" },
+                             { artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin'"), big)
+        // Same artist, different song, or different artist: no cover rather than a wrong one.
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Other Song", artworkUrl100: art }], "CG5", "Dancin'"), "")
+        compare(L.pickCover([{ artistName: "Somebody", trackName: "Dancin'", artworkUrl100: art }], "CG5", "Dancin'"), "")
+        compare(L.pickCover([], "CG5", "Dancin'"), "")
+        compare(L.pickCover(undefined, "CG5", "Dancin'"), "")
+        compare(L.pickCover([{ artistName: "CG5", trackName: "Dancin'", artworkUrl100: art }], "", "Dancin'"), "")
+    }
 }

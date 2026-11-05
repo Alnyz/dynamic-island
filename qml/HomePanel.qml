@@ -7,6 +7,7 @@ Item {
     objectName: "homePanel"
 
     property var player: null
+    property string artUrl: ""
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -276,6 +277,7 @@ Item {
                 MusicCard {
                     width: parent.width
                     player: panel.player
+                    artUrl: panel.artUrl
                 }
                 MonthCalendar {
                     width: parent.width
@@ -311,6 +313,7 @@ Item {
             anchors.fill: parent
             visible: panel.tab === "music"
             player: panel.player
+            artUrl: panel.artUrl
         }
         Loader {
             objectName: "mixerTab"
