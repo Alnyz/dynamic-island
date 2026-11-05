@@ -23,9 +23,18 @@ Row {
             SequentialAnimation on height {
                 running: bars.running
                 loops: Animation.Infinite
-                PauseAnimation { duration: [0, 300, 150, 450][bar.index] }
-                NumberAnimation { to: 14; duration: 500; easing.type: Easing.InOutSine }
-                NumberAnimation { to: 4; duration: 500; easing.type: Easing.InOutSine }
+
+                NumberAnimation {
+                    to: [14, 10, 13, 11][bar.index]
+                    duration: [380, 520, 430, 490][bar.index]
+                    easing.type: Easing.InOutSine
+                }
+                NumberAnimation {
+                    to: [3, 4, 2, 3][bar.index]
+                    duration: [380, 520, 430, 490][bar.index]
+                    easing.type: Easing.InOutSine
+                }
+
                 onRunningChanged: if (!running) bar.height = 3
             }
         }
