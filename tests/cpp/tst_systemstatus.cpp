@@ -52,6 +52,20 @@ private Q_SLOTS:
         QCOMPARE(SystemStatus::minutesLeft(QStringLiteral("Discharging"), 50000000, 57000000, 100000), -1);
     }
 
+    void testPluggedIn()
+    {
+        using S = QList<std::pair<QString, bool>>;
+        // Charger pulled while the battery still says "Charging": unplugged.
+        QVERIFY(!SystemStatus::pluggedIn(S{{QStringLiteral("Mains"), false}, {QStringLiteral("Battery"), false}}, QStringLiteral("Charging")));
+        // Plugged in while the battery still says "Discharging": plugged.
+        QVERIFY(SystemStatus::pluggedIn(S{{QStringLiteral("Mains"), true}, {QStringLiteral("Battery"), false}}, QStringLiteral("Discharging")));
+        // A USB-C charger counts.
+        QVERIFY(SystemStatus::pluggedIn(S{{QStringLiteral("Mains"), false}, {QStringLiteral("USB"), true}}, QStringLiteral("Discharging")));
+        // No charger listed at all: the battery's status decides.
+        QVERIFY(SystemStatus::pluggedIn(S{{QStringLiteral("Battery"), false}}, QStringLiteral("Full")));
+        QVERIFY(!SystemStatus::pluggedIn(S{}, QStringLiteral("Discharging\n")));
+    }
+
     void testSilenced()
     {
         // Plasma holds notifications while a full-screen app is active; the island can look past

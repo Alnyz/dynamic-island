@@ -62,6 +62,10 @@ SystemStatus::SystemStatus(QObject *parent)
     : QObject(parent)
 {
     refresh();
+    // Chargers and batteries announce changes through UPower, so plugging in shows at once instead
+    // of at the next poll. An empty path takes every power device.
+    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.UPower"), QString(), QStringLiteral("org.freedesktop.DBus.Properties"),
+                                         QStringLiteral("PropertiesChanged"), this, SLOT(onPowerChanged()));
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("/org/kde/ScreenBrightness"),
                                           QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("BrightnessChanged"), this,
                                           SLOT(onBrightnessChanged(QString, int, QString, QString)));
@@ -163,6 +167,26 @@ void SystemStatus::refresh()
     });
 }
 
+void SystemStatus::onPowerChanged()
+{
+    readBattery();
+    // The battery's own status and draw settle a moment after the charger changes.
+    QTimer::singleShot(1500, this, &SystemStatus::readBattery);
+}
+
+bool SystemStatus::pluggedIn(const QList<std::pair<QString, bool>> &supplies, const QString &batteryStatus)
+{
+    bool anyCharger = false;
+    for (const auto &[type, online] : supplies) {
+        if (type != QLatin1String("Mains") && type != QLatin1String("USB"))
+            continue;
+        anyCharger = true;
+        if (online)
+            return true;
+    }
+    return anyCharger ? false : batteryStatus.trimmed() != QLatin1String("Discharging");
+}
+
 void SystemStatus::readBattery()
 {
     // DYNAMIC_ISLAND_BATTERY=12 pretends the battery is at 12% and unplugged, to preview the low-battery glance.
@@ -172,6 +196,14 @@ void SystemStatus::readBattery()
     // No battery (a desktop): -1 keeps it out of the pill instead of reading as 0%.
     m_battery = fake.isEmpty() && !QFile::exists(kBattery + QStringLiteral("capacity")) ? -1 : capacity;
     m_charging = charging;
+    if (fake.isEmpty()) {
+        // The charger's own flag flips the moment it's plugged or pulled; the battery's status lags.
+        QList<std::pair<QString, bool>> supplies;
+        const QDir dir(QStringLiteral("/sys/class/power_supply"));
+        for (const QString &name : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+            supplies.append({readFile(dir.filePath(name) + QStringLiteral("/type")).trimmed(), readFile(dir.filePath(name) + QStringLiteral("/online")).trimmed() == QLatin1String("1")});
+        m_charging = pluggedIn(supplies, readFile(kBattery + QStringLiteral("status")));
+    }
     m_batteryState = fake.isEmpty() ? readFile(kBattery + QStringLiteral("status")).trimmed() : QStringLiteral("Discharging");
     // Energy (µWh, µW) on most laptops; charge (µAh, µA) on some.
     const bool energy = QFile::exists(kBattery + QStringLiteral("energy_now"));

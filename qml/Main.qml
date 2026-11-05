@@ -416,9 +416,9 @@ Window {
         onTriggered: island.hiddenByUser = false
     }
 
-    // Two small file reads; frequent enough to catch a plugged-in charger within a few seconds.
+    // A backstop for the charge level; plugging in and pulling the charger arrive from UPower at once.
     Timer {
-        interval: 5000
+        interval: 20000
         repeat: true
         running: true
         triggeredOnStart: true
