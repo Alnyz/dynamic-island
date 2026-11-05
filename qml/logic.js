@@ -390,7 +390,49 @@ function bluetoothSummary(devices) {
 }
 
 // The island's colours for each theme, as Qt palette roles.
-function themeColors(light) {
+// The island's opacity in percent. opacity < 0 means never set: islands that had the old
+// see-through switch on keep its 78%, others are solid.
+function islandOpacity(opacity, translucent) {
+    return opacity >= 0 ? Math.max(20, Math.min(100, opacity)) : translucent ? 78 : 100
+}
+
+// Relative luminance (WCAG) of a colour, 0 (black) to 1 (white).
+function luminance(c) {
+    const q = Qt.color(c)
+    const ch = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+    return 0.2126 * ch(q.r) + 0.7152 * ch(q.g) + 0.0722 * ch(q.b)
+}
+
+function contrastRatio(a, b) {
+    const x = luminance(a), y = luminance(b)
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+// Whether text on this background reads better dark than light.
+function wantsDarkText(background) {
+    return contrastRatio(background, "#000000") > contrastRatio(background, "#ffffff")
+}
+
+// The island's colours for a theme, or built around a custom background colour: its surfaces are
+// shades of it, and its text is dark or light, whichever reads better on it.
+function themeColors(light, custom) {
+    if (custom) {
+        const bg = Qt.color(custom)
+        const dark = wantsDarkText(bg)
+        // A softened black, unless the background is a mid-tone that needs the full contrast.
+        const ink = !dark ? "#ffffff" : contrastRatio("#111113", bg) >= 4.5 ? "#111113" : "#000000"
+        const toward = (c, a) => Qt.tint(bg, Qt.rgba(c, c, c, a))
+        const mix = a => toward(dark ? 0 : 1, a)
+        // Raised surfaces normally shade toward the text; on mid-tones, with little contrast to
+        // spare, they shade away from it instead so the text on them stays readable.
+        const roomy = contrastRatio(ink, bg) >= 7
+        const surface = a => roomy ? mix(a) : toward(dark ? 1 : 0, a * 1.6)
+        return {
+            window: Qt.rgba(bg.r, bg.g, bg.b, 1), windowText: ink, text: mix(0.86), placeholderText: mix(0.68),
+            mid: mix(0.55), base: surface(0.07), alternateBase: surface(0.11), button: surface(0.16), dark: surface(0.24),
+            brightText: dark ? "#3d2c05" : "#f1ebd9", light: dark
+        }
+    }
     return light ? {
         window: "#f2f2f7", windowText: "#1c1c1e", text: "#2c2c2e", placeholderText: "#6e6e73", mid: "#8e8e93",
         base: "#ffffff", alternateBase: "#e9e9ee", button: "#dedee3", dark: "#c7c7cc", brightText: "#7a5c12"

@@ -523,6 +523,31 @@ TestCase {
         compare(L.themeColors(false).brightText, "#e8e2d0")
     }
 
+    function test_island_opacity() {
+        compare(L.islandOpacity(-1, false), 100)
+        compare(L.islandOpacity(-1, true), 78)
+        compare(L.islandOpacity(55, true), 55)
+        compare(L.islandOpacity(55, false), 55)
+        compare(L.islandOpacity(5, false), 20)
+        compare(L.islandOpacity(300, false), 100)
+    }
+
+    function test_custom_colours_stay_readable() {
+        // A spread of hues and lightnesses, including awkward mid-tones.
+        const samples = ["#000000", "#ffffff", "#808080", "#767676", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff375f",
+                         "#0b1f33", "#1e1033", "#fff4dc", "#30d158", "#5e5ce6", "#ff9f0a", "#3a3a3c", "#c7c7cc", "#008080"]
+        for (const c of samples) {
+            const t = L.themeColors(false, c)
+            verify(L.contrastRatio(t.windowText, t.window) >= 4.5, "windowText on " + c)
+            verify(L.contrastRatio(t.windowText, t.base) >= 4.5, "windowText on base of " + c)
+            verify(L.contrastRatio(t.text, t.window) >= 3.5, "text on " + c)
+            verify(L.contrastRatio(t.placeholderText, t.window) >= 2.5, "placeholderText on " + c)
+            compare(Qt.color(t.window), Qt.color(c))
+        }
+        compare(L.wantsDarkText("#fff4dc"), true)
+        compare(L.wantsDarkText("#0b1f33"), false)
+    }
+
     function test_bar_height() {
         for (let i = 0; i < 4; ++i) {
             compare(L.barHeight(0, i, 0), 3)

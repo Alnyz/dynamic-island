@@ -14,6 +14,8 @@ QQC.ApplicationWindow {
     property var calendar: null
     // The AppConfig singleton; passed in so the window also loads without the C++ module (tests).
     property var appConfig: null
+    // BlurSettings: KWin's blur strength. Passed in, like appConfig, so tests load without it.
+    property var blur: null
     signal tourRequested()
 
     title: "Dynamic Island settings"
@@ -250,11 +252,89 @@ QQC.ApplicationWindow {
                         currentIndex: Math.max(0, model.findIndex(m => m.key === win.prefs.style.theme))
                         onActivated: win.prefs.style.theme = currentValue
                     }
+                    RowLayout {
+                        Kirigami.FormData.label: "Island colour:"
+                        spacing: 8
+                        Repeater {
+                            model: ["", "#000000", "#1c1c1e", "#0b1f33", "#1e1033", "#0f2a1d", "#2a1512", "#f2f2f7", "#fff4dc"]
+                            delegate: Rectangle {
+                                required property string modelData
+                                required property int index
+                                objectName: "islandColor" + index
+                                readonly property bool current: (win.prefs.style.color || "").toLowerCase() === modelData
+                                width: 26
+                                height: 26
+                                radius: 13
+                                // The first one is the theme's own colour, shown half dark, half light.
+                                color: modelData || "#000000"
+                                border.width: current ? 3 : 1
+                                border.color: current ? Kirigami.Theme.highlightColor : Kirigami.Theme.disabledTextColor
+                                Rectangle {
+                                    visible: parent.modelData === ""
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.rightMargin: parent.border.width
+                                    width: parent.width / 2 - parent.border.width
+                                    height: parent.height - 2 * parent.border.width
+                                    radius: height / 2
+                                    color: "#f2f2f7"
+                                }
+                                QQC.ToolTip.visible: swatchArea.containsMouse
+                                QQC.ToolTip.text: modelData === "" ? "The theme's colour" : modelData
+                                MouseArea {
+                                    id: swatchArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.prefs.style.color = parent.modelData
+                                }
+                            }
+                        }
+                        QQC.Button {
+                            objectName: "islandColorCustom"
+                            text: "Custom…"
+                            icon.name: "color-picker"
+                            onClicked: islandColorDialog.open()
+                        }
+                    }
+                    ColorDialog {
+                        id: islandColorDialog
+                        title: "Choose the island's colour"
+                        selectedColor: win.prefs.style.color || "#000000"
+                        onAccepted: win.prefs.style.color = selectedColor.toString().slice(0, 7)
+                    }
+                    SliderRow {
+                        objectName: "islandOpacity"
+                        Kirigami.FormData.label: "Opacity:"
+                        from: 20; to: 100; suffix: "%"
+                        value: L.islandOpacity(win.prefs.style.opacity, win.prefs.style.translucent)
+                        onMoved: v => win.prefs.style.opacity = v
+                    }
                     QQC.CheckBox {
                         objectName: "translucent"
-                        text: "See-through, blurring what's behind"
+                        text: "Blur what shows through"
+                        enabled: L.islandOpacity(win.prefs.style.opacity, win.prefs.style.translucent) < 100
                         checked: win.prefs.style.translucent
                         onToggled: win.prefs.style.translucent = checked
+                    }
+                    SliderRow {
+                        objectName: "blurStrength"
+                        Kirigami.FormData.label: "Blur strength:"
+                        visible: win.blur !== null
+                        enabled: win.blur !== null && win.blur.effect !== "" && win.prefs.style.translucent
+                        from: 1; to: 15; suffix: ""
+                        value: win.blur ? win.blur.strength : 12
+                        onMoved: v => win.blur.strength = v
+                    }
+                    QQC.Label {
+                        visible: win.blur !== null
+                        Layout.maximumWidth: 380
+                        wrapMode: Text.WordWrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: win.blur && win.blur.effect === "" ? "No blur effect is running in KWin."
+                            : "KWin has one blur strength for every window, so this changes the blur everywhere"
+                              + (win.blur && win.blur.effect === "better_blur_dx" ? " (Better Blur DX's setting)." : ".")
                     }
                     QQC.CheckBox {
                         objectName: "liveBars"

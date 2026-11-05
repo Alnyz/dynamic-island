@@ -17,8 +17,15 @@ Item {
     // The cover's colour (CoverColor), when there is one; music controls use musicTint.
     // Theme: light or dark colours for everything inside, and a see-through fill KWin blurs behind.
     property bool lightTheme: false
-    property bool translucent: false
-    readonly property var theme: L.themeColors(lightTheme)
+    // A background colour of the user's own (transparent for the theme's), how opaque the island
+    // is (0..1), and whether KWin blurs what shows through.
+    property color customColor: "transparent"
+    property real fillOpacity: 1
+    property bool blurBehind: false
+    readonly property bool translucent: fillOpacity < 0.999
+    readonly property var theme: L.themeColors(lightTheme, customColor.a > 0 ? customColor : "")
+    // Dark text on a custom colour counts as the light look (it gets the faint edge too).
+    readonly property bool lightLook: customColor.a > 0 ? theme.light === true : lightTheme
     palette.window: theme.window
     palette.windowText: theme.windowText
     palette.text: theme.text
@@ -385,10 +392,10 @@ Item {
 
         ShapePath {
             objectName: "islandFill"
-            fillColor: Qt.rgba(island.palette.window.r, island.palette.window.g, island.palette.window.b, island.translucent ? 0.78 : 1)
+            fillColor: Qt.rgba(island.palette.window.r, island.palette.window.g, island.palette.window.b, island.fillOpacity)
             // A thin edge in the cover's colour while the music turn shows; a faint one in the light theme.
             readonly property bool tintEdge: island.coverTinted && island.musicShown
-            strokeWidth: tintEdge || island.lightTheme ? 1 : -1
+            strokeWidth: tintEdge || island.lightLook ? 1 : -1
             strokeColor: tintEdge ? Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55) : Qt.rgba(0, 0, 0, 0.14)
             startX: notch.topR - notch.ear; startY: 0
             PathLine { x: island.width + notch.ear - notch.topR; y: 0 }

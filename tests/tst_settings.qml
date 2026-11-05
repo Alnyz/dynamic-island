@@ -141,9 +141,36 @@ TestCase {
         compare(picker.currentValue, "dark")
         prefs.style.theme = "light"
         compare(picker.currentValue, "light")
+        // The tests share one settings file; start from the defaults.
+        prefs.style.translucent = false
+        prefs.style.opacity = -1
         const box = findChild(win.contentItem, "translucent")
         verify(!box.checked)
+        // Blur only matters once the island lets something show through.
+        verify(!box.enabled)
+        prefs.style.opacity = 70
+        verify(box.enabled)
         mouseClick(box)
         compare(prefs.style.translucent, true)
+    }
+
+    function test_island_colour_and_opacity() {
+        const { prefs, win } = make()
+        win.page = 0
+        prefs.style.color = ""
+        verify(findChild(win.contentItem, "islandColor0").current)
+        mouseClick(findChild(win.contentItem, "islandColor3"))
+        compare(prefs.style.color, "#0b1f33")
+        verify(findChild(win.contentItem, "islandColor3").current)
+        mouseClick(findChild(win.contentItem, "islandColor0"))
+        compare(prefs.style.color, "")
+        // Opacity: unset shows 100%, or the old see-through 78%.
+        prefs.style.opacity = -1
+        prefs.style.translucent = false
+        compare(findChild(win.contentItem, "islandOpacity").value, 100)
+        prefs.style.translucent = true
+        compare(findChild(win.contentItem, "islandOpacity").value, 78)
+        // Without KWin's blur settings passed in, the strength row stays hidden.
+        compare(findChild(win.contentItem, "blurStrength").visible, false)
     }
 }

@@ -18,7 +18,7 @@ Window {
         updateBlur()
     }
     function updateBlur() {
-        InputRegion.setBlur(root, island.inputRect, island.blurRadius, island.translucent && island.height > 0.5)
+        InputRegion.setBlur(root, island.inputRect, island.blurRadius, island.blurBehind && island.translucent && island.height > 0.5)
     }
 
     Prefs {
@@ -26,11 +26,14 @@ Window {
         location: "file://" + AppConfig.path
     }
 
+    BlurSettings { id: blurSettings }
+
     SettingsWindow {
         id: settingsWindow
         prefs: prefs
         calendar: calendarSource
         appConfig: AppConfig
+        blur: blurSettings
         onTourRequested: {
             settingsWindow.close()
             island.startTour()
@@ -289,9 +292,12 @@ Window {
         }
         artUrl: source.artUrl
         lightTheme: prefs.style.theme === "light" || (prefs.style.theme === "system" && Kirigami.Theme.backgroundColor.hslLightness > 0.5)
-        translucent: prefs.style.translucent
+        customColor: prefs.style.color || "transparent"
+        fillOpacity: L.islandOpacity(prefs.style.opacity, prefs.style.translucent) / 100
+        blurBehind: prefs.style.translucent
         onBlurRadiusChanged: root.updateBlur()
         onTranslucentChanged: root.updateBlur()
+        onBlurBehindChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"

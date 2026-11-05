@@ -19,7 +19,7 @@ qt_standard_project_setup(REQUIRES 6.8)
 qt_add_executable(dynamic-island src/main.cpp)
 qt_add_qml_module(dynamic-island
     URI Island
-    SOURCES src/inputregion.h src/inputregion.cpp src/notifier.h src/notifier.cpp src/systemstatus.h src/systemstatus.cpp src/appconfig.h src/appconfig.cpp src/calendarsource.h src/calendarsource.cpp src/clipboardhistory.h src/clipboardhistory.cpp src/notesstore.h src/notesstore.cpp src/todostore.h src/todostore.cpp src/covercolor.h src/covercolor.cpp src/notificationwatcher.h src/notificationwatcher.cpp src/notificationlog.h src/notificationlog.cpp src/bluetoothwatcher.h src/bluetoothwatcher.cpp src/plasmasettings.h src/plasmasettings.cpp src/camerawatcher.h src/camerawatcher.cpp src/capslockwatcher.h src/capslockwatcher.cpp src/updateswatcher.h src/updateswatcher.cpp src/jobwatcher.h src/jobwatcher.cpp src/fullscreenwatcher.h src/fullscreenwatcher.cpp src/panelshortcut.h src/panelshortcut.cpp
+    SOURCES src/inputregion.h src/inputregion.cpp src/notifier.h src/notifier.cpp src/systemstatus.h src/systemstatus.cpp src/appconfig.h src/appconfig.cpp src/calendarsource.h src/calendarsource.cpp src/clipboardhistory.h src/clipboardhistory.cpp src/notesstore.h src/notesstore.cpp src/todostore.h src/todostore.cpp src/covercolor.h src/covercolor.cpp src/blursettings.h src/blursettings.cpp src/notificationwatcher.h src/notificationwatcher.cpp src/notificationlog.h src/notificationlog.cpp src/bluetoothwatcher.h src/bluetoothwatcher.cpp src/plasmasettings.h src/plasmasettings.cpp src/camerawatcher.h src/camerawatcher.cpp src/capslockwatcher.h src/capslockwatcher.cpp src/updateswatcher.h src/updateswatcher.cpp src/jobwatcher.h src/jobwatcher.cpp src/fullscreenwatcher.h src/fullscreenwatcher.cpp src/panelshortcut.h src/panelshortcut.cpp
     QML_FILES qml/Main.qml qml/logic.js qml/PlayerSource.qml qml/MprisPlayers.qml qml/Bars.qml qml/Island.qml qml/ControlButton.qml qml/CoverArt.qml qml/MusicPlayer.qml qml/HomePanel.qml qml/TimerModel.qml qml/TimerCard.qml qml/QuickButtons.qml qml/weather.js qml/WeatherSource.qml qml/WeatherCard.qml qml/MonthCalendar.qml qml/UpNext.qml qml/MusicCard.qml qml/Prefs.qml qml/Tape.qml qml/TimerTab.qml qml/Pill.qml qml/PixelCat.qml qml/IdleArt.qml qml/VolumeSlider.qml qml/Mixer.qml qml/SoundSource.qml qml/SettingsWindow.qml qml/ClipboardTab.qml qml/NotesTab.qml qml/AlertView.qml qml/ShelfTab.qml qml/QuickLinksTab.qml qml/ColorTab.qml qml/JobsModel.qml qml/NotificationHistory.qml qml/NotificationsTab.qml qml/TodoList.qml qml/LyricsSource.qml qml/LyricsView.qml qml/UpdatesTab.qml qml/Slide.qml qml/TourCard.qml qml/PillMenu.qml qml/PeekSeekBar.qml qml/CoverFlyer.qml
 )
 target_include_directories(dynamic-island PRIVATE src)
@@ -74,6 +74,11 @@ qt_add_executable(tst_covercolor tests/cpp/tst_covercolor.cpp src/covercolor.cpp
 target_include_directories(tst_covercolor PRIVATE src)
 target_link_libraries(tst_covercolor PRIVATE Qt6::Test Qt6::Gui Qt6::Network Qt6::Qml)
 add_test(NAME cpp_covercolor COMMAND tst_covercolor)
+
+qt_add_executable(tst_blursettings tests/cpp/tst_blursettings.cpp src/blursettings.cpp src/blursettings.h)
+target_include_directories(tst_blursettings PRIVATE src)
+target_link_libraries(tst_blursettings PRIVATE Qt6::Test Qt6::DBus Qt6::Qml KF6::ConfigCore)
+add_test(NAME cpp_blursettings COMMAND tst_blursettings)
 
 qt_add_executable(tst_history tests/cpp/tst_history.cpp src/notificationlog.cpp src/notificationlog.h)
 target_include_directories(tst_history PRIVATE src)

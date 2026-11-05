@@ -921,13 +921,28 @@ Item {
             compare(panel.palette.windowText, Qt.color(L.themeColors(true).windowText))
         }
 
-        function test_translucent_fill() {
+        function test_opacity_and_custom_colour() {
             const { island } = make(null)
-            island.translucent = true
             const fill = findChild(island, "islandFill")
-            verify(Math.abs(fill.fillColor.a - 0.78) < 0.01)
-            island.translucent = false
             compare(fill.fillColor.a, 1)
+            compare(island.translucent, false)
+            island.fillOpacity = 0.6
+            verify(Math.abs(fill.fillColor.a - 0.6) < 0.01)
+            compare(island.translucent, true)
+            // A custom colour fills the island and sets the palette around it.
+            island.customColor = "#0b1f33"
+            compare(Qt.rgba(fill.fillColor.r, fill.fillColor.g, fill.fillColor.b, 1), Qt.color("#0b1f33"))
+            compare(island.palette.window, Qt.color("#0b1f33"))
+            compare(island.palette.windowText, Qt.color("#ffffff"))
+            compare(island.lightLook, false)
+            // A pale one gets dark text and the faint edge.
+            island.customColor = "#fff4dc"
+            compare(island.palette.windowText, Qt.color("#111113"))
+            compare(island.lightLook, true)
+            compare(fill.strokeWidth, 1)
+            // Back to the theme.
+            island.customColor = "transparent"
+            compare(island.palette.window, Qt.color("#000000"))
         }
 
         function test_player_chips_pick_a_player() {

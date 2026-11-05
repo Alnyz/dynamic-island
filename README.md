@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 - Point at it to see the song title and a seek bar you can drag. Click it, or press Meta+N from anywhere, to open the panel. Meta+N again or Esc closes it. With the panel open from the keyboard, 1–9 or Tab switch tabs, Space plays or pauses and ←/→ seek 5 seconds. Meta+Shift+V opens clipboard history with the search box ready. Both keys can be changed in System Settings → Shortcuts → Dynamic Island; to use Meta+V for clipboard history, first take it off Plasma's own clipboard popup there.
 - Right-click it for a quick menu: pause notifications for an hour, start a 5, 10 or 25 minute timer, hide the island for an hour (Meta+N brings it back), or open Settings.
 - Choose between a notch joined to the top edge or a floating pill. Switching animates.
-- Dark or light colours (or follow Plasma's colour scheme), and an optional see-through look with KWin's blur behind it.
+- Dark or light colours (or follow Plasma's colour scheme), or any colour of your own; text turns dark or light to stay readable. An opacity slider makes it see-through, with KWin's blur behind it if you like. The blur strength slider changes KWin's own setting, so it applies to every blurred window.
 
 ### Short alerts in the pill
 

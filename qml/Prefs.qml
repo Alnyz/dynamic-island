@@ -8,7 +8,7 @@ QtObject {
     required property string location
 
     readonly property var defaults: ({
-        style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true, theme: "dark", translucent: false },
+        style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
         behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
@@ -32,7 +32,12 @@ QtObject {
         property bool liveBars: prefs.defaults.style.liveBars
         // "dark", "light" or "system" (follows Plasma's colour scheme).
         property string theme: prefs.defaults.style.theme
+        // Blur what shows through when the island isn't fully opaque.
         property bool translucent: prefs.defaults.style.translucent
+        // "" for the theme's colour, else "#rrggbb".
+        property string color: prefs.defaults.style.color
+        // Percent, 20..100; -1 until first set (see L.islandOpacity).
+        property int opacity: prefs.defaults.style.opacity
     }
 
     property Settings shape: Settings {
