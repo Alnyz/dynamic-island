@@ -45,6 +45,9 @@ public:
     static Parsed parse(const QByteArray &icsDoc);
     static QList<Occurrence> expand(const QList<Parsed> &calendars, const QDateTime &from, const QDateTime &to);
     static QList<Occurrence> expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to);
+    // Only the occurrences that fall on the days from..to: the expansion also returns events that
+    // just touch the range's edges, like the next day's all-day holiday starting at midnight.
+    static QList<Occurrence> forDays(const QList<Occurrence> &occ, QDate from, QDate to);
     // Not-yet-ended events from the start of today to the end of tomorrow.
     static QList<Occurrence> upcoming(const QList<Parsed> &calendars, const QDateTime &now, int count);
     static QList<Occurrence> upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count);

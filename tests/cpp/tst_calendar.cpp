@@ -49,6 +49,28 @@ private Q_SLOTS:
         QVERIFY(occ.first().allDay);
     }
 
+    void testDayShowsOnlyThatDay()
+    {
+        // Around Fri 23 Oct: an all-day event the day before and the day after, one at midnight
+        // after, and one during the day.
+        const QByteArray events =
+            "BEGIN:VEVENT\r\nUID:before@test\r\nDTSTART;VALUE=DATE:20261022\r\nDTEND;VALUE=DATE:20261023\r\nSUMMARY:Thursday holiday\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:after@test\r\nDTSTART;VALUE=DATE:20261024\r\nDTEND;VALUE=DATE:20261025\r\nSUMMARY:Saturday holiday\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:midnight@test\r\nDTSTART:20261024T000000\r\nDTEND:20261024T010000\r\nSUMMARY:Midnight party\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:during@test\r\nDTSTART:20261023T150000\r\nDTEND:20261023T160000\r\nSUMMARY:Friday meeting\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:span@test\r\nDTSTART;VALUE=DATE:20261022\r\nDTEND;VALUE=DATE:20261025\r\nSUMMARY:Three-day festival\r\nEND:VEVENT\r\n";
+        const auto parsed = QList<CalendarSource::Parsed>{CalendarSource::parse(ics(events))};
+        const auto raw = CalendarSource::expand(parsed, QDate(2026, 10, 23).startOfDay(), QDate(2026, 10, 24).startOfDay());
+        // The expansion alone also returns neighbours that touch the day's edges.
+        QVERIFY(raw.size() > 2);
+        const auto day = CalendarSource::forDays(raw, QDate(2026, 10, 23), QDate(2026, 10, 23));
+        QStringList titles;
+        for (const auto &o : day)
+            titles << o.title;
+        titles.sort();
+        QCOMPARE(titles, QStringList({QStringLiteral("Friday meeting"), QStringLiteral("Three-day festival")}));
+    }
+
     void testMeetingLink()
     {
         const QByteArray meet =

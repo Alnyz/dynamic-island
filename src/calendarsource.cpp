@@ -207,9 +207,24 @@ void CalendarSource::parseLater(const QString &url, const QByteArray &doc)
     watcher->setFuture(QtConcurrent::run(&CalendarSource::parse, doc));
 }
 
+QList<CalendarSource::Occurrence> CalendarSource::forDays(const QList<Occurrence> &occ, QDate from, QDate to)
+{
+    const QDateTime start = from.startOfDay();
+    const QDateTime end = to.addDays(1).startOfDay();
+    QList<Occurrence> out;
+    for (const auto &o : occ) {
+        // All-day events end at 00:00 of their last day, so they're compared by date, last day included.
+        const bool on = o.allDay ? o.start.date() <= to && qMax(o.end.date(), o.start.date()) >= from
+                                 : o.start < end && (o.end > start || (o.end == o.start && o.start >= start));
+        if (on)
+            out.append(o);
+    }
+    return out;
+}
+
 QVariantList CalendarSource::occurrences(QDate from, QDate to) const
 {
-    return toVariant(expand(m_parsed.values(), from.startOfDay(), to.addDays(1).startOfDay()));
+    return toVariant(forDays(expand(m_parsed.values(), from.startOfDay(), to.addDays(1).startOfDay()), from, to));
 }
 
 QVariantList CalendarSource::upNext(int count) const
