@@ -12,6 +12,8 @@ QQC.ApplicationWindow {
 
     required property var prefs
     property var calendar: null
+    // The AppConfig singleton; passed in so the window also loads without the C++ module (tests).
+    property var appConfig: null
 
     title: "Dynamic Island settings"
     width: 760
@@ -734,8 +736,9 @@ QQC.ApplicationWindow {
                     Layout.fillWidth: true
                     QQC.Switch {
                         Kirigami.FormData.label: "Start at login:"
-                        checked: AppConfig.autostart
-                        onToggled: AppConfig.autostart = checked
+                        enabled: win.appConfig !== null
+                        checked: win.appConfig ? win.appConfig.autostart : false
+                        onToggled: if (win.appConfig) win.appConfig.autostart = checked
                     }
                     QQC.Button {
                         text: "Reset to defaults"

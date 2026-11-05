@@ -24,6 +24,7 @@ Window {
         id: settingsWindow
         prefs: prefs
         calendar: calendarSource
+        appConfig: AppConfig
     }
 
     MprisPlayers { id: mpris }

@@ -145,15 +145,20 @@ private Q_SLOTS:
     {
         // Another instance (here: the test) already owns the name, so this one must neither load
         // nor, on destruction, unload the other instance's KWin script.
-        auto bus = QDBusConnection::sessionBus();
-        const bool mine = bus.registerService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+        // The name is taken on a second connection: on the watcher's own connection D-Bus would
+        // answer "already yours" and the watcher would load its script into the real KWin.
+        // If a real island is running it already owns the name, which tests the same thing.
+        auto other = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("tst_watchers_other"));
+        QVERIFY(other.isConnected());
+        const bool mine = other.registerService(QStringLiteral("io.github.alnyz.DynamicIsland"));
         {
             FullScreenWatcher w;
             w.setEnabled(true);
             QVERIFY(!w.loaded());
         }
         if (mine)
-            bus.unregisterService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+            other.unregisterService(QStringLiteral("io.github.alnyz.DynamicIsland"));
+        QDBusConnection::disconnectFromBus(QStringLiteral("tst_watchers_other"));
     }
 
     void notificationUrgency()
