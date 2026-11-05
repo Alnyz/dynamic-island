@@ -47,7 +47,7 @@ Item {
         onPressed: mouse => slider.set((mouse.x - 8) / track.width)
         onPositionChanged: mouse => slider.set((mouse.x - 8) / track.width)
         onWheel: wheel => {
-            const r = L.wheelSteps(wheelAccum, wheel.angleDelta.y || -wheel.angleDelta.x)
+            const r = L.wheelSteps(wheelAccum, L.scrollAmount(wheel.angleDelta.y, wheel.inverted) || -wheel.angleDelta.x)
             wheelAccum = r.accum
             if (r.steps !== 0)
                 slider.set(Math.round((slider.value + r.steps * 0.05) * 20) / 20)

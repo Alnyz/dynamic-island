@@ -161,7 +161,7 @@ Row {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             onClicked: mouse => mouse.button === Qt.RightButton ? button.rightClicked() : button.clicked()
-            onWheel: wheel => button.scrolled(wheel.angleDelta.y)
+            onWheel: wheel => button.scrolled(L.scrollAmount(wheel.angleDelta.y, wheel.inverted))
         }
         QQC.ToolTip.visible: area.containsMouse
         QQC.ToolTip.text: button.label

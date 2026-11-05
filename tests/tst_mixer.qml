@@ -42,6 +42,30 @@ Item {
             })
         }
 
+        Component {
+            id: liveDevice
+            QtObject {
+                property real volume: 32768
+                property bool muted: false
+                property string name: "Speaker"
+            }
+        }
+
+        function test_zero_mutes_and_turning_up_unmutes() {
+            const dev = createTemporaryObject(liveDevice, stage)
+            const mixer = createTemporaryObject(comp, stage, { setMuted: (d, m) => d.muted = m, outputs: [], inputs: [], apps: [] })
+            mixer.setVolume(dev, 0)
+            compare(dev.volume, 0)
+            compare(dev.muted, true)
+            // Turning it up from 0 unmutes.
+            mixer.setVolume(dev, 20000)
+            compare(dev.muted, false)
+            // Turning it down without reaching 0 leaves mute alone.
+            dev.muted = true
+            mixer.setVolume(dev, 10000)
+            compare(dev.muted, true)
+        }
+
         function test_switch_output() {
             const m = make()
             const chip = findChild(m, "output-1")

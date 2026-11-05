@@ -99,7 +99,7 @@ Item {
         onPositionChanged: mouse => tape.picked(clamp(startMinutes - (mouse.x - startX) / tape.pxPerMinute))
         onWheel: wheel => {
             // Horizontal swipes move the tape like dragging it; vertical scroll up adds time.
-            const delta = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : wheel.angleDelta.y
+            const delta = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : L.scrollAmount(wheel.angleDelta.y, wheel.inverted)
             const r = L.wheelSteps(wheelAccum, delta)
             wheelAccum = r.accum
             if (r.steps !== 0)

@@ -486,7 +486,7 @@ Item {
             }
             // Up and down: volume, or minutes on the timer's turn. Sideways: switch turns.
             if (Math.abs(wheel.angleDelta.y) > Math.abs(wheel.angleDelta.x)) {
-                const v = L.wheelSteps(island.verticalAccum, wheel.angleDelta.y)
+                const v = L.wheelSteps(island.verticalAccum, L.scrollAmount(wheel.angleDelta.y, wheel.inverted))
                 island.verticalAccum = v.accum
                 if (v.steps === 0)
                     return

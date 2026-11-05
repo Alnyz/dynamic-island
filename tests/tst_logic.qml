@@ -682,6 +682,22 @@ TestCase {
         compare(L.pillMenu({}).find(r => r.key === "timers").minutes, [5, 10, 25])
     }
 
+    function test_scroll_amount() {
+        // A mouse wheel or classic scrolling: up is more.
+        compare(L.scrollAmount(120, false), 120)
+        // Natural scrolling: Qt reports the content's direction, so fingers down arrive as +120.
+        compare(L.scrollAmount(120, true), -120)
+        compare(L.scrollAmount(-120, true), 120)
+    }
+
+    function test_muted_after() {
+        compare(L.mutedAfter(0, false, false), true)
+        compare(L.mutedAfter(0, true, true), true)
+        compare(L.mutedAfter(3276, true, true), false)
+        compare(L.mutedAfter(3276, true, false), true)
+        compare(L.mutedAfter(3276, false, false), false)
+    }
+
     function test_volume_after_steps() {
         compare(L.volumeAfterSteps(32768, 1, 65536), 36045)
         compare(L.volumeAfterSteps(32768, -2, 65536), 26214)

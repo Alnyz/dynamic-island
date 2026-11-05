@@ -316,6 +316,20 @@ function timerStepMinutes(remainingMs, steps) {
     return -Math.min(-steps, Math.max(0, most))
 }
 
+// A vertical scroll as "up is more", whatever the touchpad's setting: with natural scrolling
+// (inverted) Qt reports the content's direction, so moving fingers down reads as up.
+function scrollAmount(angleDeltaY, inverted) {
+    return inverted ? -angleDeltaY : angleDeltaY
+}
+
+// Whether a device is muted after its volume is set: reaching 0 mutes (so the keyboard's mute
+// light comes on, like Plasma's own volume control), turning it up from muted unmutes.
+function mutedAfter(volume, wasMuted, raised) {
+    if (volume <= 0)
+        return true
+    return raised ? false : wasMuted
+}
+
 function wheelSteps(accum, delta) {
     const total = accum + delta
     const steps = total > 0 ? Math.floor(total / 120) : Math.ceil(total / 120)

@@ -284,8 +284,18 @@ void SystemStatus::toggleMute()
 void SystemStatus::changeVolume(int deltaPercent)
 {
     const auto step = QStringLiteral("%1%%2").arg(qAbs(deltaPercent)).arg(deltaPercent >= 0 ? QLatin1Char('+') : QLatin1Char('-'));
-    run(QStringLiteral("wpctl"), {QStringLiteral("set-volume"), QStringLiteral("-l"), QStringLiteral("1.0"), kSink, step},
-        [this](const QString &) { refresh(); });
+    run(QStringLiteral("wpctl"), {QStringLiteral("set-volume"), QStringLiteral("-l"), QStringLiteral("1.0"), kSink, step}, [this, deltaPercent](const QString &) {
+        // Down to 0 mutes (the keyboard's mute light follows); turning it up from muted unmutes.
+        run(QStringLiteral("wpctl"), {QStringLiteral("get-volume"), kSink}, [this, deltaPercent](const QString &out) {
+            const auto v = parseWpctlVolume(out);
+            const bool mute = v && v->first == 0 && !v->second;
+            const bool unmute = v && deltaPercent > 0 && v->second;
+            if (mute || unmute)
+                run(QStringLiteral("wpctl"), {QStringLiteral("set-mute"), kSink, mute ? QStringLiteral("1") : QStringLiteral("0")}, [this](const QString &) { refresh(); });
+            else
+                refresh();
+        });
+    });
 }
 
 void SystemStatus::setWifi(bool on)

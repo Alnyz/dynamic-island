@@ -298,9 +298,11 @@ Window {
             const out = soundSource.defaultOutput
             if (!out)
                 return
-            if (out.muted && steps > 0)
-                out.muted = false
-            out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
+            const v = L.volumeAfterSteps(out.volume, steps, 65536)
+            const muted = L.mutedAfter(v, out.muted, steps > 0)
+            out.volume = v
+            if (muted !== out.muted)
+                out.muted = muted
         }
         artUrl: source.artUrl
         lightTheme: prefs.style.theme === "light" || (prefs.style.theme === "system" && Kirigami.Theme.backgroundColor.hslLightness > 0.5)
