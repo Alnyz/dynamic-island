@@ -1,8 +1,6 @@
 #include "windowactivator.h"
 
-#include <QCoreApplication>
 #include <QDBusConnection>
-#include <QDBusServiceWatcher>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -38,42 +36,6 @@ WindowActivator::WindowActivator(QObject *parent)
 {
     // Where the KWin script reports that the app has no window to bring forward.
     QDBusConnection::sessionBus().registerObject(kPath, this, QDBusConnection::ExportScriptableSlots);
-
-    // The moments a panel ends up over the island: shortly after login (panels may start after
-    // the island), unlocking the screen, and Plasma's shell restarting.
-    for (int ms : {3000, 10000})
-        QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
-    QDBusConnection::sessionBus().connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"), QStringLiteral("org.freedesktop.ScreenSaver"),
-                                          QStringLiteral("ActiveChanged"), this, SLOT(onScreenSaverActiveChanged(bool)));
-    auto *shell = new QDBusServiceWatcher(QStringLiteral("org.kde.plasmashell"), QDBusConnection::sessionBus(), QDBusServiceWatcher::WatchForRegistration, this);
-    connect(shell, &QDBusServiceWatcher::serviceRegistered, this, [this] {
-        for (int ms : {3000, 8000})
-            QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
-    });
-}
-
-void WindowActivator::onScreenSaverActiveChanged(bool active)
-{
-    if (active)
-        return;
-    // The lock screen's own panels go away a moment after unlocking.
-    for (int ms : {800, 3000})
-        QTimer::singleShot(ms, this, &WindowActivator::raiseIsland);
-}
-
-QString WindowActivator::raiseScript(qint64 pid)
-{
-    return QStringLiteral(
-               "for (const w of workspace.windowList()) {\n"
-               "    if (w.pid === %1 && (w.resourceClass || \"\") === \"dynamic-island\")\n"
-               "        workspace.raiseWindow(w);\n"
-               "}\n")
-        .arg(pid);
-}
-
-void WindowActivator::raiseIsland()
-{
-    runScript(QStringLiteral("dynamic-island-raise"), raiseScript(QCoreApplication::applicationPid()));
 }
 
 void WindowActivator::runScript(const QString &name, const QString &source)
