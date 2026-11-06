@@ -2,6 +2,8 @@
 
 #include <QSignalSpy>
 #include <QTcpServer>
+#include <QThread>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QTest>
@@ -47,6 +49,28 @@ private Q_SLOTS:
         QCOMPARE(occ.first().title, QStringLiteral("Diwali/Deepavali"));
         QCOMPARE(occ.first().note, QStringLiteral("Public holiday"));
         QVERIFY(occ.first().allDay);
+    }
+
+    void testDayShowsOnlyThatDay()
+    {
+        // Around Fri 23 Oct: an all-day event the day before and the day after, one at midnight
+        // after, and one during the day.
+        const QByteArray events =
+            "BEGIN:VEVENT\r\nUID:before@test\r\nDTSTART;VALUE=DATE:20261022\r\nDTEND;VALUE=DATE:20261023\r\nSUMMARY:Thursday holiday\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:after@test\r\nDTSTART;VALUE=DATE:20261024\r\nDTEND;VALUE=DATE:20261025\r\nSUMMARY:Saturday holiday\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:midnight@test\r\nDTSTART:20261024T000000\r\nDTEND:20261024T010000\r\nSUMMARY:Midnight party\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:during@test\r\nDTSTART:20261023T150000\r\nDTEND:20261023T160000\r\nSUMMARY:Friday meeting\r\nEND:VEVENT\r\n"
+            "BEGIN:VEVENT\r\nUID:span@test\r\nDTSTART;VALUE=DATE:20261022\r\nDTEND;VALUE=DATE:20261025\r\nSUMMARY:Three-day festival\r\nEND:VEVENT\r\n";
+        const auto parsed = QList<CalendarSource::Parsed>{CalendarSource::parse(ics(events))};
+        const auto raw = CalendarSource::expand(parsed, QDate(2026, 10, 23).startOfDay(), QDate(2026, 10, 24).startOfDay());
+        // The expansion alone also returns neighbours that touch the day's edges.
+        QVERIFY(raw.size() > 2);
+        const auto day = CalendarSource::forDays(raw, QDate(2026, 10, 23), QDate(2026, 10, 23));
+        QStringList titles;
+        for (const auto &o : day)
+            titles << o.title;
+        titles.sort();
+        QCOMPARE(titles, QStringList({QStringLiteral("Friday meeting"), QStringLiteral("Three-day festival")}));
     }
 
     void testMeetingLink()
@@ -193,6 +217,70 @@ private Q_SLOTS:
         QVERIFY(spy.wait(3000));
         QCOMPARE(source.isOk(), false);
         QCOMPARE(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size(), 1);
+    }
+
+    void testNotICalFailsAndKeepsEvents()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("cal.ics"));
+        auto write = [&](const QByteArray &data) {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            file.write(data);
+        };
+        write(ics(kSingle));
+        CalendarSource source;
+        QSignalSpy spy(&source, &CalendarSource::changed);
+        source.setUrls({QUrl::fromLocalFile(path).toString()});
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), true);
+        // A sign-in page where the calendar should be.
+        write("<html><body>Sign in</body></html>");
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), false);
+        QCOMPARE(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size(), 1);
+        // The same page again is still a failure, not an unchanged download.
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), false);
+    }
+
+    void testParsedCalendarBelongsToTheMainThread()
+    {
+        // Polled: waiting on the future would run the parse here instead of on a pool thread.
+        auto future = QtConcurrent::run([] {
+            return std::pair(CalendarSource::parse(ics(kSingle)), QThread::currentThread());
+        });
+        QTRY_VERIFY(future.isFinished());
+        const auto [calendar, ranOn] = future.result();
+        QVERIFY(ranOn != QThread::currentThread());
+        QVERIFY(calendar);
+        QCOMPARE(calendar->thread(), QThread::currentThread());
+    }
+
+    void testChangingLinksDuringADownload()
+    {
+        // The old link never answers; the new one is a working calendar.
+        QTcpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost));
+        QList<QTcpSocket *> held;
+        connect(&server, &QTcpServer::newConnection, this, [&] { held << server.nextPendingConnection(); });
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("cal.ics"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(ics(kSingle));
+        file.close();
+
+        CalendarSource source;
+        source.setTransferTimeout(300);
+        source.setUrls({QStringLiteral("http://127.0.0.1:%1/cal.ics").arg(server.serverPort())});
+        QTRY_VERIFY(!held.isEmpty());
+        source.setUrls({QUrl::fromLocalFile(path).toString()});
+        QTRY_VERIFY_WITH_TIMEOUT(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size() == 1, 3000);
+        QCOMPARE(source.isOk(), true);
     }
 };
 

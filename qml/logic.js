@@ -206,6 +206,22 @@ function eventWhen(ev) {
     return String(start.getHours()).padStart(2, "0") + ":" + String(start.getMinutes()).padStart(2, "0")
 }
 
+// The battery ring's tooltip: "82% · Charging · 1 h 20 min until full", "45% · 2 h 5 min left",
+// "100% · Fully charged". state is the battery's sysfs status; minutes -1 when unknown.
+function batteryTooltip(percent, state, minutes) {
+    const time = minutes >= 0 ? (minutes >= 60 ? Math.floor(minutes / 60) + " h" + (minutes % 60 ? " " + (minutes % 60) + " min" : "") : minutes + " min") : ""
+    const parts = [percent + "%"]
+    if (state === "Full" || (state !== "Discharging" && percent >= 100))
+        parts.push("Fully charged")
+    else if (state === "Charging")
+        parts.push(time ? "Charging · " + time + " until full" : "Charging")
+    else if (state === "Not charging")
+        parts.push("Plugged in, not charging")
+    else if (state === "Discharging")
+        parts.push(time ? time + " left" : "On battery")
+    return parts.join(" · ")
+}
+
 // Countries with a public holiday calendar from Google, and the region code that picks each
 // one automatically from the system's language setting (en_IN -> India).
 var HOLIDAY_COUNTRIES = [
@@ -306,6 +322,20 @@ function timerStepMinutes(remainingMs, steps) {
         return steps
     const most = Math.floor((remainingMs - 60000) / 60000)
     return -Math.min(-steps, Math.max(0, most))
+}
+
+// A vertical scroll as "up is more", whatever the touchpad's setting: with natural scrolling
+// (inverted) Qt reports the content's direction, so moving fingers down reads as up.
+function scrollAmount(angleDeltaY, inverted) {
+    return inverted ? -angleDeltaY : angleDeltaY
+}
+
+// Whether a device is muted after its volume is set: reaching 0 mutes (so the keyboard's mute
+// light comes on, like Plasma's own volume control), turning it up from muted unmutes.
+function mutedAfter(volume, wasMuted, raised) {
+    if (volume <= 0)
+        return true
+    return raised ? false : wasMuted
 }
 
 function wheelSteps(accum, delta) {
@@ -641,7 +671,8 @@ function fullScreenAllowed(a, f) {
     switch (a.kind) {
     case "volume":
     case "brightness":
-    case "capslock": return !!f.levels
+    case "capslock":
+    case "numlock": return !!f.levels
     case "job": return !!f.jobs
     case "privacy": return !!f.privacy
     case "device": return !!f.devices
@@ -778,7 +809,7 @@ function historyAdd(items, n, nowMs, days) {
     const row = at >= 0
         ? Object.assign({}, items[at], { title: n.title, body: n.body, icon: n.icon, time: nowMs, seen: false })
         : { id: nowMs + "-" + Math.random().toString(36).slice(2, 8), key: key, app: n.app, desktopEntry: n.desktopEntry, icon: n.icon,
-            title: n.title, body: n.body, time: nowMs, seen: false }
+            origin: n.origin || "", title: n.title, body: n.body, time: nowMs, seen: false }
     return historyPrune([row].concat(items.filter((r, i) => i !== at)), nowMs, days)
 }
 

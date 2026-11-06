@@ -62,6 +62,11 @@ SystemStatus::SystemStatus(QObject *parent)
     : QObject(parent)
 {
     refresh();
+    // Chargers and batteries announce changes through UPower, so plugging in shows at once instead
+    // of at the next poll. An empty path takes every power device, so isChargerChange() drops the
+    // routine reports (charge and draw, every device, every few seconds).
+    QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.UPower"), QString(), QStringLiteral("org.freedesktop.DBus.Properties"),
+                                         QStringLiteral("PropertiesChanged"), this, SLOT(onPowerChanged(QString, QVariantMap, QStringList)));
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("/org/kde/ScreenBrightness"),
                                           QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("BrightnessChanged"), this,
                                           SLOT(onBrightnessChanged(QString, int, QString, QString)));
@@ -163,6 +168,33 @@ void SystemStatus::refresh()
     });
 }
 
+bool SystemStatus::isChargerChange(const QVariantMap &changed)
+{
+    return changed.contains(QStringLiteral("Online")) || changed.contains(QStringLiteral("State")) || changed.contains(QStringLiteral("OnBattery"));
+}
+
+void SystemStatus::onPowerChanged(const QString &, const QVariantMap &changed, const QStringList &)
+{
+    if (!isChargerChange(changed))
+        return;
+    readBattery();
+    // The battery's own status and draw settle a moment after the charger changes.
+    QTimer::singleShot(1500, this, &SystemStatus::readBattery);
+}
+
+bool SystemStatus::pluggedIn(const QList<std::pair<QString, bool>> &supplies, const QString &batteryStatus)
+{
+    bool anyCharger = false;
+    for (const auto &[type, online] : supplies) {
+        if (type != QLatin1String("Mains") && type != QLatin1String("USB"))
+            continue;
+        anyCharger = true;
+        if (online)
+            return true;
+    }
+    return anyCharger ? false : batteryStatus.trimmed() != QLatin1String("Discharging");
+}
+
 void SystemStatus::readBattery()
 {
     // DYNAMIC_ISLAND_BATTERY=12 pretends the battery is at 12% and unplugged, to preview the low-battery glance.
@@ -172,7 +204,37 @@ void SystemStatus::readBattery()
     // No battery (a desktop): -1 keeps it out of the pill instead of reading as 0%.
     m_battery = fake.isEmpty() && !QFile::exists(kBattery + QStringLiteral("capacity")) ? -1 : capacity;
     m_charging = charging;
+    if (fake.isEmpty()) {
+        // The charger's own flag flips the moment it's plugged or pulled; the battery's status lags.
+        QList<std::pair<QString, bool>> supplies;
+        const QDir dir(QStringLiteral("/sys/class/power_supply"));
+        for (const QString &name : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+            supplies.append({readFile(dir.filePath(name) + QStringLiteral("/type")).trimmed(), readFile(dir.filePath(name) + QStringLiteral("/online")).trimmed() == QLatin1String("1")});
+        m_charging = pluggedIn(supplies, readFile(kBattery + QStringLiteral("status")));
+    }
+    m_batteryState = fake.isEmpty() ? readFile(kBattery + QStringLiteral("status")).trimmed() : QStringLiteral("Discharging");
+    // Energy (µWh, µW) on most laptops; charge (µAh, µA) on some.
+    const bool energy = QFile::exists(kBattery + QStringLiteral("energy_now"));
+    auto num = [](const QString &path) { return readFile(path).trimmed().toLongLong(); };
+    m_batteryMinutes = !fake.isEmpty() ? -1
+        : energy ? minutesLeft(m_batteryState, num(kBattery + QStringLiteral("energy_now")), num(kBattery + QStringLiteral("energy_full")), num(kBattery + QStringLiteral("power_now")))
+                 : minutesLeft(m_batteryState, num(kBattery + QStringLiteral("charge_now")), num(kBattery + QStringLiteral("charge_full")), num(kBattery + QStringLiteral("current_now")));
     Q_EMIT changed();
+}
+
+int SystemStatus::minutesLeft(const QString &status, qint64 now, qint64 full, qint64 rate)
+{
+    rate = qAbs(rate);
+    if (rate <= 0 || now < 0)
+        return -1;
+    const QString s = status.trimmed();
+    double hours = -1;
+    if (s == QLatin1String("Discharging"))
+        hours = double(now) / double(rate);
+    else if (s == QLatin1String("Charging") && full > now)
+        hours = double(full - now) / double(rate);
+    // A reading far beyond a day is the draw settling, not a real estimate.
+    return hours < 0 || hours > 48 ? -1 : int(hours * 60 + 0.5);
 }
 
 bool SystemStatus::silenced(bool ownDnd, bool trayDnd, bool inhibited, bool ignoreHolds)
@@ -230,8 +292,18 @@ void SystemStatus::toggleMute()
 void SystemStatus::changeVolume(int deltaPercent)
 {
     const auto step = QStringLiteral("%1%%2").arg(qAbs(deltaPercent)).arg(deltaPercent >= 0 ? QLatin1Char('+') : QLatin1Char('-'));
-    run(QStringLiteral("wpctl"), {QStringLiteral("set-volume"), QStringLiteral("-l"), QStringLiteral("1.0"), kSink, step},
-        [this](const QString &) { refresh(); });
+    run(QStringLiteral("wpctl"), {QStringLiteral("set-volume"), QStringLiteral("-l"), QStringLiteral("1.0"), kSink, step}, [this, deltaPercent](const QString &) {
+        // Down to 0 mutes (the keyboard's mute light follows); turning it up from muted unmutes.
+        run(QStringLiteral("wpctl"), {QStringLiteral("get-volume"), kSink}, [this, deltaPercent](const QString &out) {
+            const auto v = parseWpctlVolume(out);
+            const bool mute = v && v->first == 0 && !v->second;
+            const bool unmute = v && deltaPercent > 0 && v->second;
+            if (mute || unmute)
+                run(QStringLiteral("wpctl"), {QStringLiteral("set-mute"), kSink, mute ? QStringLiteral("1") : QStringLiteral("0")}, [this](const QString &) { refresh(); });
+            else
+                refresh();
+        });
+    });
 }
 
 void SystemStatus::setWifi(bool on)

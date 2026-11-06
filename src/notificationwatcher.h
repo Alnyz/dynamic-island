@@ -28,7 +28,6 @@ public:
     // without "default" (a click on the notification) and "inline-reply" (only Plasma can deliver replies).
     static QVariantList buttons(const QStringList &actions);
 
-    Q_INVOKABLE void openApp(const QString &desktopEntry);
     // Runs one of the app's actions through Plasma's notification server, as its own popup would.
     Q_INVOKABLE void invokeAction(uint serverId, const QString &key);
 

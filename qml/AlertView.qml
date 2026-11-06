@@ -257,6 +257,30 @@ Item {
     }
 
     Row {
+        objectName: "numLockAlert"
+        visible: view.a.kind === "numlock"
+        anchors.centerIn: parent
+        spacing: 8
+        Kirigami.Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: "input-num-on"
+            fallback: "input-keyboard-symbolic"
+            color: view.a.on ? "#30d158" : palette.windowText
+            isMask: true
+        }
+        Text {
+            objectName: "numLockAlertText"
+            anchors.verticalCenter: parent.verticalCenter
+            text: view.a.on ? "Num Lock on" : "Num Lock off"
+            color: palette.windowText
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+        }
+    }
+
+    Row {
         objectName: "capsLockAlert"
         visible: view.a.kind === "capslock"
         anchors.centerIn: parent

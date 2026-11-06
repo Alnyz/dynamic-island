@@ -98,6 +98,9 @@ Item {
     property var now: () => new Date()
     property int battery: -1
     property bool charging: false
+    // For the battery ring's tooltip.
+    property string batteryState: ""
+    property int batteryMinutes: -1
     // "glances", "animation" or "nothing".
     property string idleMode: "glances"
     property var glances: ({ events: true, battery: true, time: true, weather: true, updates: false, todo: true })
@@ -126,7 +129,8 @@ Item {
     }
     function refreshGlance() { glanceTick++ }
     signal settingsRequested()
-    signal notificationClicked(string desktopEntry)
+    // Bring the app forward (its window showing the site, for a browser), starting it if it isn't open.
+    signal notificationClicked(string desktopEntry, string origin)
     // First-run tour: a card per step of L.TOUR, until finished or skipped.
     property bool tourActive: false
     property int tourStep: 0
@@ -157,6 +161,9 @@ Item {
     property bool hiddenByUser: false
     readonly property var menuRows: L.pillMenu({ dnd: dnd, hidden: hiddenByUser })
     signal menuAction(string key)
+    // For `--trace`: a press on the pill, and the panel finished building.
+    signal pressedForTrace()
+    signal panelReady()
     function pickMenu(key, minutes) {
         menuOpen = false
         if (key === "timers") {
@@ -167,7 +174,7 @@ Item {
         menuAction(key)
     }
     // One of a notification's own actions: a button on its alert, or "default" for a click on it.
-    signal notificationAction(int serverId, string key)
+    signal notificationAction(int serverId, string key, string desktopEntry, string origin)
     // Scrolling up or down over the closed pill: steps of 5% speaker volume, positive is louder.
     signal volumeStep(int steps)
     signal linkRequested(string url)
@@ -417,6 +424,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+        onPressed: island.pressedForTrace()
         onClicked: mouse => {
             if (island.mode === "tour")
                 return
@@ -438,9 +446,9 @@ Item {
             if (island.mode === "alert" && island.alert.kind === "notification") {
                 // The app's own default action opens the right chat or page; otherwise just the app.
                 if (island.alert.hasDefault && island.alert.serverId > 0)
-                    island.notificationAction(island.alert.serverId, "default")
+                    island.notificationAction(island.alert.serverId, "default", island.alert.desktopEntry || "", island.alert.origin || "")
                 else
-                    island.notificationClicked(island.alert.desktopEntry)
+                    island.notificationClicked(island.alert.desktopEntry || "", island.alert.origin || "")
                 island.alert = null
                 return
             }
@@ -459,7 +467,7 @@ Item {
             }
             // Up and down: volume, or minutes on the timer's turn. Sideways: switch turns.
             if (Math.abs(wheel.angleDelta.y) > Math.abs(wheel.angleDelta.x)) {
-                const v = L.wheelSteps(island.verticalAccum, wheel.angleDelta.y)
+                const v = L.wheelSteps(island.verticalAccum, L.scrollAmount(wheel.angleDelta.y, wheel.inverted))
                 island.verticalAccum = v.accum
                 if (v.steps === 0)
                     return
@@ -675,6 +683,16 @@ Item {
             width: 14
             height: 14
             preferredRendererType: Shape.CurveRenderer
+            readonly property string tip: L.batteryTooltip(island.battery, island.batteryState, island.batteryMinutes)
+            // Point at the ring for the battery's details.
+            HoverHandler {
+                id: batteryHover
+                margin: 6
+            }
+            readonly property bool tipShown: batteryHover.hovered
+            QQC.ToolTip.visible: tipShown
+            QQC.ToolTip.text: tip
+            QQC.ToolTip.delay: 300
             ShapePath {
                 fillColor: "transparent"
                 strokeColor: palette.dark
@@ -706,7 +724,20 @@ Item {
             width: historyRow.implicitWidth + 12
             height: 18
             radius: 9
-            color: "#33270f"
+            color: historyArea.containsMouse ? "#4a3815" : "#33270f"
+            // Opens the Notifications tab.
+            MouseArea {
+                id: historyArea
+                objectName: "historyChipArea"
+                anchors.fill: parent
+                anchors.margins: -5
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    island.requestedTab = "notifications"
+                    island.open = true
+                }
+            }
             Row {
                 id: historyRow
                 anchors.centerIn: parent
@@ -1124,7 +1155,7 @@ Item {
         shown: island.mode === "alert"
         onButtonClicked: key => {
             if (island.alert && island.alert.serverId > 0)
-                island.notificationAction(island.alert.serverId, key)
+                island.notificationAction(island.alert.serverId, key, island.alert.desktopEntry || "", island.alert.origin || "")
             island.alert = null
         }
     }
@@ -1211,7 +1242,10 @@ Item {
     Loader {
         id: panelLoader
         active: island.open
-        onLoaded: island.flyCoverIn()
+        onLoaded: {
+            island.panelReady()
+            island.flyCoverIn()
+        }
         focus: true
         anchors.fill: parent
         anchors.margins: 18
@@ -1248,9 +1282,9 @@ Item {
             history: island.history
             newNotifications: island.newNotifications
             onNotificationsLeft: island.notificationsLeft()
-            onNotificationClicked: entry => {
+            onNotificationClicked: (entry, origin) => {
                 island.open = false
-                island.notificationClicked(entry)
+                island.notificationClicked(entry, origin)
             }
             extraTool: island.extraTool
             onExtraToolChanged: island.extraTool = extraTool

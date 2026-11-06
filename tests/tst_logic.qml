@@ -393,6 +393,8 @@ TestCase {
     function test_history_add() {
         const one = L.historyAdd([], notif(), 1000, 7)
         compare(one.length, 1)
+        compare(one[0].origin, "")
+        compare(L.historyAdd([], notif({ origin: "web.whatsapp.com" }), 1000, 7)[0].origin, "web.whatsapp.com")
         compare(one[0].key, "org.telegram.desktop")
         compare(one[0].time, 1000)
         compare(one[0].seen, false)
@@ -478,6 +480,7 @@ TestCase {
         verify(L.fullScreenAllowed({ kind: "volume" }, f))
         verify(L.fullScreenAllowed({ kind: "brightness" }, f))
         verify(L.fullScreenAllowed({ kind: "capslock" }, f))
+        verify(L.fullScreenAllowed({ kind: "numlock" }, f))
         verify(!L.fullScreenAllowed({ kind: "privacy" }, f))
         verify(!L.fullScreenAllowed({ kind: "power" }, f))
         verify(L.fullScreenAllowed({ kind: "color" }, f))
@@ -662,12 +665,40 @@ TestCase {
         compare(merged.map(e => e.title), ["Karva Chauth", "Standup", "Diwali"])
     }
 
+    function test_battery_tooltip() {
+        compare(L.batteryTooltip(82, "Charging", 80), "82% · Charging · 1 h 20 min until full")
+        compare(L.batteryTooltip(82, "Charging", -1), "82% · Charging")
+        compare(L.batteryTooltip(45, "Discharging", 125), "45% · 2 h 5 min left")
+        compare(L.batteryTooltip(45, "Discharging", 40), "45% · 40 min left")
+        compare(L.batteryTooltip(45, "Discharging", 120), "45% · 2 h left")
+        compare(L.batteryTooltip(45, "Discharging", -1), "45% · On battery")
+        compare(L.batteryTooltip(100, "Full", -1), "100% · Fully charged")
+        compare(L.batteryTooltip(100, "Not charging", -1), "100% · Fully charged")
+        compare(L.batteryTooltip(80, "Not charging", -1), "80% · Plugged in, not charging")
+    }
+
     function test_pill_menu() {
         const plain = L.pillMenu({ dnd: false, hidden: false }).map(r => r.key)
         compare(plain, ["dnd-hour", "timers", "hide-hour", "settings"])
         const flipped = L.pillMenu({ dnd: true, hidden: true }).map(r => r.key)
         compare(flipped, ["dnd-off", "timers", "show", "settings"])
         compare(L.pillMenu({}).find(r => r.key === "timers").minutes, [5, 10, 25])
+    }
+
+    function test_scroll_amount() {
+        // A mouse wheel or classic scrolling: up is more.
+        compare(L.scrollAmount(120, false), 120)
+        // Natural scrolling: Qt reports the content's direction, so fingers down arrive as +120.
+        compare(L.scrollAmount(120, true), -120)
+        compare(L.scrollAmount(-120, true), 120)
+    }
+
+    function test_muted_after() {
+        compare(L.mutedAfter(0, false, false), true)
+        compare(L.mutedAfter(0, true, true), true)
+        compare(L.mutedAfter(3276, true, true), false)
+        compare(L.mutedAfter(3276, true, false), true)
+        compare(L.mutedAfter(3276, false, false), false)
     }
 
     function test_volume_after_steps() {

@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QUuid>
 
@@ -155,4 +156,26 @@ void TodoStore::save()
         file.commit();
     }
     Q_EMIT itemsChanged();
+}
+
+QString TodoStore::legacyPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/Unknown Organization/dynamic-island.conf");
+}
+
+int TodoStore::importLegacy(const QString &path)
+{
+    const QString file = path.isEmpty() ? legacyPath() : path;
+    // Never creates the file: only reads one that's there.
+    if (!QFile::exists(file))
+        return 0;
+    QSettings old(file, QSettings::IniFormat);
+    const QString key = QStringLiteral("TodoList/tasksJson");
+    if (!old.contains(key))
+        return 0;
+    const QString json = old.value(key).toString();
+    const int n = m_items.isEmpty() ? importJson(json) : 0;
+    old.remove(key);
+    old.sync();
+    return n;
 }

@@ -16,6 +16,10 @@ class SystemStatus : public QObject
 
     Q_PROPERTY(int battery MEMBER m_battery NOTIFY changed)
     Q_PROPERTY(bool charging MEMBER m_charging NOTIFY changed)
+    // The battery's own status ("Charging", "Discharging", "Full", "Not charging"), and the
+    // minutes until full or empty at the current draw; -1 when it can't be told.
+    Q_PROPERTY(QString batteryState MEMBER m_batteryState NOTIFY changed)
+    Q_PROPERTY(int batteryMinutes MEMBER m_batteryMinutes NOTIFY changed)
     Q_PROPERTY(int volume MEMBER m_volume NOTIFY changed)
     Q_PROPERTY(bool muted MEMBER m_muted NOTIFY changed)
     Q_PROPERTY(bool wifi MEMBER m_wifi NOTIFY changed)
@@ -34,6 +38,14 @@ public:
     static bool parseNmcliRadio(const QString &output);
     static bool parseBluetoothPowered(const QString &output);
     static std::pair<int, bool> parseBattery(const QString &capacity, const QString &status);
+    // Minutes to full (charging) or to empty (discharging) from sysfs readings: energy in µWh and
+    // power in µW, or charge in µAh and current in µA. -1 when idle, full or unknown.
+    static int minutesLeft(const QString &status, qint64 now, qint64 full, qint64 rate);
+    // Plugged in: any charger (Mains or USB power supply) online. supplies: {type, online} for
+    // each power supply. Without any charger listed, the battery's status decides.
+    static bool pluggedIn(const QList<std::pair<QString, bool>> &supplies, const QString &batteryStatus);
+    // Whether a UPower property change is about the charger or charging, not routine readings.
+    static bool isChargerChange(const QVariantMap &changed);
     static bool dndUntilActive(const QString &until, const QDateTime &now);
     // ownDnd: the island's button; trayDnd: Plasma's tray switch; inhibited: holds from apps,
     // including Plasma's own while a full-screen app is active, which ignoreHolds looks past.
@@ -68,6 +80,8 @@ Q_SIGNALS:
     void colorPicked(const QString &hex);
 
 private Q_SLOTS:
+    // UPower saw a charger or battery change: read the battery now.
+    void onPowerChanged(const QString &interface, const QVariantMap &changed, const QStringList &invalidated);
     void onBrightnessChanged(const QString &display, int value, const QString &sourceClient, const QString &sourceContext);
 
 private:
@@ -78,6 +92,8 @@ private:
 
     int m_battery = -1;
     bool m_charging = false;
+    QString m_batteryState;
+    int m_batteryMinutes = -1;
     int m_volume = 0;
     bool m_muted = false;
     bool m_wifi = false;

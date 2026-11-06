@@ -39,13 +39,18 @@ public:
     explicit CalendarSource(QObject *parent = nullptr);
 
     static QString meetingLink(const QString &text);
+    using Parsed = KCalendarCore::MemoryCalendar::Ptr;
+    // One iCal document, parsed (null when it isn't valid iCal). The slow part: done once per
+    // download, off the main thread, never on a lookup.
+    static Parsed parse(const QByteArray &icsDoc);
+    static QList<Occurrence> expand(const QList<Parsed> &calendars, const QDateTime &from, const QDateTime &to);
     static QList<Occurrence> expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to);
+    // Only the occurrences that fall on the days from..to: the expansion also returns events that
+    // just touch the range's edges, like the next day's all-day holiday starting at midnight.
+    static QList<Occurrence> forDays(const QList<Occurrence> &occ, QDate from, QDate to);
     // Not-yet-ended events from the start of today to the end of tomorrow.
+    static QList<Occurrence> upcoming(const QList<Parsed> &calendars, const QDateTime &now, int count);
     static QList<Occurrence> upcoming(const QList<QByteArray> &icsDocs, const QDateTime &now, int count);
-    // The same, from calendars already parsed.
-    static KCalendarCore::MemoryCalendar::Ptr parse(const QByteArray &doc);
-    static QList<Occurrence> expand(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &from, const QDateTime &to);
-    static QList<Occurrence> upcoming(const QList<KCalendarCore::MemoryCalendar::Ptr> &calendars, const QDateTime &now, int count);
 
     QStringList urls() const { return m_urls; }
     void setUrls(const QStringList &urls);
@@ -70,8 +75,15 @@ private:
 
     QNetworkAccessManager *m_net;
     QStringList m_urls;
-    // Last good download per link, parsed, kept when a later fetch fails.
-    QHash<QString, KCalendarCore::MemoryCalendar::Ptr> m_calendars;
+    // Last good download per link, parsed, kept when a later fetch fails, and its fingerprint.
+    QHash<QString, QByteArray> m_hashes;
+    QHash<QString, Parsed> m_parsed;
+    // Bumped when the links change, so a download or parse of an old link that ends late is dropped.
+    int m_generation = 0;
+    void parseLater(const QString &url, const QByteArray &doc, const QByteArray &hash);
+    // A round ends once every download and every parse it started has finished.
+    int m_parsing = 0;
+    void finishRound();
     bool m_ok = false;
     bool m_loaded = false;
     int m_pending = 0;

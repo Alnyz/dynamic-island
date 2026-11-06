@@ -35,6 +35,11 @@ public:
     Q_INVOKABLE void clearDone();
     // Tasks from the first To-Do version, kept as JSON ([{text, done}]) in QSettings; returns how many.
     Q_INVOKABLE int importJson(const QString &json);
+    // Moves the first version's list over once: it sat in QSettings' default file, which (with no
+    // organisation name set) is ~/.config/Unknown Organization/dynamic-island.conf. Only an empty
+    // store takes it; the old entry is removed either way. Returns how many tasks came over.
+    Q_INVOKABLE int importLegacy(const QString &path = QString());
+    static QString legacyPath();
 
 Q_SIGNALS:
     void itemsChanged();

@@ -14,7 +14,13 @@ Item {
     readonly property real full: 65536
     // Changes go through these so tests can watch them; PulseAudio objects take plain assignment.
     property var setDefault: d => d.default = true
-    property var setVolume: (d, v) => d.volume = v
+    // 0 mutes and turning a muted device up unmutes it, as in Plasma's own mixer.
+    property var setVolume: (d, v) => {
+        const muted = L.mutedAfter(v, d.muted, v > d.volume)
+        d.volume = v
+        if (muted !== d.muted)
+            setMuted(d, muted)
+    }
     property var setMuted: (d, m) => d.muted = m
 
     readonly property var output: outputs.find(d => d.default) || outputs[0] || null

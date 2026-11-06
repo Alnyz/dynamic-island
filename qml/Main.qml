@@ -1,5 +1,4 @@
 import QtQuick
-import QtCore
 import org.kde.kirigami as Kirigami
 import Island
 import "logic.js" as L
@@ -12,6 +11,22 @@ Window {
     visible: false
     color: "transparent"
     flags: Qt.FramelessWindowHint
+
+    // `dynamic-island --trace` logs how long opening the panel takes, step by step.
+    readonly property bool trace: Qt.application.arguments.indexOf("--trace") >= 0
+    property real traceStart: 0
+    function traceStep(what) {
+        if (!trace)
+            return
+        if (what === "click")
+            traceStart = Date.now()
+        console.log("trace", new Date().toISOString().slice(11, 23), "+" + (traceStart ? Date.now() - traceStart : 0) + " ms", what)
+    }
+    property bool traceFrame: false
+    onFrameSwapped: if (traceFrame) {
+        traceFrame = false
+        traceStep("first frame drawn")
+    }
 
     function updateInputRegion() {
         InputRegion.set(root, island.inputRect)
@@ -52,17 +67,6 @@ Window {
     NotesStore { id: notesStore }
 
     TodoStore { id: todoStore }
-    // The first To-Do version kept its list in QSettings' default file; move it over once.
-    Settings {
-        id: oldTodos
-        category: "TodoList"
-        property string tasksJson: ""
-    }
-    function importOldTodos() {
-        if (oldTodos.tasksJson && oldTodos.tasksJson !== "[]" && todoStore.items.length === 0)
-            todoStore.importJson(oldTodos.tasksJson)
-        oldTodos.tasksJson = ""
-    }
 
     NotificationLog { id: notificationLog }
 
@@ -193,12 +197,14 @@ Window {
         enabled: prefs.show.privacy
     }
 
-    // Plasma's Caps Lock box goes with its other on-screen boxes when levels are on, so this takes its place.
+    // Plasma's Caps Lock and Num Lock boxes go with its other on-screen boxes when levels are on, so these take their place.
     CapsLockWatcher {
         id: capsLockWatcher
         enabled: prefs.show.levels
-        onOnChanged: if (root.levelsReady && !island.open)
+        onCapsLockPressed: if (root.levelsReady && !island.open)
             root.alert({ kind: "capslock", on: on }, 1500)
+        onNumLockPressed: if (root.levelsReady && !island.open)
+            root.alert({ kind: "numlock", on: numLock }, 1500)
     }
 
     // Plasma's own box and popups go away while the island shows the same thing.
@@ -294,9 +300,11 @@ Window {
             const out = soundSource.defaultOutput
             if (!out)
                 return
-            if (out.muted && steps > 0)
-                out.muted = false
-            out.volume = L.volumeAfterSteps(out.volume, steps, 65536)
+            const v = L.volumeAfterSteps(out.volume, steps, 65536)
+            const muted = L.mutedAfter(v, out.muted, steps > 0)
+            out.volume = v
+            if (muted !== out.muted)
+                out.muted = muted
         }
         artUrl: source.artUrl
         lightTheme: prefs.style.theme === "light" || (prefs.style.theme === "system" && Kirigami.Theme.backgroundColor.hslLightness > 0.5)
@@ -316,8 +324,14 @@ Window {
         micApps: prefs.show.privacy ? soundSource.recorders : []
         jobs: jobsModel.summary
         cameraApps: cameraWatcher.apps
-        onNotificationClicked: entry => notificationWatcher.openApp(entry)
-        onNotificationAction: (serverId, key) => notificationWatcher.invokeAction(serverId, key)
+        onNotificationClicked: (entry, origin) => WindowActivator.activate(entry, WindowActivator.originHint(origin), true)
+        onNotificationAction: (serverId, key, entry, origin) => {
+            notificationWatcher.invokeAction(serverId, key)
+            // The app gets the click but can't raise itself on Wayland; bring its window forward
+            // once it has switched to the right tab or chat.
+            if (key === "default" && entry)
+                Qt.callLater(() => activateLater.activateSoon(entry, origin))
+        }
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
         notes: notesStore
@@ -351,6 +365,8 @@ Window {
         panelDate: prefs.panel.date
         battery: SystemStatus.battery
         charging: SystemStatus.charging
+        batteryState: SystemStatus.batteryState
+        batteryMinutes: SystemStatus.batteryMinutes
         idleMode: prefs.idle.mode
         glances: ({ events: prefs.idle.events, battery: prefs.idle.battery, time: prefs.idle.time, weather: prefs.idle.weather, updates: prefs.idle.updates, todo: prefs.idle.todo, meetings: prefs.show.meetings })
         updates: updatesWatcher.count
@@ -379,7 +395,13 @@ Window {
                 root.showSettings()
             }
         }
+        onPressedForTrace: root.traceStep("click")
+        onPanelReady: {
+            root.traceStep("panel built")
+            root.traceFrame = root.trace
+        }
         onOpenChanged: if (open) {
+            root.traceStep("open")
             // Opening the panel (Meta+N) brings a hidden island back.
             hiddenByUser = false
             SystemStatus.refresh()
@@ -395,6 +417,19 @@ Window {
         interval: 4000
         running: !prefs.behaviour.tourSeen
         onTriggered: island.startTour()
+    }
+
+    Timer {
+        id: activateLater
+        interval: 200
+        property string entry
+        property string origin
+        function activateSoon(e, o) {
+            entry = e
+            origin = o
+            restart()
+        }
+        onTriggered: WindowActivator.activate(entry, WindowActivator.originHint(origin))
     }
 
     function showSettings() {
@@ -419,9 +454,9 @@ Window {
         onTriggered: island.hiddenByUser = false
     }
 
-    // Two small file reads; frequent enough to catch a plugged-in charger within a few seconds.
+    // A backstop for the charge level; plugging in and pulling the charger arrive from UPower at once.
     Timer {
-        interval: 5000
+        interval: 20000
         repeat: true
         running: true
         triggeredOnStart: true
@@ -455,7 +490,8 @@ Window {
     }
 
     Component.onCompleted: {
-        importOldTodos()
+        // The first To-Do version's list, moved over once.
+        todoStore.importLegacy()
         updateInputRegion()
         PlasmaSettings.setOsdEnabled(!islandLevels)
         PlasmaSettings.setPopupsEnabled(!islandNotifications)
