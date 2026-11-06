@@ -237,9 +237,3 @@ QVariantMap NotificationWatcher::describe(const QString &appName, const QString 
     };
 }
 
-void NotificationWatcher::openApp(const QString &desktopEntry)
-{
-    static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
-    if (safe.match(desktopEntry).hasMatch())
-        QProcess::startDetached(QStringLiteral("gtk-launch"), {desktopEntry});
-}

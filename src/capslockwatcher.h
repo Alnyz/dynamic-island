@@ -27,15 +27,23 @@ public:
     void setEnabled(bool on);
     bool on() const { return m_on; }
     bool numLock() const { return m_num; }
+    // For tests; the real LEDs otherwise.
+    void setLedRoot(const QString &root) { m_ledRoot = root; }
+    // The same as one timer tick.
+    void pollNow() { poll(); }
 
 Q_SIGNALS:
     void enabledChanged();
     void onChanged();
     void numLockChanged();
+    // A key was pressed, unlike the changes above, which also follow enabled being switched.
+    void capsLockPressed();
+    void numLockPressed();
 
 private:
-    void poll();
+    void poll(bool announce = true);
 
+    QString m_ledRoot = QStringLiteral("/sys/class/leds");
     QTimer m_timer;
     bool m_on = false;
     bool m_num = false;

@@ -448,7 +448,7 @@ Item {
                 if (island.alert.hasDefault && island.alert.serverId > 0)
                     island.notificationAction(island.alert.serverId, "default", island.alert.desktopEntry || "", island.alert.origin || "")
                 else
-                    island.notificationClicked(island.alert.desktopEntry, island.alert.origin || "")
+                    island.notificationClicked(island.alert.desktopEntry || "", island.alert.origin || "")
                 island.alert = null
                 return
             }

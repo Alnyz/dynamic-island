@@ -63,9 +63,10 @@ SystemStatus::SystemStatus(QObject *parent)
 {
     refresh();
     // Chargers and batteries announce changes through UPower, so plugging in shows at once instead
-    // of at the next poll. An empty path takes every power device.
+    // of at the next poll. An empty path takes every power device, so isChargerChange() drops the
+    // routine reports (charge and draw, every device, every few seconds).
     QDBusConnection::systemBus().connect(QStringLiteral("org.freedesktop.UPower"), QString(), QStringLiteral("org.freedesktop.DBus.Properties"),
-                                         QStringLiteral("PropertiesChanged"), this, SLOT(onPowerChanged()));
+                                         QStringLiteral("PropertiesChanged"), this, SLOT(onPowerChanged(QString, QVariantMap, QStringList)));
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("/org/kde/ScreenBrightness"),
                                           QStringLiteral("org.kde.ScreenBrightness"), QStringLiteral("BrightnessChanged"), this,
                                           SLOT(onBrightnessChanged(QString, int, QString, QString)));
@@ -167,8 +168,15 @@ void SystemStatus::refresh()
     });
 }
 
-void SystemStatus::onPowerChanged()
+bool SystemStatus::isChargerChange(const QVariantMap &changed)
 {
+    return changed.contains(QStringLiteral("Online")) || changed.contains(QStringLiteral("State")) || changed.contains(QStringLiteral("OnBattery"));
+}
+
+void SystemStatus::onPowerChanged(const QString &, const QVariantMap &changed, const QStringList &)
+{
+    if (!isChargerChange(changed))
+        return;
     readBattery();
     // The battery's own status and draw settle a moment after the charger changes.
     QTimer::singleShot(1500, this, &SystemStatus::readBattery);

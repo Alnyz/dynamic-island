@@ -5,6 +5,8 @@
 #include <KCalendarCore/OccurrenceIterator>
 #include <QFutureWatcher>
 #include <QNetworkAccessManager>
+#include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QNetworkReply>
 #include <QRegularExpression>
@@ -38,7 +40,12 @@ CalendarSource::Parsed CalendarSource::parse(const QByteArray &icsDoc)
 {
     auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
     KCalendarCore::ICalFormat format;
-    return format.fromRawString(calendar, icsDoc) ? calendar : Parsed();
+    if (!format.fromRawString(calendar, icsDoc))
+        return Parsed();
+    // Parsed on a pool thread but read and deleted on the main one, so it has to belong there.
+    if (auto *app = QCoreApplication::instance())
+        calendar->moveToThread(app->thread());
+    return calendar;
 }
 
 QList<CalendarSource::Occurrence> CalendarSource::expand(const QList<QByteArray> &icsDocs, const QDateTime &from, const QDateTime &to)
@@ -111,32 +118,37 @@ void CalendarSource::setUrls(const QStringList &urls)
     if (urls == m_urls)
         return;
     m_urls = urls;
-    m_docs.clear();
+    m_hashes.clear();
     m_parsed.clear();
+    // Whatever is still on its way belongs to the old links and no longer counts.
     ++m_generation;
+    m_pending = 0;
+    m_parsing = 0;
     Q_EMIT changed();
     refresh();
 }
 
 void CalendarSource::refresh()
 {
-    if (m_urls.isEmpty() || m_pending > 0)
+    if (m_urls.isEmpty() || m_pending > 0 || m_parsing > 0)
         return;
+    const int generation = m_generation;
     m_lastAttempt = QDateTime::currentDateTime();
     m_pending = m_urls.size();
     m_roundFailed = false;
     for (const auto &url : std::as_const(m_urls)) {
         auto *reply = m_net->get(QNetworkRequest(QUrl(url)));
-        connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, url, generation] {
             reply->deleteLater();
+            if (generation != m_generation)
+                return;
             // Never log the URL: it is a secret link.
             if (reply->error() == QNetworkReply::NoError) {
                 const QByteArray doc = reply->readAll();
-                // The same file as last time (the usual case) needs no new parse.
-                if (doc != m_docs.value(url) || !m_parsed.contains(url)) {
-                    m_docs.insert(url, doc);
-                    parseLater(url, doc);
-                }
+                // The same file as the last good one (the usual case) needs no new parse.
+                const QByteArray hash = QCryptographicHash::hash(doc, QCryptographicHash::Sha256);
+                if (hash != m_hashes.value(url) || !m_parsed.contains(url))
+                    parseLater(url, doc, hash);
             } else
                 m_roundFailed = true;
             --m_pending;
@@ -186,21 +198,23 @@ void CalendarSource::finishRound()
     Q_EMIT changed();
 }
 
-void CalendarSource::parseLater(const QString &url, const QByteArray &doc)
+void CalendarSource::parseLater(const QString &url, const QByteArray &doc, const QByteArray &hash)
 {
     const int generation = m_generation;
     ++m_parsing;
     auto *watcher = new QFutureWatcher<Parsed>(this);
-    connect(watcher, &QFutureWatcher<Parsed>::finished, this, [this, watcher, url, generation] {
+    connect(watcher, &QFutureWatcher<Parsed>::finished, this, [this, watcher, url, hash, generation] {
         watcher->deleteLater();
+        if (generation != m_generation)
+            return;
         --m_parsing;
-        if (generation == m_generation && m_urls.contains(url)) {
-            // Not iCal (a sign-in page instead of the calendar, say): a failed round, and the last
-            // good calendar stays.
-            if (const Parsed calendar = watcher->result())
-                m_parsed.insert(url, calendar);
-            else
-                m_roundFailed = true;
+        // Not iCal (a sign-in page instead of the calendar, say): a failed round, and the last
+        // good calendar stays.
+        if (const Parsed calendar = watcher->result()) {
+            m_parsed.insert(url, calendar);
+            m_hashes.insert(url, hash);
+        } else {
+            m_roundFailed = true;
         }
         finishRound();
     });

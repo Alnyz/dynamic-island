@@ -44,6 +44,8 @@ public:
     // Plugged in: any charger (Mains or USB power supply) online. supplies: {type, online} for
     // each power supply. Without any charger listed, the battery's status decides.
     static bool pluggedIn(const QList<std::pair<QString, bool>> &supplies, const QString &batteryStatus);
+    // Whether a UPower property change is about the charger or charging, not routine readings.
+    static bool isChargerChange(const QVariantMap &changed);
     static bool dndUntilActive(const QString &until, const QDateTime &now);
     // ownDnd: the island's button; trayDnd: Plasma's tray switch; inhibited: holds from apps,
     // including Plasma's own while a full-screen app is active, which ignoreHolds looks past.
@@ -79,7 +81,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     // UPower saw a charger or battery change: read the battery now.
-    void onPowerChanged();
+    void onPowerChanged(const QString &interface, const QVariantMap &changed, const QStringList &invalidated);
     void onBrightnessChanged(const QString &display, int value, const QString &sourceClient, const QString &sourceContext);
 
 private:

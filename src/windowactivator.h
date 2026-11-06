@@ -37,6 +37,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE void noWindow(const QString &desktopEntry);
 
 private:
-    // Loads and runs a one-off KWin script under name, unloading it again afterwards.
-    void runScript(const QString &name, const QString &source);
+    // Loads and runs a one-off KWin script, unloading it again afterwards.
+    void runScript(const QString &source);
+    int m_runs = 0;
 };

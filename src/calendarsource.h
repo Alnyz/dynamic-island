@@ -75,12 +75,12 @@ private:
 
     QNetworkAccessManager *m_net;
     QStringList m_urls;
-    // Last good download per link, kept when a later fetch fails, and its parsed form.
-    QHash<QString, QByteArray> m_docs;
+    // Last good download per link, parsed, kept when a later fetch fails, and its fingerprint.
+    QHash<QString, QByteArray> m_hashes;
     QHash<QString, Parsed> m_parsed;
-    // Bumped when the links change, so a parse of an old link that finishes late is dropped.
+    // Bumped when the links change, so a download or parse of an old link that ends late is dropped.
     int m_generation = 0;
-    void parseLater(const QString &url, const QByteArray &doc);
+    void parseLater(const QString &url, const QByteArray &doc, const QByteArray &hash);
     // A round ends once every download and every parse it started has finished.
     int m_parsing = 0;
     void finishRound();

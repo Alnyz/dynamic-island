@@ -392,6 +392,34 @@ private Q_SLOTS:
         QCOMPARE(CameraWatcher::scan(proc.path()), QStringList{QStringLiteral("brave")});
     }
 
+    void testLockAlertsOnlyForKeyPresses()
+    {
+        QTemporaryDir leds;
+        QVERIFY(leds.isValid());
+        const auto setLed = [&](const char *value) {
+            QDir(leds.path()).mkpath(QStringLiteral("input2::numlock"));
+            QFile f(leds.filePath(QStringLiteral("input2::numlock/brightness")));
+            QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            f.write(value);
+        };
+        setLed("1");
+        CapsLockWatcher watcher;
+        watcher.setLedRoot(leds.path());
+        QSignalSpy pressed(&watcher, &CapsLockWatcher::numLockPressed);
+        // Num Lock already on: switching the alerts on or off says nothing about the key.
+        watcher.setEnabled(true);
+        QCOMPARE(watcher.numLock(), true);
+        QCOMPARE(pressed.count(), 0);
+        watcher.setEnabled(false);
+        QCOMPARE(watcher.numLock(), false);
+        QCOMPARE(pressed.count(), 0);
+        watcher.setEnabled(true);
+        QCOMPARE(pressed.count(), 0);
+        setLed("0");
+        watcher.pollNow();
+        QCOMPARE(pressed.count(), 1);
+    }
+
     void testCapsLockRead()
     {
         QTemporaryDir leds;

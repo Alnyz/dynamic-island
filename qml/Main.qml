@@ -201,9 +201,9 @@ Window {
     CapsLockWatcher {
         id: capsLockWatcher
         enabled: prefs.show.levels
-        onOnChanged: if (root.levelsReady && !island.open)
+        onCapsLockPressed: if (root.levelsReady && !island.open)
             root.alert({ kind: "capslock", on: on }, 1500)
-        onNumLockChanged: if (root.levelsReady && !island.open)
+        onNumLockPressed: if (root.levelsReady && !island.open)
             root.alert({ kind: "numlock", on: numLock }, 1500)
     }
 
@@ -330,7 +330,7 @@ Window {
             // The app gets the click but can't raise itself on Wayland; bring its window forward
             // once it has switched to the right tab or chat.
             if (key === "default" && entry)
-                Qt.callLater(() => activateLater.start(entry, origin))
+                Qt.callLater(() => activateLater.activateSoon(entry, origin))
         }
         onLinkRequested: url => Qt.openUrlExternally(url)
         clipboard: clipboardHistory
@@ -424,7 +424,7 @@ Window {
         interval: 200
         property string entry
         property string origin
-        function start(e, o) {
+        function activateSoon(e, o) {
             entry = e
             origin = o
             restart()

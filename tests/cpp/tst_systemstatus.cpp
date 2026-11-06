@@ -14,6 +14,15 @@ private Q_SLOTS:
         QCOMPARE(SystemStatus::parseWpctlVolume(QStringLiteral("garbage")), std::nullopt);
     }
 
+    void testChargerChangeIgnoresRoutineReadings()
+    {
+        // What a battery sends every few seconds, from a real laptop.
+        QVERIFY(!SystemStatus::isChargerChange({{QStringLiteral("UpdateTime"), 1}, {QStringLiteral("EnergyRate"), 1.0}, {QStringLiteral("TimeToEmpty"), 1}, {QStringLiteral("Voltage"), 1.0}}));
+        QVERIFY(SystemStatus::isChargerChange({{QStringLiteral("Online"), true}}));
+        QVERIFY(SystemStatus::isChargerChange({{QStringLiteral("State"), 1}, {QStringLiteral("UpdateTime"), 1}}));
+        QVERIFY(SystemStatus::isChargerChange({{QStringLiteral("OnBattery"), false}}));
+    }
+
     void testParseNmcli()
     {
         QCOMPARE(SystemStatus::parseNmcliRadio(QStringLiteral("enabled\n")), true);

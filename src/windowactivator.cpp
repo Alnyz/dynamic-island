@@ -1,5 +1,6 @@
 #include "windowactivator.h"
 
+#include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -29,6 +30,12 @@ QString quoted(const QString &s)
 
 const QString kName = QStringLiteral("dynamic-island-activate");
 const QString kPath = QStringLiteral("/WindowActivator");
+
+bool isSafeEntry(const QString &desktopEntry)
+{
+    static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
+    return safe.match(desktopEntry).hasMatch();
+}
 }
 
 WindowActivator::WindowActivator(QObject *parent)
@@ -38,8 +45,10 @@ WindowActivator::WindowActivator(QObject *parent)
     QDBusConnection::sessionBus().registerObject(kPath, this, QDBusConnection::ExportScriptableSlots);
 }
 
-void WindowActivator::runScript(const QString &name, const QString &source)
+void WindowActivator::runScript(const QString &source)
 {
+    // A name of its own each time, so quick clicks can't unload each other's scripts.
+    const QString name = kName + QLatin1Char('-') + QString::number(QCoreApplication::applicationPid()) + QLatin1Char('-') + QString::number(++m_runs);
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     QDir().mkpath(dir);
     const QString path = dir + QLatin1Char('/') + name + QStringLiteral(".js");
@@ -48,26 +57,27 @@ void WindowActivator::runScript(const QString &name, const QString &source)
         return;
     file.write(source.toUtf8());
     file.close();
-    auto bus = QDBusConnection::sessionBus();
-    // A previous one that's still loaded would block loading under the same name.
-    bus.call(scripting(QStringLiteral("unloadScript")) << name);
-    auto *load = new QDBusPendingCallWatcher(bus.asyncCall(scripting(QStringLiteral("loadScript")) << path << name), this);
-    connect(load, &QDBusPendingCallWatcher::finished, this, [load, name] {
+    auto *load = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(scripting(QStringLiteral("loadScript")) << path << name), this);
+    connect(load, &QDBusPendingCallWatcher::finished, this, [load, name, path] {
         load->deleteLater();
         const QDBusPendingReply<int> id = *load;
-        if (!id.isValid() || id.value() < 0)
+        if (!id.isValid() || id.value() < 0) {
+            QFile::remove(path);
             return;
+        }
         QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"), QStringLiteral("/Scripting/Script") + QString::number(id.value()),
                                                                               QStringLiteral("org.kde.kwin.Script"), QStringLiteral("run")));
         // It has done its job by then; unloading keeps KWin's script list clean.
-        QTimer::singleShot(2000, [name] { QDBusConnection::sessionBus().asyncCall(scripting(QStringLiteral("unloadScript")) << name); });
+        QTimer::singleShot(2000, [name, path] {
+            QDBusConnection::sessionBus().asyncCall(scripting(QStringLiteral("unloadScript")) << name);
+            QFile::remove(path);
+        });
     });
 }
 
 void WindowActivator::noWindow(const QString &desktopEntry)
 {
-    static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
-    if (!safe.match(desktopEntry).hasMatch())
+    if (!isSafeEntry(desktopEntry))
         return;
     QProcess launcher;
     launcher.setProgram(QStringLiteral("gtk-launch"));
@@ -122,8 +132,7 @@ QString WindowActivator::script(const QString &desktopEntry, const QString &titl
 
 void WindowActivator::activate(const QString &desktopEntry, const QString &titleHint, bool launch)
 {
-    static const QRegularExpression safe(QStringLiteral("^[\\w.-]+$"));
-    if (!safe.match(desktopEntry).hasMatch())
+    if (!isSafeEntry(desktopEntry))
         return;
-    runScript(kName, script(desktopEntry, titleHint, launch ? QDBusConnection::sessionBus().baseService() : QString()));
+    runScript(script(desktopEntry, titleHint, launch ? QDBusConnection::sessionBus().baseService() : QString()));
 }

@@ -2,6 +2,8 @@
 
 #include <QSignalSpy>
 #include <QTcpServer>
+#include <QThread>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QTest>
@@ -239,6 +241,46 @@ private Q_SLOTS:
         QVERIFY(spy.wait(3000));
         QCOMPARE(source.isOk(), false);
         QCOMPARE(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size(), 1);
+        // The same page again is still a failure, not an unchanged download.
+        source.refresh();
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(source.isOk(), false);
+    }
+
+    void testParsedCalendarBelongsToTheMainThread()
+    {
+        // Polled: waiting on the future would run the parse here instead of on a pool thread.
+        auto future = QtConcurrent::run([] {
+            return std::pair(CalendarSource::parse(ics(kSingle)), QThread::currentThread());
+        });
+        QTRY_VERIFY(future.isFinished());
+        const auto [calendar, ranOn] = future.result();
+        QVERIFY(ranOn != QThread::currentThread());
+        QVERIFY(calendar);
+        QCOMPARE(calendar->thread(), QThread::currentThread());
+    }
+
+    void testChangingLinksDuringADownload()
+    {
+        // The old link never answers; the new one is a working calendar.
+        QTcpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost));
+        QList<QTcpSocket *> held;
+        connect(&server, &QTcpServer::newConnection, this, [&] { held << server.nextPendingConnection(); });
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("cal.ics"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(ics(kSingle));
+        file.close();
+
+        CalendarSource source;
+        source.setTransferTimeout(300);
+        source.setUrls({QStringLiteral("http://127.0.0.1:%1/cal.ics").arg(server.serverPort())});
+        QTRY_VERIFY(!held.isEmpty());
+        source.setUrls({QUrl::fromLocalFile(path).toString()});
+        QTRY_VERIFY_WITH_TIMEOUT(source.occurrences(QDate(2026, 10, 1), QDate(2026, 10, 31)).size() == 1, 3000);
+        QCOMPARE(source.isOk(), true);
     }
 };
 
