@@ -1484,6 +1484,17 @@ Item {
             compare(findChild(island, "capsLockAlertText").text, "Caps Lock off")
         }
 
+        function test_numlock_alert() {
+            const { island } = make(null)
+            island.showAlert({ kind: "numlock", on: true }, 3000)
+            tryCompare(findChild(island, "numLockAlert"), "visible", true)
+            compare(findChild(island, "capsLockAlert").visible, false)
+            compare(findChild(island, "numLockAlertText").text, "Num Lock on")
+            tryCompare(island, "height", 32)
+            island.showAlert({ kind: "numlock", on: false }, 3000)
+            compare(findChild(island, "numLockAlertText").text, "Num Lock off")
+        }
+
         function test_privacy_alert() {
             const { island } = make(null)
             island.showAlert({ kind: "privacy", app: "Zoom", device: "microphone" }, 3000)

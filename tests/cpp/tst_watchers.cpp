@@ -407,6 +407,11 @@ private Q_SLOTS:
         fakeLed(QStringLiteral("input11::capslock"), QStringLiteral("1"));
         QVERIFY(CapsLockWatcher::read(leds.path()));
         QVERIFY(!CapsLockWatcher::read(leds.filePath(QStringLiteral("missing"))));
+        // Num Lock reads from its own LED.
+        QVERIFY(CapsLockWatcher::read(leds.path(), QStringLiteral("numlock")));
+        fakeLed(QStringLiteral("input2::numlock"), QStringLiteral("0"));
+        QVERIFY(!CapsLockWatcher::read(leds.path(), QStringLiteral("numlock")));
+        QVERIFY(!CapsLockWatcher::read(leds.path(), QStringLiteral("scrolllock")));
     }
 
     void testUpdatesParse()

@@ -480,6 +480,7 @@ TestCase {
         verify(L.fullScreenAllowed({ kind: "volume" }, f))
         verify(L.fullScreenAllowed({ kind: "brightness" }, f))
         verify(L.fullScreenAllowed({ kind: "capslock" }, f))
+        verify(L.fullScreenAllowed({ kind: "numlock" }, f))
         verify(!L.fullScreenAllowed({ kind: "privacy" }, f))
         verify(!L.fullScreenAllowed({ kind: "power" }, f))
         verify(L.fullScreenAllowed({ kind: "color" }, f))

@@ -197,12 +197,14 @@ Window {
         enabled: prefs.show.privacy
     }
 
-    // Plasma's Caps Lock box goes with its other on-screen boxes when levels are on, so this takes its place.
+    // Plasma's Caps Lock and Num Lock boxes go with its other on-screen boxes when levels are on, so these take their place.
     CapsLockWatcher {
         id: capsLockWatcher
         enabled: prefs.show.levels
         onOnChanged: if (root.levelsReady && !island.open)
             root.alert({ kind: "capslock", on: on }, 1500)
+        onNumLockChanged: if (root.levelsReady && !island.open)
+            root.alert({ kind: "numlock", on: numLock }, 1500)
     }
 
     // Plasma's own box and popups go away while the island shows the same thing.
