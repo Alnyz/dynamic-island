@@ -9,6 +9,9 @@ Item {
     id: island
 
     property var player: null
+    // The position to show, counted on between the player's own updates.
+    readonly property real livePosition: clock.value
+    LivePosition { id: clock; player: island.player; active: island.mode === "peek" || island.mode === "open" }
     // Players to pick from in the Music tab (PlayerSource.choices), and the pick.
     property var playerChoices: []
     signal playerPicked(var p)

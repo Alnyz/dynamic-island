@@ -1699,6 +1699,15 @@ Item {
             compare(findChild(island, "title").truncated, true)
         }
 
+        function test_peek_bar_moves_while_playing_without_position_updates() {
+            const { island } = make()
+            mouseMove(island, 10, 10)
+            tryCompare(island, "width", 390)
+            const fill = findChild(island, "peekSeekFill")
+            const before = fill.width
+            tryVerify(() => fill.width > before)
+        }
+
         function test_peek_has_previous_and_next() {
             const { island } = make()
             mouseMove(island, 10, 10)

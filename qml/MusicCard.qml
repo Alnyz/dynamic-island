@@ -5,6 +5,7 @@ Column {
     id: card
 
     property var player: null
+    LivePosition { id: clock; player: card.player; active: card.visible }
     property string artUrl: ""
     property color tint: palette.windowText
     property bool coverHidden: false
@@ -60,7 +61,7 @@ Column {
             color: palette.button
             Rectangle {
                 objectName: "cardProgressFill"
-                width: card.hasLength ? parent.width * Math.min(1, card.player.position / card.player.length) : 0
+                width: card.hasLength ? parent.width * Math.min(1, clock.value / card.player.length) : 0
                 height: parent.height
                 radius: parent.radius
                 color: card.tint
@@ -71,7 +72,7 @@ Column {
             height: elapsed.implicitHeight
             Text {
                 id: elapsed
-                text: card.hasLength ? L.formatTime(card.player.position) : ""
+                text: card.hasLength ? L.formatTime(clock.value) : ""
                 color: palette.placeholderText
                 font.pixelSize: 11
                 font.features: { "tnum": 1 }

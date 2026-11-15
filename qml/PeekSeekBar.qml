@@ -8,7 +8,7 @@ Item {
     // While dragging, the bar follows the pointer; the player seeks on release.
     property real dragFraction: -1
     readonly property real fraction: dragFraction >= 0 ? dragFraction
-        : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.player.position / island.player.length)) : 0
+        : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.livePosition / island.player.length)) : 0
 
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
