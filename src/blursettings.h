@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QString>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // KWin's blur strength, for the island's settings. KWin has one strength for every blurred
 // window (there is no per-window strength), so this edits that shared setting: Better Blur DX's

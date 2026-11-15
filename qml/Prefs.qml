@@ -1,5 +1,8 @@
-import QtQuick
-import QtCore
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import Qt.labs.settings 1.1
 
 QtObject {
     id: prefs
@@ -22,7 +25,7 @@ QtObject {
 
     // look: "notch" (joined to the top edge) or "pill" (floating below it).
     property Settings style: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "style"
         property string look: prefs.defaults.style.look
         property string accent: prefs.defaults.style.accent
@@ -41,7 +44,7 @@ QtObject {
     }
 
     property Settings shape: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "shape"
         property int height: prefs.defaults.shape.height
         property int idleWidth: prefs.defaults.shape.idleWidth
@@ -51,7 +54,7 @@ QtObject {
     }
 
     property Settings behaviour: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "behaviour"
         property int cycleSeconds: prefs.defaults.behaviour.cycleSeconds
         property int swipeHoldSeconds: prefs.defaults.behaviour.swipeHoldSeconds
@@ -65,7 +68,7 @@ QtObject {
 
     // Calendar links are not part of reset: they are the user's data, not a look.
     property Settings calendar: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "calendar"
         property var icsUrls: []
         property var disabled: []
@@ -78,7 +81,7 @@ QtObject {
 
     // An empty city means: find the location from the internet connection.
     property Settings weather: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "weather"
         property string city: prefs.defaults.weather.city
         property real latitude: prefs.defaults.weather.latitude
@@ -87,14 +90,14 @@ QtObject {
     }
 
     property Settings quickButtons: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "quickButtons"
         property var hidden: []
     }
 
     // The animation file is kept on reset, like calendar links: it's the user's own pick.
     property Settings idle: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "idle"
         property string mode: prefs.defaults.idle.mode
         property bool events: prefs.defaults.idle.events
@@ -108,7 +111,7 @@ QtObject {
     }
 
     property Settings show: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "show"
         property bool levels: prefs.defaults.show.levels
         property bool notifications: prefs.defaults.show.notifications
@@ -122,7 +125,7 @@ QtObject {
     // Notification history. off holds the keys of apps switched off. known is JSON text of the apps
     // seen so far, [{ key, name, icon, kind }]; it and lastSeen are data, so reset leaves them alone.
     property Settings history: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "history"
         property bool save: prefs.defaults.history.save
         property int days: prefs.defaults.history.days
@@ -136,7 +139,7 @@ QtObject {
 
     // What comes in front of a full-screen app. urgent holds notification keys (L.notifKey).
     property Settings fullScreen: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "fullScreen"
         property bool levels: prefs.defaults.fullScreen.levels
         property bool jobs: prefs.defaults.fullScreen.jobs
@@ -149,14 +152,14 @@ QtObject {
 
     // The user's own data, so reset leaves it alone. Links are JSON: [{ name, url }].
     property Settings tools: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "tools"
         property string links: "[]"
         property var colors: []
     }
 
     property Settings panel: Settings {
-        location: prefs.location
+        fileName: prefs.location.replace(/^file:\/\//, "")
         category: "panel"
         property string extraTool: "clipboard"
         // The clock and date at the top of the open panel.

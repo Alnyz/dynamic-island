@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.plasma.private.volume
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.plasma.private.volume 0.1
 import "logic.js" as L
 
 // Speakers, microphones and app streams from Plasma's own volume module.

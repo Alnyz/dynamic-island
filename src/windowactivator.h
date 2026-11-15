@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QString>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Brings an app's window to the front through a one-off KWin script. On Wayland an app may only
 // raise itself with an activation token; Plasma's own popups pass one along with a notification's

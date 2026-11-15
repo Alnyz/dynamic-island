@@ -1,6 +1,9 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import org.kde.kirigami 2.19 as Kirigami
 
 // Connected Bluetooth devices and their battery, shown from the Bluetooth quick button.
 QQC.Popup {
@@ -15,15 +18,15 @@ QQC.Popup {
     closePolicy: QQC.Popup.CloseOnEscape | QQC.Popup.CloseOnPressOutside
     background: Rectangle {
         radius: 14
-        color: palette.alternateBase
-        border.color: palette.dark
+        color: ipal.alternateBase
+        border.color: ipal.dark
     }
 
     contentItem: Column {
         spacing: 8
         Text {
             text: "BLUETOOTH DEVICES"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 11
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -32,7 +35,7 @@ QQC.Popup {
             objectName: "btNone"
             visible: popup.devices.length === 0
             text: "No devices connected"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
         }
         Repeater {
@@ -49,7 +52,7 @@ QQC.Popup {
                     height: 18
                     source: modelData.icon || "bluetooth"
                     fallback: "bluetooth"
-                    color: palette.windowText
+                    color: ipal.windowText
                     isMask: true
                 }
                 Column {
@@ -62,7 +65,7 @@ QQC.Popup {
                             id: nameText
                             width: parent.width - batteryText.implicitWidth - 8
                             text: modelData.name
-                            color: palette.windowText
+                            color: ipal.windowText
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
@@ -72,9 +75,8 @@ QQC.Popup {
                             objectName: "btBattery" + index
                             anchors.right: parent.right
                             text: modelData.battery >= 0 ? modelData.battery + "%" : "—"
-                            color: modelData.battery >= 0 && modelData.battery <= 15 ? "#ff6b6b" : palette.placeholderText
+                            color: modelData.battery >= 0 && modelData.battery <= 15 ? "#ff6b6b" : ipal.placeholderText
                             font.pixelSize: 12
-                            font.features: { "tnum": 1 }
                         }
                     }
                     // How full, when the device says.
@@ -83,7 +85,7 @@ QQC.Popup {
                         width: parent.width
                         height: 3
                         radius: 1.5
-                        color: palette.button
+                        color: ipal.button
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(100, modelData.battery)) / 100
                             height: parent.height

@@ -1,5 +1,8 @@
-import QtQuick
-import QtQuick.Controls as QQC
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
 
 // The packages waiting for an update (UpdatesWatcher), and a button that upgrades them in a terminal.
 Item {
@@ -18,7 +21,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: tab.packages.length === 0 ? "Everything is up to date"
                 : tab.packages.length === 1 ? "1 update waiting" : tab.packages.length + " updates waiting"
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 15
             font.weight: Font.DemiBold
         }
@@ -53,13 +56,13 @@ Item {
             width: ListView.view.width - 10
             height: 28
             radius: 8
-            color: index % 2 ? "transparent" : palette.base
+            color: index % 2 ? "transparent" : ipal.base
             Text {
                 x: 10
                 width: parent.width * 0.45
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.name
-                color: palette.windowText
+                color: ipal.windowText
                 font.pixelSize: 12
                 font.weight: Font.Medium
                 elide: Text.ElideRight
@@ -71,9 +74,8 @@ Item {
                 width: parent.width * 0.5
                 horizontalAlignment: Text.AlignRight
                 text: modelData.from + "  →  " + modelData.to
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
-                font.features: { "tnum": 1 }
                 elide: Text.ElideLeft
             }
         }

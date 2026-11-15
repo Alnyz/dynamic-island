@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Switches off Plasma's own volume/brightness box and notification popups while the island shows them.
 class PlasmaSettings : public QObject

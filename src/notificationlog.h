@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QVariantList>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // The saved notification history, one JSON array in ~/.local/share/dynamic-island/notifications.json.
 // The rules (what is kept, for how long) live in logic.js; this only reads and writes the file.

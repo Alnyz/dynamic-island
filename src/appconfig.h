@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Owns ~/.config/dynamic-island.conf, which may hold secret calendar links, so it is kept private (0600).
 class AppConfig : public QObject

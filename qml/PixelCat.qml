@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 
 // A 2-px pixel cat that paces the pill, sometimes sits down, and blinks.
 Item {
@@ -111,7 +114,7 @@ Item {
                 y: Math.floor(index / cat.cols) * cat.pixel
                 width: cat.pixel
                 height: cat.pixel
-                color: palette.windowText
+                color: ipal.windowText
                 visible: cat.frames[cat.frame][Math.floor(index / cat.cols)][index % cat.cols] === "#"
             }
         }

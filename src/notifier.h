@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 class Notifier : public QObject
 {

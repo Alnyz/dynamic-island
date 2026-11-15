@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QVariantList>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 class QMimeData;
 

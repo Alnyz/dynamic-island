@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QVariantList>
 #include <QVariantMap>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // BlueZ's GetManagedObjects reply: object path -> interface -> properties.
 using BluezInterfaces = QMap<QString, QVariantMap>;

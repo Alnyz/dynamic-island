@@ -109,7 +109,7 @@ QString WindowActivator::script(const QString &desktopEntry, const QString &titl
                // A browser's own web-app windows share its prefix: brave-browser -> brave-<app id>-Default.
                "const family = entry.replace(/-(browser|stable|beta)$/, \"\") + \"-\";\n"
                "let titled = null, own = null, related = null;\n"
-               "for (const w of workspace.windowList()) {\n"
+               "for (const w of workspace.clientList()) {\n"
                "    if (!w.normalWindow) continue;\n"
                "    const name = (w.desktopFileName || w.resourceClass || \"\").toLowerCase();\n"
                "    const cls = (w.resourceClass || \"\").toLowerCase();\n"
@@ -124,7 +124,7 @@ QString WindowActivator::script(const QString &desktopEntry, const QString &titl
                "const best = titled || own || related;\n"
                "if (best) {\n"
                "    if (best.minimized) best.minimized = false;\n"
-               "    workspace.activeWindow = best;\n"
+               "    workspace.activeClient = best;\n"
                "}\n")
                .arg(quoted(desktopEntry), quoted(titleHint))
         + miss;

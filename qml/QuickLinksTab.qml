@@ -1,6 +1,10 @@
-import QtQuick
-import QtCore
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import Qt.labs.settings 1.1
+import Qt.labs.platform 1.1 as Platform
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // The user's own sites and folders, one click each. They are added in Settings.
@@ -8,7 +12,7 @@ Item {
     id: tab
 
     property var links: []
-    readonly property string home: decodeURIComponent(StandardPaths.writableLocation(StandardPaths.HomeLocation).toString().substring(7))
+    readonly property string home: decodeURIComponent(Platform.StandardPaths.writableLocation(Platform.StandardPaths.HomeLocation).toString().substring(7))
     signal openRequested(string url)
     signal settingsRequested()
 
@@ -18,7 +22,7 @@ Item {
         height: 16
         Text {
             text: "QUICK LINKS"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -28,7 +32,7 @@ Item {
             visible: tab.links.length > 0
             anchors.right: parent.right
             text: "Edit"
-            color: editArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+            color: editArea.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent
             font.pixelSize: 12
             font.weight: Font.Medium
             MouseArea {
@@ -50,7 +54,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Sites and folders you open every day, one click away"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 13
         }
         Pill {
@@ -80,8 +84,8 @@ Item {
                 width: (parent.width - 3 * 12) / 4
                 height: 64
                 radius: 16
-                color: tileArea.containsMouse ? palette.alternateBase : palette.base
-                border.color: tileArea.containsMouse ? palette.dark : palette.button
+                color: tileArea.containsMouse ? ipal.alternateBase : ipal.base
+                border.color: tileArea.containsMouse ? ipal.dark : ipal.button
 
                 Rectangle {
                     id: badge
@@ -90,13 +94,13 @@ Item {
                     width: 38
                     height: 38
                     radius: 11
-                    color: Qt.rgba(palette.accent.r, palette.accent.g, palette.accent.b, 0.16)
+                    color: Qt.rgba(ipal.accent.r, ipal.accent.g, ipal.accent.b, 0.16)
                     Kirigami.Icon {
                         anchors.centerIn: parent
                         width: 18
                         height: 18
                         source: tile.folder ? "folder-symbolic" : "globe-symbolic"
-                        color: palette.accent
+                        color: ipal.accent
                         isMask: true
                     }
                 }
@@ -110,7 +114,7 @@ Item {
                     Text {
                         width: parent.width
                         text: tile.modelData.name || L.linkName(tile.modelData.url)
-                        color: palette.windowText
+                        color: ipal.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -118,7 +122,7 @@ Item {
                     Text {
                         width: parent.width
                         text: tile.folder ? decodeURIComponent(tile.modelData.url.substring(7)).replace(tab.home, "~") : L.linkName(tile.modelData.url)
-                        color: palette.placeholderText
+                        color: ipal.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideMiddle
                     }

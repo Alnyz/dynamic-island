@@ -4,30 +4,29 @@
 #include <QProcess>
 #include <QVariantList>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
-// How many repo packages have an update waiting, from `checkupdates` (pacman-contrib), run every 30 minutes while enabled.
-// ponytail: repo packages only; AUR (`paru -Qua`) would be a second command and a second count.
+// How many packages have an update waiting, from `apt list --upgradable`, run every 30 minutes while enabled.
 class UpdatesWatcher : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
 
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
-    // -1 until the first check finishes, or when checkupdates is missing or failed.
+    // -1 until the first check finishes, or when apt failed.
     Q_PROPERTY(int count READ count NOTIFY countChanged)
-    // [{name, from, to}] for the updates found, in checkupdates' order.
+    // [{name, from, to}] for the updates found, in apt's order.
     Q_PROPERTY(QVariantList packages READ packages NOTIFY countChanged)
 
 public:
     explicit UpdatesWatcher(QObject *parent = nullptr);
 
-    // checkupdates exits 0 with one line per update, 2 with none, anything else is an error.
+    // The number of upgradable packages in apt's output, or -1 when apt failed.
     static int parse(int exitCode, const QByteArray &out);
-    // "name old -> new" lines into {name, from, to}.
+    // "name/suite new arch [upgradable from: old]" lines into {name, from, to}.
     static QVariantList parseList(const QByteArray &out);
-    // The command that upgrades everything: an AUR helper if there is one, else pacman.
-    static QStringList upgradeCommand(bool hasParu, bool hasYay);
+    // The command that upgrades everything.
+    static QStringList upgradeCommand();
 
     bool enabled() const { return m_timer.isActive(); }
     void setEnabled(bool on);

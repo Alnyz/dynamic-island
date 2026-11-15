@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 Column {
@@ -6,7 +9,7 @@ Column {
 
     property var player: null
     property string artUrl: ""
-    property color tint: palette.windowText
+    property color tint: ipal.windowText
     property bool coverHidden: false
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property bool hasLength: player !== null && player.length > 0
@@ -33,7 +36,7 @@ Column {
             Text {
                 width: parent.width
                 text: card.player ? card.player.track : "Nothing playing"
-                color: card.player ? palette.windowText : palette.placeholderText
+                color: card.player ? ipal.windowText : ipal.placeholderText
                 font.pixelSize: 14
                 font.weight: card.player ? Font.DemiBold : Font.Normal
                 elide: Text.ElideRight
@@ -42,7 +45,7 @@ Column {
                 width: parent.width
                 visible: card.player !== null
                 text: card.player ? card.player.artist : ""
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
                 elide: Text.ElideRight
             }
@@ -57,7 +60,7 @@ Column {
             width: parent.width
             height: 3
             radius: 1.5
-            color: palette.button
+            color: ipal.button
             Rectangle {
                 objectName: "cardProgressFill"
                 width: card.hasLength ? parent.width * Math.min(1, card.player.position / card.player.length) : 0
@@ -72,16 +75,14 @@ Column {
             Text {
                 id: elapsed
                 text: card.hasLength ? L.formatTime(card.player.position) : ""
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 11
-                font.features: { "tnum": 1 }
             }
             Text {
                 anchors.right: parent.right
                 text: card.hasLength ? L.formatTime(card.player.length) : ""
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 11
-                font.features: { "tnum": 1 }
             }
         }
     }
@@ -101,12 +102,12 @@ Column {
             width: 38
             height: 38
             radius: 19
-            color: palette.windowText
+            color: ipal.windowText
             ControlButton {
                 anchors.centerIn: parent
                 iconName: card.playing ? "media-playback-pause" : "media-playback-start"
                 iconSize: 18
-                iconColor: palette.window
+                iconColor: ipal.window
                 onClicked: card.player.PlayPause()
             }
         }

@@ -1,12 +1,8 @@
-#version 440
-layout(location = 0) in vec2 qt_TexCoord0;
-layout(location = 0) out vec4 fragColor;
-layout(std140, binding = 0) uniform buf {
-    mat4 qt_Matrix;
-    float qt_Opacity;
-    float time;
-    vec2 size;
-};
+// GLSL for Qt 5's OpenGL ShaderEffect.
+varying highp vec2 qt_TexCoord0;
+uniform lowp float qt_Opacity;
+uniform highp float time;
+uniform highp vec2 size;
 
 // Soft colour ribbons drifting through the pill, faded at the ends into the black.
 void main() {
@@ -21,5 +17,5 @@ void main() {
     float band = exp(-pow((uv.y - centre) * 3.4, 2.0));
     float edge = smoothstep(0.0, 0.22, uv.x) * smoothstep(1.0, 0.78, uv.x);
     float alpha = band * edge * 0.9;
-    fragColor = vec4(col * alpha, alpha) * qt_Opacity;
+    gl_FragColor = vec4(col * alpha, alpha) * qt_Opacity;
 }

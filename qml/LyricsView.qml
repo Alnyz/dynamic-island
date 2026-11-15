@@ -1,6 +1,9 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
-import QtQuick.Controls as QQC
+import QtQuick.Controls 2.15 as QQC
 
 // Lyrics from LyricsSource: synced ones follow the song and seek on click; plain ones scroll.
 Item {
@@ -10,7 +13,7 @@ Item {
     property var lines: []
     property string plain: ""
     property real positionMs: 0
-    property color tint: palette.windowText
+    property color tint: ipal.windowText
     signal seekRequested(real ms)
 
     readonly property int current: state === "synced" ? L.lyricLine(lines, positionMs) : -1
@@ -23,7 +26,7 @@ Item {
             : view.state === "instrumental" ? "Instrumental"
             : view.state === "off" ? "Lyrics are off in Settings"
             : "No lyrics found for this song"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 13
     }
 
@@ -47,7 +50,7 @@ Item {
             objectName: "lyricLine" + index
             width: ListView.view.width
             text: modelData.text || "♪"
-            color: index === view.current ? view.tint : index < view.current ? palette.mid : palette.text
+            color: index === view.current ? view.tint : index < view.current ? ipal.mid : ipal.text
             font.pixelSize: index === view.current ? 15 : 13
             font.weight: index === view.current ? Font.DemiBold : Font.Normal
             wrapMode: Text.WordWrap
@@ -76,7 +79,7 @@ Item {
             objectName: "lyricsPlain"
             width: view.width - 12
             text: view.plain
-            color: palette.text
+            color: ipal.text
             font.pixelSize: 13
             lineHeight: 1.2
             wrapMode: Text.WordWrap

@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QVariantList>
 #include <QVariantMap>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // The To-Do list, kept in ~/.local/share/dynamic-island/todo.json in the order tasks were added.
 class TodoStore : public QObject

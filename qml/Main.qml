@@ -1,6 +1,9 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
-import Island
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
+import Island 1.0
 import "logic.js" as L
 
 Window {
@@ -286,13 +289,14 @@ Window {
         coverLookup: prefs.behaviour.coverLookup
     }
 
+    Binding { target: ipal; property: "accent"; value: prefs.style.accent }
+
     Island {
         id: island
         anchors.horizontalCenter: parent.horizontalCenter
         // The pill floats a little below the screen edge.
         y: 6 * island.pillAmount
         pill: prefs.style.look === "pill"
-        palette.accent: prefs.style.accent
         player: source.player
         playerChoices: source.choices
         onPlayerPicked: p => source.pin(p)
@@ -350,8 +354,11 @@ Window {
         extraTool: prefs.panel.extraTool
         onExtraToolChanged: prefs.panel.extraTool = extraTool
         focus: true
-        onWantsKeyboardChanged: InputRegion.setKeyboard(root, wantsKeyboard, openedByKeyboard)
-        onOpenedByKeyboardChanged: InputRegion.setKeyboard(root, wantsKeyboard, openedByKeyboard)
+        // X11 can't hand focus over on click the way Wayland's "on demand" does, so the open panel
+        // always takes the keyboard (Esc, typing in its fields).
+        readonly property bool x11Keyboard: open || wantsKeyboard
+        onX11KeyboardChanged: InputRegion.setKeyboard(root, x11Keyboard, openedByKeyboard)
+        onOpenedByKeyboardChanged: InputRegion.setKeyboard(root, x11Keyboard, openedByKeyboard)
         barHeight: prefs.shape.height
         idleWidth: prefs.shape.idleWidth
         compactWidth: prefs.shape.compactWidth

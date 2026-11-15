@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QVariantList>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // One plain text file per note in ~/.local/share/dynamic-island/notes.
 class NotesStore : public QObject

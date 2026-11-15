@@ -61,7 +61,7 @@ void ClipboardHistory::handleMime(const QMimeData *mime)
         return;
     image = image.convertToFormat(QImage::Format_ARGB32);
     const QString hash = QString::fromLatin1(
-        QCryptographicHash::hash(QByteArrayView(image.constBits(), image.sizeInBytes()), QCryptographicHash::Sha1).toHex());
+        QCryptographicHash::hash(QByteArray::fromRawData(reinterpret_cast<const char *>(image.constBits()), int(image.sizeInBytes())), QCryptographicHash::Sha1).toHex());
     const int existing = [&] {
         for (int i = 0; i < m_items.size(); ++i)
             if (m_items.at(i).toMap().value(QStringLiteral("hash")) == hash)

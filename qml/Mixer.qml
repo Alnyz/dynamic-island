@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // Devices and per-app volume. Works on PulseAudio objects from SoundSource (or look-alikes in tests).
@@ -92,7 +95,7 @@ Item {
             width: parent.width - 88
             height: 3
             radius: 1.5
-            color: palette.alternateBase
+            color: ipal.alternateBase
             Rectangle {
                 width: parent.width * Math.min(1, Math.max(0, mixer.micLevel))
                 height: parent.height
@@ -117,7 +120,7 @@ Item {
                 visible: mixer.apps.length > 0
                 anchors.right: parent.right
                 text: "Reset all to 100%"
-                color: resetArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+                color: resetArea.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent
                 font.pixelSize: 12
                 MouseArea {
                     id: resetArea
@@ -133,7 +136,7 @@ Item {
             visible: mixer.apps.length === 0
             topPadding: 6
             text: "No apps are playing sound"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
         }
 
@@ -161,7 +164,7 @@ Item {
                     Text {
                         width: parent.width
                         text: row.appName
-                        color: row.modelData.muted ? palette.mid : palette.windowText
+                        color: row.modelData.muted ? ipal.mid : ipal.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -169,7 +172,7 @@ Item {
                     Text {
                         width: parent.width
                         text: row.modelData.muted ? "Muted" : row.modelData.corked ? "Paused" : row.modelData.name
-                        color: palette.placeholderText
+                        color: ipal.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -187,9 +190,8 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     horizontalAlignment: Text.AlignRight
                     text: Math.round(row.modelData.volume / mixer.full * 100) + "%"
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font.pixelSize: 12
-                    font.features: { "tnum": 1 }
                 }
                 MuteButton {
                     anchors.verticalCenter: parent.verticalCenter
@@ -201,7 +203,7 @@ Item {
     }
 
     component Heading: Text {
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
         font.weight: Font.DemiBold
         font.letterSpacing: 0.6
@@ -215,7 +217,7 @@ Item {
         width: 28
         height: 28
         radius: 14
-        color: muted ? "#3a1d1d" : muteArea.containsMouse ? palette.alternateBase : "transparent"
+        color: muted ? "#3a1d1d" : muteArea.containsMouse ? ipal.alternateBase : "transparent"
         Kirigami.Icon {
             anchors.centerIn: parent
             width: 15
@@ -246,7 +248,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             icon: dv.icon
             muted: dv.device ? dv.device.muted : false
-            color: muted ? "#3a1d1d" : palette.base
+            color: muted ? "#3a1d1d" : ipal.base
             onClicked: mixer.setMuted(dv.device, !dv.device.muted)
         }
         VolumeSlider {
@@ -262,9 +264,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignRight
             text: dv.device ? Math.round(dv.device.volume / mixer.full * 100) + "%" : ""
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
-            font.features: { "tnum": 1 }
         }
     }
 }

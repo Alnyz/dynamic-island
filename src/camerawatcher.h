@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Names of programs holding a camera (/dev/video*) open, checked every few seconds while enabled.
 class CameraWatcher : public QObject

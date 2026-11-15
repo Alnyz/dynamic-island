@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 
 // The built-in idle animations: "aurora", "wave", "fireflies" or "cat".
 Item {
@@ -25,7 +28,7 @@ Item {
         sourceComponent: ShaderEffect {
             property real time: art.time
             property size size: Qt.size(width, height)
-            fragmentShader: "qrc:/shaders/" + art.name + ".frag.qsb"
+            fragmentShader: "qrc:/shaders/" + art.name + ".frag"
         }
     }
 
