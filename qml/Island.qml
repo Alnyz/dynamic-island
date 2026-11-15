@@ -268,7 +268,8 @@ Item {
                     : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
         compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
-        peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: 330, h: 60, r: 20 },
+        // Music is wider for its previous / play-pause / next buttons.
+        peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: activity === "music" ? 390 : 330, h: 60, r: 20 },
         // 14 + 18: panelLoader's top and bottom margins.
         tour: { w: 420, h: 116, r: 26 },
         menu: { w: 290, h: 16 + menuRows.length * 36, r: 22 },
@@ -872,11 +873,74 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
+        // The song title between the cover and the bars. A title too long for the gap scrolls
+        // slowly right to left, pausing at the start of each pass.
+        Item {
+            id: compactTitle
+            objectName: "compactTitle"
+            visible: island.mode === "compact"
+            anchors.left: art.right
+            anchors.leftMargin: 8
+            anchors.right: musicBars.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: art.verticalCenter
+            height: compactTitleText.implicitHeight
+            clip: true
+
+            readonly property string title: island.player ? island.player.track || "" : ""
+            readonly property int gap: 40
+            readonly property bool scrolls: compactTitleText.implicitWidth > width
+            readonly property real distance: compactTitleText.implicitWidth + gap
+            onTitleChanged: restartScroll()
+            onScrollsChanged: restartScroll()
+            onVisibleChanged: restartScroll()
+
+            function restartScroll() {
+                marqueeScroll.stop()
+                marquee.x = 0
+                if (scrolls && visible)
+                    marqueeScroll.start()
+            }
+
+            Row {
+                id: marquee
+                spacing: compactTitle.gap
+                Text {
+                    id: compactTitleText
+                    text: compactTitle.title
+                    color: palette.windowText
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                }
+                // A second copy follows the first, so the loop has no jump.
+                Text {
+                    visible: compactTitle.scrolls
+                    text: compactTitle.title
+                    color: palette.windowText
+                    font: compactTitleText.font
+                }
+            }
+
+            SequentialAnimation {
+                id: marqueeScroll
+                loops: Animation.Infinite
+                PauseAnimation { duration: 1500 }
+                NumberAnimation {
+                    target: marquee
+                    property: "x"
+                    from: 0
+                    to: -compactTitle.distance
+                    // About 30 pixels a second.
+                    duration: compactTitle.distance / 30 * 1000
+                }
+            }
+        }
+
         Column {
             visible: island.mode === "peek"
             anchors.left: art.right
             anchors.leftMargin: 10
-            anchors.right: peekPlayPause.left
+            anchors.right: peekPrevious.left
             anchors.rightMargin: 6
             anchors.verticalCenter: art.verticalCenter
 
@@ -903,21 +967,45 @@ Item {
             island: island
             visible: island.mode === "peek" && island.player !== null && island.player.length > 0
             anchors.left: art.left
-            anchors.right: peekPlayPause.right
+            anchors.right: peekNext.right
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 1
             height: 10
         }
 
         ControlButton {
+            id: peekPrevious
+            objectName: "peekPrevious"
+            visible: island.mode === "peek"
+            enabled: island.player !== null && island.player.canGoPrevious !== false
+            opacity: enabled ? 1 : 0.4
+            anchors.right: peekPlayPause.left
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: "media-skip-backward"
+            onClicked: island.player.Previous()
+        }
+
+        ControlButton {
             id: peekPlayPause
             objectName: "peekPlayPause"
             visible: island.mode === "peek"
-            anchors.right: parent.right
-            anchors.rightMargin: 8
+            anchors.right: peekNext.left
             anchors.verticalCenter: parent.verticalCenter
             iconName: island.playing ? "media-playback-pause" : "media-playback-start"
             onClicked: island.player.PlayPause()
+        }
+
+        ControlButton {
+            id: peekNext
+            objectName: "peekNext"
+            visible: island.mode === "peek"
+            enabled: island.player !== null && island.player.canGoNext !== false
+            opacity: enabled ? 1 : 0.4
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: "media-skip-forward"
+            onClicked: island.player.Next()
         }
 
         JobChip {

@@ -1695,8 +1695,25 @@ Item {
         function test_long_title_elides() {
             const { island } = make({ track: "x".repeat(200) })
             mouseMove(island, 10, 10)
-            tryCompare(island, "width", 330)
+            tryCompare(island, "width", 390)
             compare(findChild(island, "title").truncated, true)
+        }
+
+        function test_peek_has_previous_and_next() {
+            const { island } = make()
+            mouseMove(island, 10, 10)
+            tryCompare(island, "width", 390)
+            mouseClick(findChild(island, "peekPrevious"))
+            mouseClick(findChild(island, "peekNext"))
+            compare(stage.calls.previous, 1)
+            compare(stage.calls.next, 1)
+        }
+
+        function test_compact_title_scrolls_only_when_too_long() {
+            const { island } = make({ track: "x".repeat(200) })
+            tryCompare(findChild(island, "compactTitle"), "scrolls", true)
+            const short = make({ track: "Hi" })
+            tryCompare(findChild(short.island, "compactTitle"), "scrolls", false)
         }
 
         function test_leave_closes_after_delay() {
