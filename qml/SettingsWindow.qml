@@ -1,10 +1,14 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import QtQuick.Layouts
-import QtQuick.Dialogs
-import QtCore
-import org.kde.kirigami as Kirigami
-import Island
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import QtQuick.Layouts 1.15
+import QtQuick.Dialogs 1.3
+import Qt.labs.settings 1.1
+import Qt.labs.platform 1.1 as Platform
+import org.kde.kirigami 2.19 as Kirigami
+import Island 1.0
 import "logic.js" as L
 
 QQC.ApplicationWindow {
@@ -23,8 +27,6 @@ QQC.ApplicationWindow {
     height: 600
     minimumWidth: 620
     minimumHeight: 400
-    // The island is a layer-shell surface, which can't parent a normal window.
-    transientParent: null
 
     readonly property var calendarUrls: L.toList(prefs.calendar.icsUrls)
     readonly property var disabledUrls: L.toList(prefs.calendar.disabled)
@@ -300,8 +302,8 @@ QQC.ApplicationWindow {
                     ColorDialog {
                         id: islandColorDialog
                         title: "Choose the island's colour"
-                        selectedColor: win.prefs.style.color || "#000000"
-                        onAccepted: win.prefs.style.color = selectedColor.toString().slice(0, 7)
+                        color: win.prefs.style.color || "#000000"
+                        onAccepted: win.prefs.style.color = color.toString().slice(0, 7)
                     }
                     SliderRow {
                         objectName: "islandOpacity"
@@ -350,8 +352,8 @@ QQC.ApplicationWindow {
                     ColorDialog {
                         id: accentDialog
                         title: "Choose an accent colour"
-                        selectedColor: win.prefs.style.accent
-                        onAccepted: win.prefs.style.accent = selectedColor.toString()
+                        color: win.prefs.style.accent
+                        onAccepted: win.prefs.style.accent = color.toString()
                     }
                     Item { Kirigami.FormData.isSection: true }
                     SliderRow {
@@ -714,7 +716,7 @@ QQC.ApplicationWindow {
                         id: animationDialog
                         title: "Choose an animation"
                         nameFilters: ["Animations (*.gif *.webp)"]
-                        onAccepted: win.prefs.idle.animation = selectedFile.toString()
+                        onAccepted: win.prefs.idle.animation = fileUrl.toString()
                         onRejected: artPicker.currentIndex = artPicker.current.startsWith("builtin:") ? artPicker.indexOfValue(artPicker.current) : 4
                     }
                 }
@@ -966,7 +968,7 @@ QQC.ApplicationWindow {
                             icon.name: "list-add"
                             enabled: linkAddress.text.trim() !== ""
                             onClicked: {
-                                const url = L.linkUrl(linkAddress.text, StandardPaths.writableLocation(StandardPaths.HomeLocation).toString())
+                                const url = L.linkUrl(linkAddress.text, Platform.StandardPaths.writableLocation(Platform.StandardPaths.HomeLocation).toString())
                                 win.saveLinks(win.links.concat([{ name: linkName.text.trim(), url: url }]))
                                 linkAddress.clear()
                                 linkName.clear()

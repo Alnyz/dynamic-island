@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // Pick a colour anywhere on screen; its codes copy with a click.
@@ -37,8 +40,8 @@ Item {
             width: 200
             height: 200
             radius: 22
-            color: tab.current || palette.base
-            border.color: tab.current ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : palette.button
+            color: tab.current || ipal.base
+            border.color: tab.current ? Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.12) : ipal.button
             Text {
                 visible: !tab.current
                 anchors.centerIn: parent
@@ -46,7 +49,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 text: "Pick any colour on your screen"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 13
             }
         }
@@ -79,13 +82,13 @@ Item {
                 width: parent.width
                 height: 50
                 radius: 14
-                color: rowArea.containsMouse && tab.formats ? palette.alternateBase : palette.base
-                border.color: palette.button
+                color: rowArea.containsMouse && tab.formats ? ipal.alternateBase : ipal.base
+                border.color: ipal.button
                 Text {
                     x: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData.label
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.6
@@ -94,9 +97,8 @@ Item {
                     x: 70
                     anchors.verticalCenter: parent.verticalCenter
                     text: parent.value
-                    color: tab.formats ? palette.windowText : palette.mid
+                    color: tab.formats ? ipal.windowText : ipal.mid
                     font.pixelSize: 14
-                    font.features: { "tnum": 1 }
                 }
                 Row {
                     visible: tab.formats !== null
@@ -108,7 +110,7 @@ Item {
                         visible: tab.copiedKey === modelData.key
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Copied"
-                        color: palette.accent
+                        color: ipal.accent
                         font.pixelSize: 12
                     }
                     Kirigami.Icon {
@@ -116,7 +118,7 @@ Item {
                         width: 15
                         height: 15
                         source: tab.copiedKey === modelData.key ? "checkmark-symbolic" : "edit-copy-symbolic"
-                        color: tab.copiedKey === modelData.key ? palette.accent : palette.placeholderText
+                        color: tab.copiedKey === modelData.key ? ipal.accent : ipal.placeholderText
                         isMask: true
                     }
                 }
@@ -136,7 +138,7 @@ Item {
         Text {
             visible: tab.colors.length > 0
             text: "RECENT"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -155,7 +157,7 @@ Item {
                     radius: 16
                     color: modelData
                     border.width: modelData === tab.current ? 2 : 1
-                    border.color: modelData === tab.current ? palette.windowText : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
+                    border.color: modelData === tab.current ? ipal.windowText : Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.14)
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor

@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // The right-click menu on the pill: L.pillMenu's rows, with the timer presets side by side.
@@ -14,7 +17,7 @@ Slide {
         width: parent ? parent.width : 0
         height: 32
         radius: 10
-        color: rowArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
+        color: rowArea.containsMouse ? Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.12) : "transparent"
         Kirigami.Icon {
             id: rowIcon
             x: 10
@@ -22,7 +25,7 @@ Slide {
             width: 16
             height: 16
             source: row.icon
-            color: palette.windowText
+            color: ipal.windowText
             isMask: true
         }
         Text {
@@ -32,7 +35,7 @@ Slide {
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             text: row.label
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 13
             elide: Text.ElideRight
         }
@@ -76,7 +79,7 @@ Slide {
                         width: 16
                         height: 16
                         source: entry.modelData.icon
-                        color: palette.windowText
+                        color: ipal.windowText
                         isMask: true
                     }
                     Item { width: 4; height: 1 }
@@ -89,11 +92,11 @@ Slide {
                             width: 64
                             height: 26
                             radius: 13
-                            color: chipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.22) : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.1)
+                            color: chipArea.containsMouse ? Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.22) : Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.1)
                             Text {
                                 anchors.centerIn: parent
                                 text: parent.modelData + " min"
-                                color: palette.windowText
+                                color: ipal.windowText
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
                             }

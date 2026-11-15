@@ -18,7 +18,10 @@
 
 namespace
 {
-const QString kSink = QStringLiteral("@DEFAULT_AUDIO_SINK@");
+const QString kSink = QStringLiteral("@DEFAULT_SINK@");
+// Ubuntu 22.04's wpctl has no volume commands, so the volume goes through pactl; this prints
+// "Volume: ... 64% ..." and "Mute: yes|no" in one go.
+const QStringList kGetVolume{QStringLiteral("-c"), QStringLiteral("LC_ALL=C pactl get-sink-volume @DEFAULT_SINK@; LC_ALL=C pactl get-sink-mute @DEFAULT_SINK@")};
 const QString kBattery = QStringLiteral("/sys/class/power_supply/BAT0/");
 // PolicyAgent inhibition type for screen dimming/locking.
 constexpr uint kChangeScreenSettings = 4;
@@ -73,7 +76,7 @@ SystemStatus::SystemStatus(QObject *parent)
 
     auto *idle = KIdleTime::instance();
     idle->addIdleTimeout(60 * 1000);
-    connect(idle, &KIdleTime::timeoutReached, this, [this, idle] {
+    connect(idle, qOverload<int, int>(&KIdleTime::timeoutReached), this, [this, idle] {
         m_userIdle = true;
         Q_EMIT changed();
         idle->catchNextResumeEvent();
@@ -105,11 +108,13 @@ SystemStatus::~SystemStatus()
 
 std::optional<std::pair<int, bool>> SystemStatus::parseWpctlVolume(const QString &output)
 {
-    static const QRegularExpression re(QStringLiteral("^Volume:\\s+([0-9.]+)(\\s+\\[MUTED\\])?"));
-    const auto m = re.match(output.trimmed());
+    // pactl: the first channel's percentage, and the "Mute:" line.
+    static const QRegularExpression percent(QStringLiteral("^Volume:.*?(\\d+)%"), QRegularExpression::MultilineOption);
+    static const QRegularExpression mute(QStringLiteral("^Mute:\\s*yes"), QRegularExpression::MultilineOption);
+    const auto m = percent.match(output);
     if (!m.hasMatch())
         return std::nullopt;
-    return std::pair{qRound(m.captured(1).toDouble() * 100), m.hasCaptured(2)};
+    return std::pair{m.captured(1).toInt(), mute.match(output).hasMatch()};
 }
 
 bool SystemStatus::parseNmcliRadio(const QString &output)
@@ -138,7 +143,7 @@ bool SystemStatus::dndUntilActive(const QString &until, const QDateTime &now)
 void SystemStatus::run(const QString &program, const QStringList &args, std::function<void(const QString &)> done)
 {
     auto *proc = new QProcess(this);
-    connect(proc, &QProcess::finished, this, [proc, done] {
+    connect(proc, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this, [proc, done] {
         if (done)
             done(QString::fromUtf8(proc->readAllStandardOutput()));
         proc->deleteLater();
@@ -151,7 +156,7 @@ void SystemStatus::refresh()
     readBattery();
     readDnd();
     readKeepAwake();
-    run(QStringLiteral("wpctl"), {QStringLiteral("get-volume"), kSink}, [this](const QString &out) {
+    run(QStringLiteral("sh"), kGetVolume, [this](const QString &out) {
         if (const auto v = parseWpctlVolume(out)) {
             m_volume = v->first;
             m_muted = v->second;
@@ -286,20 +291,21 @@ void SystemStatus::readKeepAwake()
 
 void SystemStatus::toggleMute()
 {
-    run(QStringLiteral("wpctl"), {QStringLiteral("set-mute"), kSink, QStringLiteral("toggle")}, [this](const QString &) { refresh(); });
+    run(QStringLiteral("pactl"), {QStringLiteral("set-sink-mute"), kSink, QStringLiteral("toggle")}, [this](const QString &) { refresh(); });
 }
 
 void SystemStatus::changeVolume(int deltaPercent)
 {
-    const auto step = QStringLiteral("%1%%2").arg(qAbs(deltaPercent)).arg(deltaPercent >= 0 ? QLatin1Char('+') : QLatin1Char('-'));
-    run(QStringLiteral("wpctl"), {QStringLiteral("set-volume"), QStringLiteral("-l"), QStringLiteral("1.0"), kSink, step}, [this, deltaPercent](const QString &) {
+    // Capped at 100%, like wpctl's -l 1.0.
+    const int target = qBound(0, m_volume + deltaPercent, 100);
+    run(QStringLiteral("pactl"), {QStringLiteral("set-sink-volume"), kSink, QStringLiteral("%1%").arg(target)}, [this, deltaPercent](const QString &) {
         // Down to 0 mutes (the keyboard's mute light follows); turning it up from muted unmutes.
-        run(QStringLiteral("wpctl"), {QStringLiteral("get-volume"), kSink}, [this, deltaPercent](const QString &out) {
+        run(QStringLiteral("sh"), kGetVolume, [this, deltaPercent](const QString &out) {
             const auto v = parseWpctlVolume(out);
             const bool mute = v && v->first == 0 && !v->second;
             const bool unmute = v && deltaPercent > 0 && v->second;
             if (mute || unmute)
-                run(QStringLiteral("wpctl"), {QStringLiteral("set-mute"), kSink, mute ? QStringLiteral("1") : QStringLiteral("0")}, [this](const QString &) { refresh(); });
+                run(QStringLiteral("pactl"), {QStringLiteral("set-sink-mute"), kSink, mute ? QStringLiteral("1") : QStringLiteral("0")}, [this](const QString &) { refresh(); });
             else
                 refresh();
         });

@@ -1,6 +1,9 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // Saved notifications as NotificationHistory.groups gives them, one card per app. Changes go out as signals.
@@ -28,14 +31,14 @@ Item {
             Text {
                 anchors.baseline: parent.children[1].baseline
                 text: "Notifications"
-                color: palette.windowText
+                color: ipal.windowText
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
             }
             Text {
                 objectName: "notifHeader"
                 text: tab.newCount ? tab.newCount + " new" : "all seen"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -46,12 +49,12 @@ Item {
             width: clearText.implicitWidth + 12
             height: 24
             radius: 6
-            color: clearArea.containsMouse ? palette.base : "transparent"
+            color: clearArea.containsMouse ? ipal.base : "transparent"
             Text {
                 id: clearText
                 anchors.centerIn: parent
                 text: "Clear all"
-                color: clearArea.containsMouse ? palette.windowText : palette.placeholderText
+                color: clearArea.containsMouse ? ipal.windowText : ipal.placeholderText
                 font.pixelSize: 12
             }
             MouseArea {
@@ -106,14 +109,14 @@ Item {
             objectName: "notifEmptyTitle"
             anchors.horizontalCenter: parent.horizontalCenter
             text: "No notifications"
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "New ones will be saved here."
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 13
         }
     }
@@ -124,7 +127,7 @@ Item {
         width: parent.width
         height: cardColumn.height + 20
         radius: 16
-        color: palette.base
+        color: ipal.base
 
         Column {
             id: cardColumn
@@ -152,7 +155,7 @@ Item {
                     anchors.rightMargin: 8
                     anchors.verticalCenter: appIcon.verticalCenter
                     text: card.modelData.app
-                    color: palette.text
+                    color: ipal.text
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -163,7 +166,7 @@ Item {
                     anchors.rightMargin: 6
                     anchors.verticalCenter: appIcon.verticalCenter
                     text: card.modelData.rows.length > 1 ? card.modelData.rows.length : ""
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font.pixelSize: 12
                 }
             }
@@ -178,7 +181,7 @@ Item {
                     width: cardColumn.width
                     height: 46
                     radius: 10
-                    color: hover.hovered ? palette.alternateBase : "transparent"
+                    color: hover.hovered ? ipal.alternateBase : "transparent"
 
                     HoverHandler { id: hover }
                     MouseArea {
@@ -202,7 +205,7 @@ Item {
                         y: 7
                         width: timeText.x - x - 10
                         text: row.modelData.title
-                        color: row.isNew ? palette.windowText : palette.text
+                        color: row.isNew ? ipal.windowText : ipal.text
                         font.pixelSize: 12
                         font.weight: row.isNew ? Font.DemiBold : Font.Normal
                         elide: Text.ElideRight
@@ -214,9 +217,8 @@ Item {
                         anchors.rightMargin: 8
                         anchors.baseline: titleText.baseline
                         text: L.ago(row.modelData.time, tab.now())
-                        color: palette.mid
+                        color: ipal.mid
                         font.pixelSize: 11
-                        font.features: { "tnum": 1 }
                     }
                     Text {
                         x: 22
@@ -224,7 +226,7 @@ Item {
                         anchors.topMargin: 3
                         width: removeButton.x - x - 10
                         text: row.modelData.body
-                        color: palette.placeholderText
+                        color: ipal.placeholderText
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -239,13 +241,13 @@ Item {
                         width: 20
                         height: 20
                         radius: 10
-                        color: removeArea.containsMouse ? palette.button : "transparent"
+                        color: removeArea.containsMouse ? ipal.button : "transparent"
                         Kirigami.Icon {
                             anchors.centerIn: parent
                             width: 11
                             height: 11
                             source: "window-close-symbolic"
-                            color: removeArea.containsMouse ? palette.windowText : palette.placeholderText
+                            color: removeArea.containsMouse ? ipal.windowText : ipal.placeholderText
                             isMask: true
                         }
                         MouseArea {

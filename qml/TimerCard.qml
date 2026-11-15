@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 Column {
@@ -12,7 +15,7 @@ Column {
 
     Text {
         text: "TIMER"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
         font.weight: Font.DemiBold
         font.letterSpacing: 0.6
@@ -20,11 +23,10 @@ Column {
 
     Text {
         text: card.active ? L.countdownText(card.leftMs) : "0:00"
-        color: card.active ? palette.windowText : palette.mid
+        color: card.active ? ipal.windowText : ipal.mid
         font.pixelSize: 40
         font.weight: Font.ExtraLight
         font.letterSpacing: -1
-        font.features: { "tnum": 1 }
     }
 
     Rectangle {
@@ -32,19 +34,19 @@ Column {
         width: parent.width
         height: 3
         radius: 1.5
-        color: palette.button
+        color: ipal.button
         Rectangle {
             width: card.timer.durationMs > 0 ? parent.width * card.leftMs / card.timer.durationMs : 0
             height: parent.height
             radius: parent.radius
-            color: palette.accent
+            color: ipal.accent
         }
     }
 
     Text {
         visible: card.active
         text: card.timer.paused ? "Paused" : "Ends at " + Qt.formatTime(new Date(card.timer.endMs), "HH:mm")
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
     }
 

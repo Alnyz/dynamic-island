@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QString>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Whether a full-screen window covers the island's screen, as reported by a KWin script
 // (data/kwin/fullscreen.js) that calls the scriptable slots below over D-Bus.

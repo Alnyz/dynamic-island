@@ -1,7 +1,10 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import org.kde.kirigami as Kirigami
-import Island
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import org.kde.kirigami 2.19 as Kirigami
+import Island 1.0
 import "logic.js" as L
 
 Row {
@@ -22,7 +25,7 @@ Row {
         width: battRow.implicitWidth + 24
         height: 30
         radius: 15
-        color: palette.base
+        color: ipal.base
 
         Row {
             id: battRow
@@ -34,13 +37,13 @@ Row {
                 height: 16
                 readonly property int level: Math.round(SystemStatus.battery / 20) * 20
                 source: "battery-" + String(level).padStart(3, "0") + (SystemStatus.charging ? "-charging" : "")
-                color: palette.windowText
+                color: ipal.windowText
                 isMask: true
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: SystemStatus.battery + "%"
-                color: palette.windowText
+                color: ipal.windowText
                 font.pixelSize: 12
             }
         }
@@ -76,8 +79,8 @@ Row {
             height: 30
             radius: 15
             z: 50
-            color: palette.alternateBase
-            border.color: palette.dark
+            color: ipal.alternateBase
+            border.color: ipal.dark
             Row {
                 anchors.centerIn: parent
                 spacing: 8
@@ -86,22 +89,21 @@ Row {
                     width: 44
                     height: 4
                     radius: 2
-                    color: palette.button
+                    color: ipal.button
                     Rectangle {
                         width: SystemStatus.muted ? 0 : parent.width * Math.min(100, SystemStatus.volume) / 100
                         height: parent.height
                         radius: parent.radius
-                        color: palette.accent
+                        color: ipal.accent
                     }
                 }
                 Text {
                     objectName: "volumeBubbleText"
                     anchors.verticalCenter: parent.verticalCenter
                     text: SystemStatus.muted ? "Muted" : SystemStatus.volume + "%"
-                    color: palette.windowText
+                    color: ipal.windowText
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
-                    font.features: { "tnum": 1 }
                 }
             }
         }
@@ -172,14 +174,14 @@ Row {
         width: 30
         height: 30
         radius: 15
-        color: on ? palette.accent : palette.base
+        color: on ? ipal.accent : ipal.base
 
         Kirigami.Icon {
             anchors.centerIn: parent
             width: 15
             height: 15
             source: button.iconName
-            color: parent.on ? "#ffffff" : palette.windowText
+            color: parent.on ? "#ffffff" : ipal.windowText
             isMask: true
         }
         Rectangle {
@@ -191,13 +193,13 @@ Row {
             width: Math.max(16, badgeText.implicitWidth + 6)
             height: 13
             radius: 6.5
-            color: Number(button.badge) <= 15 ? "#ff6b6b" : palette.button
-            border.color: palette.window
+            color: Number(button.badge) <= 15 ? "#ff6b6b" : ipal.button
+            border.color: ipal.window
             Text {
                 id: badgeText
                 anchors.centerIn: parent
                 text: button.badge
-                color: Number(button.badge) <= 15 ? "#ffffff" : palette.windowText
+                color: Number(button.badge) <= 15 ? "#ffffff" : ipal.windowText
                 font.pixelSize: 8
                 font.weight: Font.Bold
             }

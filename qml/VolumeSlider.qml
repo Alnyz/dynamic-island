@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 // A 0 to 1 slider that drags, clicks and scrolls in 5% steps.
@@ -7,8 +10,8 @@ Item {
 
     property real value: 0
     property bool dimmed: false
-    property color fill: palette.accent
-    property color trackColor: palette.button
+    property color fill: ipal.accent
+    property color trackColor: ipal.button
     signal moved(real value)
 
     implicitHeight: 22
@@ -28,7 +31,7 @@ Item {
             width: track.width * Math.max(0, Math.min(1, slider.value))
             height: parent.height
             radius: parent.radius
-            color: slider.dimmed ? palette.mid : slider.fill
+            color: slider.dimmed ? ipal.mid : slider.fill
         }
     }
     Rectangle {
@@ -37,7 +40,7 @@ Item {
         width: 16
         height: 16
         radius: 8
-        color: palette.windowText
+        color: ipal.windowText
     }
     MouseArea {
         anchors.fill: parent

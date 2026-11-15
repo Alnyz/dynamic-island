@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // The first-run tour on the pill: one card per step of L.TOUR.
@@ -15,7 +18,7 @@ Slide {
         width: 28
         height: 28
         source: parent.step.icon
-        color: palette.accent
+        color: ipal.accent
         isMask: true
     }
     Column {
@@ -29,7 +32,7 @@ Slide {
             objectName: "tourTitle"
             width: parent.width
             text: parent.parent.step.title
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
@@ -37,7 +40,7 @@ Slide {
             objectName: "tourBody"
             width: parent.width
             text: parent.parent.step.body
-            color: palette.text
+            color: ipal.text
             font.pixelSize: 12
             wrapMode: Text.WordWrap
             maximumLineCount: 2
@@ -57,7 +60,7 @@ Slide {
                 width: index === island.tourStep ? 14 : 6
                 height: 6
                 radius: 3
-                color: index === island.tourStep ? palette.windowText : Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.3)
+                color: index === island.tourStep ? ipal.windowText : Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.3)
                 Behavior on width { NumberAnimation { duration: 150 } }
             }
         }
@@ -74,8 +77,8 @@ Slide {
             width: skipText.implicitWidth + 22
             height: 26
             radius: 13
-            color: skipArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12) : "transparent"
-            Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: palette.placeholderText; font.pixelSize: 12 }
+            color: skipArea.containsMouse ? Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.12) : "transparent"
+            Text { id: skipText; anchors.centerIn: parent; text: "Skip"; color: ipal.placeholderText; font.pixelSize: 12 }
             MouseArea { id: skipArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: island.skipTour() }
         }
         Rectangle {
@@ -83,7 +86,7 @@ Slide {
             width: nextText.implicitWidth + 26
             height: 26
             radius: 13
-            color: nextArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+            color: nextArea.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent
             Text {
                 id: nextText
                 anchors.centerIn: parent

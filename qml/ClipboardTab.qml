@@ -1,6 +1,9 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 // Copy history from ClipboardHistory (or plain objects in tests). Changes go out as signals.
@@ -39,7 +42,7 @@ Item {
             width: parent.width
             height: 32
             radius: 16
-            color: palette.base
+            color: ipal.base
             Kirigami.Icon {
                 id: findIcon
                 x: 12
@@ -47,7 +50,7 @@ Item {
                 width: 14
                 height: 14
                 source: "edit-find-symbolic"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 isMask: true
             }
             TextInput {
@@ -58,8 +61,8 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                color: palette.windowText
-                selectionColor: palette.accent
+                color: ipal.windowText
+                selectionColor: ipal.accent
                 font.pixelSize: 13
                 clip: true
                 text: tab.query
@@ -68,7 +71,7 @@ Item {
                 Text {
                     visible: !search.text
                     text: "Search what you copied"
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font: search.font
                 }
             }
@@ -113,7 +116,7 @@ Item {
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 6
                     text: row.modelData.header || ""
-                    color: palette.mid
+                    color: ipal.mid
                     font.pixelSize: 12
                 }
 
@@ -123,8 +126,8 @@ Item {
                     anchors.fill: parent
                     radius: 10
                     readonly property bool isSelected: row.modelData.id === tab.selectedId
-                    color: isSelected || rowArea.containsMouse ? palette.base : "transparent"
-                    border.color: isSelected ? palette.button : "transparent"
+                    color: isSelected || rowArea.containsMouse ? ipal.base : "transparent"
+                    border.color: isSelected ? ipal.button : "transparent"
 
                     Row {
                         x: 8
@@ -136,7 +139,7 @@ Item {
                             width: 24
                             height: 24
                             radius: 7
-                            color: palette.alternateBase
+                            color: ipal.alternateBase
                             clip: true
                             Image {
                                 visible: row.modelData.kind === "image"
@@ -152,7 +155,7 @@ Item {
                                 width: 13
                                 height: 13
                                 source: row.modelData.kind === "link" ? "link-symbolic" : "insert-text-symbolic"
-                                color: palette.placeholderText
+                                color: ipal.placeholderText
                                 isMask: true
                             }
                         }
@@ -162,7 +165,7 @@ Item {
                             text: row.modelData.kind === "image"
                                 ? "Image · " + row.modelData.width + " × " + row.modelData.height
                                 : (row.modelData.text || "").replace(/\s+/g, " ")
-                            color: palette.windowText
+                            color: ipal.windowText
                             font.pixelSize: 13
                             elide: Text.ElideRight
                         }
@@ -177,7 +180,7 @@ Item {
                                 width: 13
                                 height: 13
                                 source: "pin-symbolic"
-                                color: palette.accent
+                                color: ipal.accent
                                 isMask: true
                             }
                             Text {
@@ -186,9 +189,8 @@ Item {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: row.modelData.time ? L.ago(row.modelData.time, tab.now()) : ""
-                                color: palette.mid
+                                color: ipal.mid
                                 font.pixelSize: 12
-                                font.features: { "tnum": 1 }
                             }
                         }
                     }
@@ -209,7 +211,7 @@ Item {
         anchors.horizontalCenter: left.horizontalCenter
         y: 130
         text: tab.items.length ? "Nothing matches" : "Nothing copied yet"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 13
     }
 
@@ -222,7 +224,7 @@ Item {
 
         Text {
             text: "PREVIEW"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -232,8 +234,8 @@ Item {
             width: parent.width
             height: parent.height - y - actions.height - meta.height - 2 * parent.spacing
             radius: 14
-            color: palette.base
-            border.color: palette.alternateBase
+            color: ipal.base
+            border.color: ipal.alternateBase
             clip: true
 
             Text {
@@ -242,7 +244,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 16
                 text: tab.selected && tab.selected.kind !== "image" ? tab.selected.text : ""
-                color: tab.selected && tab.selected.kind === "link" ? "#7cb8ff" : palette.text
+                color: tab.selected && tab.selected.kind === "link" ? "#7cb8ff" : ipal.text
                 font.pixelSize: 14
                 lineHeight: 1.3
                 wrapMode: Text.Wrap
@@ -262,7 +264,7 @@ Item {
             id: meta
             objectName: "clipMeta"
             text: tab.selected ? L.clipMeta(tab.selected, tab.now()) : " "
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
         }
 
@@ -327,13 +329,13 @@ Item {
         width: toastText.implicitWidth + 24
         height: 26
         radius: 13
-        color: palette.windowText
+        color: ipal.windowText
         Behavior on opacity { NumberAnimation { duration: 200 } }
         Text {
             id: toastText
             anchors.centerIn: parent
             text: "Copied"
-            color: palette.window
+            color: ipal.window
             font.pixelSize: 12
             font.weight: Font.DemiBold
         }

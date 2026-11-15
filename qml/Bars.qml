@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 // The little level meter on the music pill. With a sound level (0..1) the bars follow it;
@@ -7,7 +10,7 @@ Row {
     id: bars
 
     property bool running: false
-    property color color: palette.brightText
+    property color color: ipal.brightText
     // The output's peak level, or -1 when it isn't being measured.
     property real level: -1
     readonly property bool live: running && level >= 0

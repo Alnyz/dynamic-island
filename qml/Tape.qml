@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 // A strip of minute marks that slides under a fixed line; the line sits on `minutes`.
@@ -27,7 +30,7 @@ Item {
             width: tape.pxPerMinute
             height: tape.height
 
-            Rectangle { width: 2; height: 24; radius: 1; x: -1; color: palette.mid }
+            Rectangle { width: 2; height: 24; radius: 1; x: -1; color: ipal.mid }
             Repeater {
                 model: 3
                 delegate: Rectangle {
@@ -35,17 +38,16 @@ Item {
                     x: (index + 1) * tape.pxPerMinute / 4
                     width: 1
                     height: 12
-                    color: palette.dark
+                    color: ipal.dark
                 }
             }
             Text {
                 x: -width / 2
                 y: 30
                 text: parent.minute
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 11
                 font.weight: Font.Medium
-                font.features: { "tnum": 1 }
             }
         }
     }
@@ -56,7 +58,7 @@ Item {
         height: tape.height
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: palette.window }
+            GradientStop { position: 0; color: ipal.window }
             GradientStop { position: 1; color: "transparent" }
         }
     }
@@ -67,7 +69,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0; color: "transparent" }
-            GradientStop { position: 1; color: palette.window }
+            GradientStop { position: 1; color: ipal.window }
         }
     }
 
@@ -77,7 +79,7 @@ Item {
         width: 2
         height: 30
         radius: 1
-        color: palette.accent
+        color: ipal.accent
     }
 
     MouseArea {

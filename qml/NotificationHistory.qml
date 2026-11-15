@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 // The saved notifications, newest first. Main.qml writes them to NotificationLog on itemsEdited.

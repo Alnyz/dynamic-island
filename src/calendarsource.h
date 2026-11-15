@@ -7,7 +7,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <QVariantList>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 class QNetworkAccessManager;
 

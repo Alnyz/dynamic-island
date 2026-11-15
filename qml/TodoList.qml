@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 
 // The To-Do tab. The list and its changes come from outside (TodoStore in the app).
 Column {
@@ -34,7 +37,7 @@ Column {
             objectName: "todoInput"
             width: parent.width - 70
             height: 32
-            color: palette.windowText
+            color: ipal.windowText
             leftPadding: 10
             rightPadding: 10
             clip: true
@@ -44,9 +47,9 @@ Column {
 
             Rectangle {
                 anchors.fill: parent
-                color: palette.alternateBase
+                color: ipal.alternateBase
                 radius: 6
-                border.color: taskInput.activeFocus ? palette.accent : palette.dark
+                border.color: taskInput.activeFocus ? ipal.accent : ipal.dark
                 z: -1
             }
             Text {
@@ -54,7 +57,7 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 x: 10
                 text: "Add a task"
-                color: palette.mid
+                color: ipal.mid
                 font.pixelSize: 12
             }
         }
@@ -64,7 +67,7 @@ Column {
             width: 62
             height: 32
             radius: 6
-            color: palette.accent
+            color: ipal.accent
 
             Text {
                 anchors.centerIn: parent
@@ -85,7 +88,7 @@ Column {
     Text {
         visible: todo.items.length === 0
         text: "Nothing to do. Add a task above; the next one shows on the idle pill."
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
     }
 
@@ -111,8 +114,8 @@ Column {
                 width: 18
                 height: 18
                 radius: 4
-                color: row.modelData.done ? palette.accent : "transparent"
-                border.color: palette.accent
+                color: row.modelData.done ? ipal.accent : "transparent"
+                border.color: ipal.accent
                 anchors.verticalCenter: parent.verticalCenter
 
                 Text {
@@ -135,7 +138,7 @@ Column {
                 objectName: "todoText" + row.index
                 width: parent.width - 18 - 24 - 2 * parent.spacing
                 text: row.modelData.text
-                color: row.modelData.done ? palette.mid : palette.windowText
+                color: row.modelData.done ? ipal.mid : ipal.windowText
                 font.strikeout: row.modelData.done
                 font.pixelSize: 12
                 elide: Text.ElideRight
@@ -153,7 +156,7 @@ Column {
                 Text {
                     anchors.centerIn: parent
                     text: "✕"
-                    color: deleteArea.containsMouse ? "#ff8a8a" : palette.mid
+                    color: deleteArea.containsMouse ? "#ff8a8a" : ipal.mid
                     font.pixelSize: 12
                 }
 
@@ -172,7 +175,7 @@ Column {
         objectName: "todoClearDone"
         visible: todo.doneCount > 0
         text: "Clear " + todo.doneCount + " done"
-        color: clearArea.containsMouse ? palette.windowText : palette.placeholderText
+        color: clearArea.containsMouse ? ipal.windowText : ipal.placeholderText
         font.pixelSize: 12
         MouseArea {
             id: clearArea

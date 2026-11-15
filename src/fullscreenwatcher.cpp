@@ -5,6 +5,9 @@
 #include <QDBusReply>
 #include <QDir>
 #include <QFile>
+#include <QGuiApplication>
+#include <QRegularExpression>
+#include <QScreen>
 #include <QStandardPaths>
 
 namespace
@@ -12,6 +15,17 @@ namespace
 const QString kService = QStringLiteral("io.github.alnyz.DynamicIsland");
 const QString kPath = QStringLiteral("/FullScreen");
 const QString kScriptName = QStringLiteral("dynamic-island-fullscreen");
+
+// The KWin 5 script reports a window's centre point; turn it into that screen's name.
+QString screenNameOf(const QString &output)
+{
+    static const QRegularExpression point(QStringLiteral("^(-?\\d+),(-?\\d+)$"));
+    const auto m = point.match(output);
+    if (!m.hasMatch())
+        return output;
+    const QScreen *screen = QGuiApplication::screenAt(QPoint(m.captured(1).toInt(), m.captured(2).toInt()));
+    return screen ? screen->name() : QString();
+}
 
 QDBusMessage scripting(const QString &method)
 {
@@ -54,7 +68,7 @@ void FullScreenWatcher::reportActivated(const QString &output, bool fullScreen, 
 {
     if (resourceClass.isEmpty() || resourceClass == QLatin1String("dynamic-island"))
         return;
-    m_output = output;
+    m_output = screenNameOf(output);
     m_fullScreen = fullScreen;
     update();
     Q_EMIT switched();
@@ -62,7 +76,7 @@ void FullScreenWatcher::reportActivated(const QString &output, bool fullScreen, 
 
 void FullScreenWatcher::reportFullScreen(const QString &output, bool fullScreen)
 {
-    m_output = output;
+    m_output = screenNameOf(output);
     m_fullScreen = fullScreen;
     update();
 }

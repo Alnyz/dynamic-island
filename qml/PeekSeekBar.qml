@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 
 // A thin seek bar along the bottom of the music peek; drag or click to jump.
 Item {
@@ -15,14 +18,14 @@ Item {
         width: parent.width
         height: seekArea.containsMouse || seekArea.pressed ? 4 : 2
         radius: height / 2
-        color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.18)
+        color: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.18)
         Behavior on height { NumberAnimation { duration: 120 } }
         Rectangle {
             objectName: "peekSeekFill"
             width: parent.width * peekSeek.fraction
             height: parent.height
             radius: parent.radius
-            color: island.coverTinted ? island.coverTint : palette.windowText
+            color: island.coverTinted ? island.coverTint : ipal.windowText
         }
     }
     Rectangle {
@@ -32,7 +35,7 @@ Item {
         radius: 4.5
         x: peekSeek.fraction * peekSeek.width - width / 2
         anchors.verticalCenter: parent.verticalCenter
-        color: palette.windowText
+        color: ipal.windowText
     }
     MouseArea {
         id: seekArea

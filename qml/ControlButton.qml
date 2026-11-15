@@ -1,12 +1,15 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 
 Item {
     id: button
 
     property string iconName
     property int iconSize: 20
-    property color iconColor: palette.windowText
+    property color iconColor: ipal.windowText
     signal clicked()
 
     width: iconSize + 12

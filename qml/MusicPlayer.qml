@@ -1,7 +1,10 @@
-import QtQuick
-import QtQuick.Effects
-import QtQuick.Shapes
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtGraphicalEffects 1.15 as GE
+import QtQuick.Shapes 1.15
+import org.kde.kirigami 2.19 as Kirigami
 import "logic.js" as L
 
 Item {
@@ -12,7 +15,7 @@ Item {
     property var choices: []
     signal picked(var p)
     property string artUrl: ""
-    property color tint: palette.brightText
+    property color tint: ipal.brightText
     property bool coverHidden: false
     // LyricsSource; the lyrics button only shows when it's on.
     property var lyrics: null
@@ -46,10 +49,10 @@ Item {
         running: music.showLyrics && music.visible
         onTriggered: music.lyricsPositionMs = music.positionMs + (music.playing ? Date.now() - music.positionAt : 0)
     }
-    property color accentTint: palette.accent
+    property color accentTint: ipal.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
-    readonly property color dim: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.62)
+    readonly property color dim: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.62)
 
     implicitHeight: 330
 
@@ -57,7 +60,7 @@ Item {
         visible: music.player === null
         anchors.centerIn: parent
         text: "Nothing playing"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 13
     }
 
@@ -77,14 +80,10 @@ Item {
             asynchronous: true
             visible: false
         }
-        MultiEffect {
+        GE.FastBlur {
             anchors.fill: parent
             source: glowSource
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: 1
-            blurMax: 64
-            saturation: 0.2
+            radius: 64
             opacity: 0.4
         }
         Shape {
@@ -100,9 +99,13 @@ Item {
                     focalY: centerY
                     centerRadius: music.width / 2
                     GradientStop { position: 0.1; color: "transparent" }
-                    GradientStop { position: 0.8; color: palette.window }
+                    GradientStop { position: 0.8; color: ipal.window }
                 }
-                PathRectangle { width: music.width; height: music.width }
+                startX: 0; startY: 0
+                PathLine { x: music.width; y: 0 }
+                PathLine { x: music.width; y: music.width }
+                PathLine { x: 0; y: music.width }
+                PathLine { x: 0; y: 0 }
             }
         }
     }
@@ -120,11 +123,12 @@ Item {
             Item {
                 width: 170
                 height: 170
-                RectangularShadow {
+                GE.RectangularGlow {
                     anchors.fill: parent
-                    offset.y: 14
-                    blur: 40
-                    radius: 16
+                    anchors.topMargin: 14
+                    anchors.bottomMargin: -14
+                    glowRadius: 20
+                    cornerRadius: 16 + glowRadius
                     color: Qt.rgba(0, 0, 0, 0.6)
                 }
                 CoverArt {
@@ -145,7 +149,7 @@ Item {
                     objectName: "title"
                     width: parent.width
                     text: music.player ? L.displayTitle(music.player.track) : ""
-                    color: palette.windowText
+                    color: ipal.windowText
                     font.pixelSize: 26
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -175,12 +179,12 @@ Item {
                             width: chipLabel.implicitWidth + 22
                             height: 24
                             radius: 12
-                            color: current ? palette.windowText : chipArea.containsMouse ? palette.button : palette.alternateBase
+                            color: current ? ipal.windowText : chipArea.containsMouse ? ipal.button : ipal.alternateBase
                             Text {
                                 id: chipLabel
                                 anchors.centerIn: parent
                                 text: modelData.identity || modelData.objectName || "Player"
-                                color: parent.current ? palette.window : palette.windowText
+                                color: parent.current ? ipal.window : ipal.windowText
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
                             }
@@ -233,7 +237,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 130
                             fill: music.tint
-                            trackColor: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
+                            trackColor: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.14)
                             value: music.player ? music.player.volume : 0
                             onMoved: v => music.player.volume = v
                         }
@@ -246,8 +250,8 @@ Item {
                         width: openRow.implicitWidth + 28
                         height: 34
                         radius: height / 2
-                        color: openArea.containsMouse ? Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14) : Qt.rgba(palette.window.r, palette.window.g, palette.window.b, 0.5)
-                        border.color: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.12)
+                        color: openArea.containsMouse ? Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.14) : Qt.rgba(ipal.window.r, ipal.window.g, ipal.window.b, 0.5)
+                        border.color: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.12)
                         Row {
                             id: openRow
                             anchors.centerIn: parent
@@ -257,12 +261,12 @@ Item {
                                 width: 13
                                 height: 13
                                 source: "external-link-symbolic"
-                                color: palette.windowText
+                                color: ipal.windowText
                                 isMask: true
                             }
                             Text {
                                 text: "Open " + (music.player ? music.player.identity : "")
-                                color: palette.windowText
+                                color: ipal.windowText
                                 font.pixelSize: 12
                             }
                         }
@@ -283,7 +287,7 @@ Item {
             objectName: "progress"
             width: parent.width
             fill: music.tint
-            trackColor: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
+            trackColor: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.14)
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
             value: music.player && music.player.length > 0 ? music.player.position / music.player.length : 0
@@ -314,7 +318,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.shuffle ?? 0) !== L.Shuffle.Unknown
                 iconName: "media-playlist-shuffle"
-                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? music.accentTint : palette.mid
+                iconColor: music.player && music.player.shuffle === L.Shuffle.On ? music.accentTint : ipal.mid
                 onClicked: music.player.shuffle = music.player.shuffle === L.Shuffle.On ? L.Shuffle.Off : L.Shuffle.On
             }
             ControlButton {
@@ -330,13 +334,13 @@ Item {
                 width: 54
                 height: 54
                 radius: 27
-                color: playArea.pressed ? palette.text : palette.windowText
+                color: playArea.pressed ? ipal.text : ipal.windowText
                 Kirigami.Icon {
                     anchors.centerIn: parent
                     width: 24
                     height: 24
                     source: music.playing ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"
-                    color: palette.window
+                    color: ipal.window
                     isMask: true
                 }
                 MouseArea {
@@ -357,7 +361,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.player !== null && (music.player.loopStatus ?? 0) !== L.Loop.Unknown
                 iconName: music.player && music.player.loopStatus === L.Loop.Track ? "media-repeat-single" : "media-playlist-repeat"
-                iconColor: music.player && music.player.loopStatus > L.Loop.None ? music.accentTint : palette.mid
+                iconColor: music.player && music.player.loopStatus > L.Loop.None ? music.accentTint : ipal.mid
                 onClicked: music.player.loopStatus = L.nextLoop(music.player.loopStatus)
             }
             ControlButton {
@@ -365,7 +369,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: music.lyricsOn
                 iconName: "view-media-lyrics"
-                iconColor: music.showLyrics ? music.accentTint : palette.mid
+                iconColor: music.showLyrics ? music.accentTint : ipal.mid
                 onClicked: music.showLyrics = !music.showLyrics
             }
         }

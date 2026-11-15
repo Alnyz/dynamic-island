@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 
 // Files dropped on the island; drag one out to drop it into any app.
 Item {
@@ -29,7 +32,7 @@ Item {
         height: 16
         Text {
             text: "SHELF"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -39,7 +42,7 @@ Item {
             visible: tab.files.length > 0
             anchors.right: parent.right
             text: "Clear"
-            color: clearArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+            color: clearArea.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent
             font.pixelSize: 12
             font.weight: Font.Medium
             MouseArea {
@@ -60,15 +63,15 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         radius: 16
-        color: drop.containsDrag ? "#0b1a2e" : palette.base
-        border.color: drop.containsDrag ? palette.accent : palette.button
+        color: drop.containsDrag ? "#0b1a2e" : ipal.base
+        border.color: drop.containsDrag ? ipal.accent : ipal.button
 
         Text {
             objectName: "shelfEmpty"
             visible: tab.files.length === 0
             anchors.centerIn: parent
             text: "Drag files here to keep them for later"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 13
         }
 
@@ -102,7 +105,7 @@ Item {
                             width: 56
                             height: 56
                             radius: 12
-                            color: dragArea.containsMouse ? palette.alternateBase : palette.base
+                            color: dragArea.containsMouse ? ipal.alternateBase : ipal.base
                             clip: true
                             Image {
                                 visible: tab.isImage(file.modelData)
@@ -125,7 +128,7 @@ Item {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             text: tab.nameOf(file.modelData)
-                            color: palette.text
+                            color: ipal.text
                             font.pixelSize: 12
                             elide: Text.ElideMiddle
                         }
@@ -145,13 +148,13 @@ Item {
                         width: 20
                         height: 20
                         radius: 10
-                        color: palette.button
+                        color: ipal.button
                         Kirigami.Icon {
                             anchors.centerIn: parent
                             width: 10
                             height: 10
                             source: "window-close-symbolic"
-                            color: palette.windowText
+                            color: ipal.windowText
                             isMask: true
                         }
                         MouseArea {

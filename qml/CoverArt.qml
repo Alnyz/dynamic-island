@@ -1,6 +1,9 @@
-import QtQuick
-import QtQuick.Effects
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtGraphicalEffects 1.15
+import org.kde.kirigami 2.19 as Kirigami
 
 Rectangle {
     id: art
@@ -9,7 +12,7 @@ Rectangle {
     // Shown when there's no cover, e.g. Spotify sends none during ads.
     property string fallbackIcon
 
-    color: palette.button
+    color: ipal.button
 
     Image {
         id: cover
@@ -29,14 +32,10 @@ Rectangle {
         layer.enabled: true
         visible: false
     }
-    MultiEffect {
+    OpacityMask {
         anchors.fill: parent
         source: cover
-        maskEnabled: true
         maskSource: coverMask
-        // Soft mask edge; without it the anti-aliased corners turn solid and the icon looks square.
-        maskThresholdMin: 0.5
-        maskSpreadAtMin: 1.0
         visible: cover.status === Image.Ready
     }
     Kirigami.Icon {

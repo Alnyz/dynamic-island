@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QTimer>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 // Whether Caps Lock and Num Lock are on, read from the keyboard LEDs under /sys/class/leds while enabled.
 // ponytail: polled every 250 ms because sysfs has no change events; swap in a libinput/evdev watch if that ever shows in a profile.

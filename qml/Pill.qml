@@ -1,6 +1,9 @@
-import QtQuick
-import QtQuick.Controls as QQC
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
+import org.kde.kirigami 2.19 as Kirigami
 
 Rectangle {
     id: pill
@@ -12,14 +15,14 @@ Rectangle {
     property bool selected: false
     signal clicked()
 
-    readonly property color ink: selected ? palette.window : palette.windowText
+    readonly property color ink: selected ? ipal.window : ipal.windowText
 
     height: 40
     width: text === "" ? height : content.implicitWidth + (height > 32 ? 36 : 26)
     radius: height / 2
-    color: primary ? (area.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent)
-         : selected ? palette.windowText
-         : area.containsMouse ? palette.button : (height > 32 ? palette.alternateBase : palette.base)
+    color: primary ? (area.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent)
+         : selected ? ipal.windowText
+         : area.containsMouse ? ipal.button : (height > 32 ? ipal.alternateBase : ipal.base)
 
     Row {
         id: content

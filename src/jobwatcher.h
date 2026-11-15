@@ -2,7 +2,7 @@
 
 #include <QObject>
 #include <QVariantMap>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 
 class QSocketNotifier;
 struct DBusConnection;

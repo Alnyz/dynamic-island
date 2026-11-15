@@ -1,12 +1,8 @@
-#version 440
-layout(location = 0) in vec2 qt_TexCoord0;
-layout(location = 0) out vec4 fragColor;
-layout(std140, binding = 0) uniform buf {
-    mat4 qt_Matrix;
-    float qt_Opacity;
-    float time;
-    vec2 size;
-};
+// GLSL for Qt 5's OpenGL ShaderEffect.
+varying highp vec2 qt_TexCoord0;
+uniform lowp float qt_Opacity;
+uniform highp float time;
+uniform highp vec2 size;
 
 // A handful of warm dots drifting sideways and twinkling.
 float hash(float n) { return fract(sin(n) * 43758.5453); }
@@ -26,5 +22,5 @@ void main() {
     float edge = smoothstep(0.0, 18.0, px.x) * smoothstep(size.x, size.x - 18.0, px.x);
     col *= edge;
     float alpha = clamp(max(col.r, max(col.g, col.b)), 0.0, 1.0);
-    fragColor = vec4(col, alpha) * qt_Opacity;
+    gl_FragColor = vec4(col, alpha) * qt_Opacity;
 }

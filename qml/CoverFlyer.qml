@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 
 // The pill's cover on its way into the open panel. It lives on the window (the island's parent),
 // so the centred island growing around it doesn't drag it along.
@@ -67,7 +70,10 @@ Item {
         duration: 380
         easing.type: Easing.OutCubic
     }
-    FrameAnimation {
+    // Qt 5 has no FrameAnimation; a ~60 Hz timer does the same job.
+    Timer {
+        interval: 16
+        repeat: true
         running: flyer.visible
         onTriggered: {
             flyer.frame++

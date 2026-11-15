@@ -1,5 +1,8 @@
-import QtQuick
-import QtQuick.Controls as QQC
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import QtQuick.Controls 2.15 as QQC
 import "logic.js" as L
 
 // Notes from NotesStore (or fakes in tests); saves a moment after typing stops.
@@ -64,7 +67,7 @@ Item {
             height: 16
             Text {
                 text: "NOTES"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.letterSpacing: 0.6
@@ -73,7 +76,7 @@ Item {
                 objectName: "noteNew"
                 anchors.right: parent.right
                 text: "+ New"
-                color: newArea.containsMouse ? Qt.lighter(palette.accent, 1.15) : palette.accent
+                color: newArea.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent
                 font.pixelSize: 12
                 font.weight: Font.Medium
                 MouseArea {
@@ -103,7 +106,7 @@ Item {
                 width: list.width
                 height: 48
                 radius: 10
-                color: modelData.id === tab.currentId ? palette.base : noteArea.containsMouse ? palette.alternateBase : "transparent"
+                color: modelData.id === tab.currentId ? ipal.base : noteArea.containsMouse ? ipal.alternateBase : "transparent"
                 Column {
                     x: 10
                     width: parent.width - 20
@@ -112,7 +115,7 @@ Item {
                     Text {
                         width: parent.width
                         text: note.modelData.title
-                        color: palette.windowText
+                        color: ipal.windowText
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -120,7 +123,7 @@ Item {
                     Text {
                         width: parent.width
                         text: L.noteWhen(note.modelData.modified, tab.now()) + (note.modelData.preview ? " · " + note.modelData.preview : "")
-                        color: palette.placeholderText
+                        color: ipal.placeholderText
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
@@ -146,18 +149,18 @@ Item {
             height: parent.height - status.height - parent.spacing
             background: Rectangle {
                 radius: 14
-                color: palette.base
-                border.color: editor.activeFocus ? palette.dark : palette.alternateBase
+                color: ipal.base
+                border.color: editor.activeFocus ? ipal.dark : ipal.alternateBase
             }
             QQC.TextArea {
                 id: editor
                 objectName: "noteEditor"
                 padding: 16
                 wrapMode: TextEdit.Wrap
-                color: palette.text
-                selectionColor: palette.accent
+                color: ipal.text
+                selectionColor: ipal.accent
                 placeholderText: "Write something…"
-                placeholderTextColor: palette.mid
+                placeholderTextColor: ipal.mid
                 font.pixelSize: 14
                 background: null
                 onTextChanged: if (activeFocus) saveTimer.restart()
@@ -170,7 +173,7 @@ Item {
             height: 16
             Text {
                 text: "First line is the title"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
             }
             Text {
@@ -179,7 +182,7 @@ Item {
                 anchors.right: noteStatusText.left
                 anchors.rightMargin: 14
                 text: "Delete"
-                color: deleteArea.containsMouse ? "#ff8a8a" : palette.placeholderText
+                color: deleteArea.containsMouse ? "#ff8a8a" : ipal.placeholderText
                 font.pixelSize: 12
                 MouseArea {
                     id: deleteArea
@@ -195,7 +198,7 @@ Item {
                 objectName: "noteStatus"
                 anchors.right: parent.right
                 text: saveTimer.running ? "Saving…" : "Saved"
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
             }
         }

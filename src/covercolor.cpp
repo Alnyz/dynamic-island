@@ -83,8 +83,8 @@ QColor CoverColor::pick(const QImage &image)
     const Bucket &best = *std::max_element(buckets.begin(), buckets.end(), [](const Bucket &a, const Bucket &b) { return a.weight < b.weight; });
     QColor c = QColor::fromRgbF(float(best.r / best.weight), float(best.g / best.weight), float(best.b / best.weight));
     // Readable as a fill and as text on black: not too dark, not washed out.
-    float h, s, l;
+    qreal h, s, l;
     c.getHslF(&h, &s, &l);
-    c.setHslF(h, qBound(0.45f, s, 0.9f), qBound(0.5f, l, 0.68f));
+    c.setHslF(h, qBound(0.45, s, 0.9), qBound(0.5, l, 0.68));
     return c;
 }

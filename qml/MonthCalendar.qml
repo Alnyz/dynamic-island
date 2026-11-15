@@ -1,10 +1,13 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 Column {
     id: cal
 
-    readonly property color accent: palette.accent
+    readonly property color accent: ipal.accent
     property var calendar: null
     // The holiday calendar (another CalendarSource), and whether observances count too.
     property var holidays: null
@@ -83,7 +86,7 @@ Column {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: cal.monthNames[cal.month0] + " " + cal.year
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
@@ -109,7 +112,7 @@ Column {
                 width: parent.cellW
                 horizontalAlignment: Text.AlignHCenter
                 text: modelData
-                color: palette.mid
+                color: ipal.mid
                 font.pixelSize: 10
             }
         }
@@ -158,7 +161,7 @@ Column {
                     readonly property string holiday: cal.holidayDays[cal.key(modelData.y, modelData.m, modelData.d)] || ""
                     // Public holidays in orange; white on the accent circle in either theme.
                     color: isToday ? "#ffffff" : holiday === "public" ? (modelData.inMonth ? "#ff9f0a" : Qt.darker("#ff9f0a", 1.6))
-                         : modelData.inMonth ? palette.windowText : palette.mid
+                         : modelData.inMonth ? ipal.windowText : ipal.mid
                     font.pixelSize: 12
                     font.weight: isToday ? Font.Bold : Font.Normal
                 }

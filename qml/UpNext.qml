@@ -1,4 +1,7 @@
-import QtQuick
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
 import "logic.js" as L
 
 Column {
@@ -50,7 +53,7 @@ Column {
             id: heading
             objectName: "upNextHeading"
             text: up.day ? L.dayName(up.day, up.now()).toUpperCase() : "UP NEXT"
-            color: palette.placeholderText
+            color: ipal.placeholderText
             font.pixelSize: 12
             font.weight: Font.DemiBold
             font.letterSpacing: 0.6
@@ -60,7 +63,7 @@ Column {
             visible: up.day !== null
             anchors.right: parent.right
             text: "Upcoming"
-            color: backArea.containsMouse ? palette.windowText : palette.accent
+            color: backArea.containsMouse ? ipal.windowText : ipal.accent
             font.pixelSize: 12
             MouseArea {
                 id: backArea
@@ -82,9 +85,8 @@ Column {
             Text {
                 width: 48
                 text: modelData.holiday ? (modelData.publicHoliday ? "Holiday" : "Festival") : L.eventWhen(modelData)
-                color: modelData.holiday ? "#ff9f0a" : palette.placeholderText
+                color: modelData.holiday ? "#ff9f0a" : ipal.placeholderText
                 font.pixelSize: 12
-                font.features: { "tnum": 1 }
                 topPadding: 1
             }
             Column {
@@ -93,14 +95,14 @@ Column {
                 Text {
                     width: parent.width
                     text: modelData.title
-                    color: palette.windowText
+                    color: ipal.windowText
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
                 Text {
                     text: L.eventDetail(modelData, new Date(), up.day !== null)
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font.pixelSize: 12
                 }
             }
@@ -119,7 +121,7 @@ Column {
         objectName: "upNextMore"
         visible: up.day !== null && up.events.length > up.dayLimit
         text: "+" + (up.events.length - up.dayLimit) + " more"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
     }
 
@@ -128,7 +130,7 @@ Column {
         width: parent.width
         visible: up.events.length === 0
         wrapMode: Text.WordWrap
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
         text: !up.calendar || !up.calendar.configured ? "Add your Google Calendar link to see events here"
             : !up.calendar.loaded ? "Loading events…"

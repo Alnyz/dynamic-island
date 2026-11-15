@@ -1,5 +1,8 @@
-import QtQuick
-import org.kde.kirigami as Kirigami
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQml 2.15
+import QtQml.Models 2.15
+import org.kde.kirigami 2.19 as Kirigami
 import "weather.js" as W
 
 Column {
@@ -19,11 +22,10 @@ Column {
         Text {
             id: deg
             text: card.hasData ? card.weather.temperature + "°" : ""
-            color: palette.windowText
+            color: ipal.windowText
             font.pixelSize: 52
             font.weight: Font.ExtraLight
             font.letterSpacing: -1
-            font.features: { "tnum": 1 }
         }
         Column {
             anchors.bottom: deg.baseline
@@ -36,12 +38,12 @@ Column {
                     width: 14
                     height: 14
                     source: card.info.icon
-                    color: palette.windowText
+                    color: ipal.windowText
                     isMask: true
                 }
                 Text {
                     text: card.info.text
-                    color: palette.windowText
+                    color: ipal.windowText
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
                 }
@@ -50,7 +52,7 @@ Column {
                 width: parent.width
                 elide: Text.ElideRight
                 text: card.hasData ? (card.weather.city ? card.weather.city + " · " : "") + "H " + card.weather.high + "° L " + card.weather.low + "°" : ""
-                color: palette.placeholderText
+                color: ipal.placeholderText
                 font.pixelSize: 12
             }
         }
@@ -67,17 +69,15 @@ Column {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: modelData.hour + ":00"
-                    color: palette.placeholderText
+                    color: ipal.placeholderText
                     font.pixelSize: 11
-                    font.features: { "tnum": 1 }
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: modelData.temperature + "°"
-                    color: palette.windowText
+                    color: ipal.windowText
                     font.pixelSize: 12
                     font.weight: Font.Medium
-                    font.features: { "tnum": 1 }
                 }
             }
         }
@@ -86,7 +86,7 @@ Column {
     Text {
         visible: !card.hasData
         text: "Weather unavailable"
-        color: palette.placeholderText
+        color: ipal.placeholderText
         font.pixelSize: 12
     }
 

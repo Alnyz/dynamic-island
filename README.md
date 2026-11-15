@@ -4,6 +4,29 @@ A notch at the top of the screen for KDE Plasma 6 on Wayland. It shows what's pl
 
 I wanted something like the Dynamic Island on macOS for my Arch setup, inspired by Notchy. I built it with Claude as a coding assistant: Claude wrote most of the code, and I decided what it should do and tried it out on my laptop as it grew.
 
+## This branch: Plasma 5 on X11 (Ubuntu 22.04)
+
+The `port/plasma5-x11` branch builds against Qt 5.15 and KDE Frameworks 5 and runs on Plasma 5.24 under X11. What differs from the Plasma 6 version:
+
+- The island is a frameless X11 window of the notification type, kept centred at the top of the primary screen, instead of a layer-shell surface. While a full-screen window covers it, it becomes an on-screen-display window to stay in front.
+- Music comes from a small MPRIS client in C++ (`src/mprisplayers.cpp`), since Plasma 5 has no private MPRIS QML module.
+- Colours go through a shared `ipal` object instead of Qt 6's per-item `palette`.
+- The idle animations are plain OpenGL GLSL, the KWin scripts use the KWin 5 API, the update count uses `apt list --upgradable`, and the volume buttons use `pactl`.
+- The panel shortcut is Meta+N and Meta+Alt+N; when Meta+N is already taken (Latte Dock uses it), only Meta+Alt+N is set.
+- The QML and C++ tests still target Qt 6 and are not built.
+
+Packages on Ubuntu 22.04:
+
+```sh
+sudo apt install cmake ninja-build extra-cmake-modules libdbus-1-dev libx11-dev libqt5x11extras5-dev \
+    qtbase5-dev qtbase5-private-dev qtdeclarative5-dev qtquickcontrols2-5-dev \
+    libkf5calendarcore-dev libkf5config-dev libkf5globalaccel-dev libkf5guiaddons-dev libkf5idletime-dev libkf5windowsystem-dev \
+    qml-module-qtgraphicaleffects qml-module-qtquick-shapes qml-module-qt-labs-settings qml-module-qt-labs-platform \
+    qml-module-qtquick-dialogs qml-module-org-kde-kirigami2 plasma-pa network-manager bluez kde-spectacle
+```
+
+Then build and install as below.
+
 It runs on my machine (CachyOS, Plasma 6, Wayland). It hasn't been tested anywhere else yet.
 
 Here's a 16-second demo, recorded on my laptop with demo data:

@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <functional>
 #include <optional>
-#include <qqmlintegration.h>
+#include <QtQml/qqml.h>
 #include <utility>
 
 class SystemStatus : public QObject
