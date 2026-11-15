@@ -53,7 +53,7 @@ The panel has buttons for battery, volume, Wi-Fi, Bluetooth (with a badge for a 
 
 ## Requirements
 
-- KDE Plasma 6 on Wayland. The island is a layer-shell surface and uses KWin and Plasma services, so it won't work on X11 or other desktops.
+- KDE Plasma 6 on Wayland. The island is a layer-shell surface and uses KWin and Plasma services, so it won't work on X11 or other desktops. For Plasma 5 on X11 (Qt 5.15, KDE Frameworks 5), see the [`port/plasma5-x11`](https://github.com/Alnyz/dynamic-island/tree/port/plasma5-x11) branch, maintained by [@viktorg1](https://github.com/viktorg1).
 - Browser downloads show only with Plasma's browser integration add-on installed in the browser.
 - It imports Plasma's private MPRIS and volume QML modules. A Plasma update can change those and break the music or mixer parts.
 
