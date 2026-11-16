@@ -165,13 +165,15 @@ Item {
                     visible: music.choices.length > 1
                     topPadding: 8
                     spacing: 6
+                    // The chips hold plain text, never the player objects: a player that quits (Spotifry
+                    // restarting) while the tab builds its chips would leave the list pointing at a dead object.
                     Repeater {
-                        model: music.choices.length > 1 ? music.choices : []
+                        model: music.choices.length > 1 ? music.choices.map(p => ({ name: p.objectName || "", label: p.identity || p.objectName || "Player" })) : []
                         delegate: Rectangle {
                             required property var modelData
                             required property int index
                             readonly property bool current: music.player !== null
-                                && (modelData === music.player || (modelData.objectName || "") === (music.player.objectName || "") && modelData.objectName)
+                                && (music.choices[index] === music.player || modelData.name !== "" && modelData.name === (music.player.objectName || ""))
                             objectName: "playerChip" + index
                             width: chipLabel.implicitWidth + 22
                             height: 24
@@ -180,7 +182,7 @@ Item {
                             Text {
                                 id: chipLabel
                                 anchors.centerIn: parent
-                                text: modelData.identity || modelData.objectName || "Player"
+                                text: modelData.label
                                 color: parent.current ? palette.window : palette.windowText
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
@@ -190,7 +192,11 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: music.picked(parent.modelData)
+                                onClicked: {
+                                    const p = music.choices[parent.index]
+                                    if (p)
+                                        music.picked(p)
+                                }
                             }
                         }
                     }
