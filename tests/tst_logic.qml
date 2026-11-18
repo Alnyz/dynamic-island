@@ -595,6 +595,18 @@ TestCase {
         compare(L.lyricLine([], 5000), -1)
     }
 
+    function test_lyric_text_at() {
+        const lines = [{ ms: 1000, text: "One" }, { ms: 5000, text: "" }, { ms: 9000, text: "Three" }]
+        // Nothing sung yet.
+        compare(L.lyricTextAt(lines, 0), "")
+        compare(L.lyricTextAt(lines, 1000), "One")
+        // A line without words keeps the one before it.
+        compare(L.lyricTextAt(lines, 6000), "One")
+        compare(L.lyricTextAt(lines, 9000), "Three")
+        compare(L.lyricTextAt([], 5000), "")
+        compare(L.lyricTextAt(null, 5000), "")
+    }
+
     function test_lyrics_urls() {
         compare(L.lyricsGetUrl("Maroon 5", "Girls Like You", "Red Pill Blues", 235400000),
                 "https://lrclib.net/api/get?artist_name=Maroon%205&track_name=Girls%20Like%20You&album_name=Red%20Pill%20Blues&duration=235")

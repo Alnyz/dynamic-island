@@ -268,6 +268,8 @@ Window {
     LyricsSource {
         id: lyricsSource
         enabled: prefs.behaviour.lyrics
+        // The pill asks too, while it shows the current line in place of the title.
+        wantedPill: island.wantsLyrics
         artist: source.player ? source.player.artist || "" : ""
         title: source.player ? source.player.track || "" : ""
         album: source.player ? source.player.album || "" : ""
@@ -315,6 +317,7 @@ Window {
         onTranslucentChanged: root.updateBlur()
         onBlurBehindChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
+        pillLyrics: prefs.behaviour.pillLyrics
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"
         timer: timerModel

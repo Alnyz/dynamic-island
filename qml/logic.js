@@ -652,6 +652,19 @@ function lyricLine(lines, ms) {
     return found
 }
 
+// The words to show on the pill at ms: the line being sung, or the last one that had words
+// (an instrumental gap keeps the line before it), or "" before the first words.
+function lyricTextAt(lines, ms) {
+    if (!lines || !lines.length)
+        return ""
+    for (let i = lyricLine(lines, ms); i >= 0; --i) {
+        const words = String(lines[i].text || "").trim()
+        if (words)
+            return words
+    }
+    return ""
+}
+
 // a: the alert itself, for kinds whose size depends on it (a notification with buttons is taller).
 function alertSize(kind, barHeight, radius, a) {
     if (kind === "notification" && a && a.buttons && a.buttons.length > 0)

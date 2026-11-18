@@ -434,6 +434,13 @@ QQC.ApplicationWindow {
                         checked: win.prefs.behaviour.lyrics
                         onToggled: win.prefs.behaviour.lyrics = checked
                     }
+                    QQC.CheckBox {
+                        objectName: "pillLyricsSwitch"
+                        text: "Show the line being sung in place of the title on the pill"
+                        enabled: win.prefs.behaviour.lyrics
+                        checked: win.prefs.behaviour.pillLyrics
+                        onToggled: win.prefs.behaviour.pillLyrics = checked
+                    }
                     QQC.ButtonGroup { id: openGroup }
                     QQC.RadioButton {
                         Kirigami.FormData.label: "Open the panel:"
