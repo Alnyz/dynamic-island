@@ -24,21 +24,29 @@ QtObject {
     property real at: Date.now()
     property int tick: 0
 
+    // Plasma keeps the position it last heard, and a player that never announces it moving (as
+    // MPRIS allows) leaves that copy stale: a clock made or woken later would start from it and
+    // jump back. This asks the player itself; the answer comes in through onPositionChanged.
+    function refresh() {
+        if (player && typeof player.updatePosition === "function")
+            player.updatePosition()
+        sync()
+    }
     function sync() {
         base = player ? player.position || 0 : 0
         at = Date.now()
         tick++
     }
     // Deferred: syncing while the binding above is still being worked out makes a binding loop.
-    onPlayerChanged: Qt.callLater(sync)
-    onPlayingChanged: Qt.callLater(sync)
-    onActiveChanged: if (active) Qt.callLater(sync)
+    onPlayerChanged: Qt.callLater(refresh)
+    onPlayingChanged: Qt.callLater(refresh)
+    onActiveChanged: if (active) Qt.callLater(refresh)
 
     property Connections follow: Connections {
         target: clock.player
         ignoreUnknownSignals: true
         function onPositionChanged() { Qt.callLater(clock.sync) }
-        function onTrackChanged() { Qt.callLater(clock.sync) }
+        function onTrackChanged() { Qt.callLater(clock.refresh) }
     }
     property Timer ticker: Timer {
         interval: 200
