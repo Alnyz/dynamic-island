@@ -296,7 +296,11 @@ Item {
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
             value: music.player && music.player.length > 0 ? (music.clock ? music.clock.value : 0) / music.player.length : 0
-            onMoved: v => music.player.position = Math.round(v * music.player.length)
+            onMoved: v => {
+                music.player.position = Math.round(v * music.player.length)
+                if (music.clock)
+                    music.clock.moveTo(v * music.player.length)
+            }
         }
         Item {
             width: parent.width

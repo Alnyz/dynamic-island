@@ -58,6 +58,14 @@ TestCase {
         tryVerify(() => c.value >= 150000000)
     }
 
+    function test_move_to_after_a_seek() {
+        const p = createTemporaryObject(playerComp, tc)
+        const c = createTemporaryObject(clockComp, tc, { player: p })
+        tryVerify(() => c.value >= 4000000)
+        c.moveTo(90000000)
+        verify(c.value >= 90000000)
+    }
+
     function test_a_plain_player_counts() {
         const c = createTemporaryObject(clockComp, tc, { player: { playbackStatus: L.Status.Playing, length: 0, position: 5000000 } })
         tryVerify(() => c.value >= 5000000)

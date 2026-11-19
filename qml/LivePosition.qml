@@ -44,6 +44,12 @@ QtObject {
         counting = playing
         tick++
     }
+    // Called after telling the player to seek: not every player reports the jump.
+    function moveTo(us) {
+        base = us
+        at = Date.now()
+        tick++
+    }
     // Deferred: syncing while the binding above is still being worked out makes a binding loop.
     onPlayerChanged: Qt.callLater(sync)
     onPlayingChanged: hold()
