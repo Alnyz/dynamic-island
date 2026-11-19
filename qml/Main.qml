@@ -268,6 +268,7 @@ Window {
     LyricsSource {
         id: lyricsSource
         enabled: prefs.behaviour.lyrics
+        off: L.toList(prefs.behaviour.lyricSourcesOff)
         artist: source.player ? source.player.artist || "" : ""
         title: source.player ? source.player.track || "" : ""
         album: source.player ? source.player.album || "" : ""

@@ -133,6 +133,28 @@ TestCase {
         compare(l.lines[0].words[2].text, "hours")
     }
 
+    function test_sources_turned_off_are_not_asked() {
+        answers = { "/getLyrics": [null, { ttml: ttml }], "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.off = ["betterlyrics", "qq", "lrcred"]
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        verify(!l.lines[0].words)
+        compare(requests.filter(u => u.indexOf("lrclib.net") < 0).length, 0)
+    }
+
+    function test_all_sources_off_finds_nothing() {
+        answers = { "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.off = ["betterlyrics", "qq", "lrcred", "lrclib"]
+        l.wanted = true
+        tryCompare(l, "state", "none")
+        compare(requests.length, 0)
+        // Turning one back on asks again.
+        l.off = ["betterlyrics", "qq", "lrcred"]
+        tryCompare(l, "state", "synced")
+    }
+
     function test_slow_word_source_gives_way_to_lrclib() {
         answers = { "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
         const l = createTemporaryObject(slowComp, tc)

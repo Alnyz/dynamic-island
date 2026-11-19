@@ -640,6 +640,14 @@ function parseLrc(text) {
 // --- Word-timed lyrics (BetterLyrics, lrc.red, QQ Music), the same sources Spotifry asks ---
 // Their lines are { ms, text, words: [{ ms, end, text }] }; each word keeps the space after it.
 
+// Every lyrics source, best first, as listed in Settings; the first three are asked together.
+var lyricSources = [
+    { key: "betterlyrics", label: "BetterLyrics", note: "word by word" },
+    { key: "lrcred", label: "lrc.red", note: "word by word" },
+    { key: "qq", label: "QQ Music", note: "word by word, a big catalogue" },
+    { key: "lrclib", label: "LRCLIB", note: "line by line, the last choice" }
+]
+
 function wordLyricsQuery(artist, title, lengthUs) {
     return "?s=" + encodeURIComponent(searchTitle(title)) + "&a=" + encodeURIComponent(artist || "")
         + (lengthUs > 0 ? "&d=" + Math.round(lengthUs / 1e6) : "")

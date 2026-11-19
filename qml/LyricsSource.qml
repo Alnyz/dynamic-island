@@ -10,6 +10,8 @@ QtObject {
     property bool enabled: false
     // Set by the lyrics view while it's on screen; no request is made otherwise.
     property bool wanted: false
+    // Keys of the sources turned off (L.lyricSources).
+    property var off: []
     property string artist: ""
     property string title: ""
     property string album: ""
@@ -49,7 +51,8 @@ QtObject {
 
     // Song key -> { state, lines, plain }; remembered for this session.
     property var cache: new Map()
-    readonly property string key: artist + "\n" + title + "\n" + Math.round(lengthUs / 1e6)
+    // The sources in use are part of the key, so turning one off or on asks again.
+    readonly property string key: artist + "\n" + title + "\n" + Math.round(lengthUs / 1e6) + "\n" + off.join(",")
 
     // Content first, then state, so whatever reacts to the state sees the matching lines.
     function show(r) {
@@ -119,16 +122,26 @@ QtObject {
         }
         giveUp = settle
         wordWait.restart()
-        fetch(L.betterLyricsUrl(a, t, len), (err, r) => answer(0, !err && r ? L.parseTtml(r.ttml) : null))
-        fetch(L.qqLyricsUrl(a, t, len), (err, r) => answer(2, !err && r ? L.parseQrc(r.lyrics) : null))
-        fetch(L.lrcRedSearchUrl(a, t), (err, r) => {
-            const isrc = !err && r ? L.pickLrcRed(r.hits, a, t, len) : ""
-            if (!isrc) {
-                answer(1, null)
-                return
-            }
-            fetch(L.lrcRedTtmlUrl(isrc), (err2, ttml) => answer(1, !err2 && ttml ? L.parseTtml(ttml) : null), true)
-        })
+        const skip = off.slice()
+        if (skip.includes("betterlyrics"))
+            answer(0, null)
+        else
+            fetch(L.betterLyricsUrl(a, t, len), (err, r) => answer(0, !err && r ? L.parseTtml(r.ttml) : null))
+        if (skip.includes("qq"))
+            answer(2, null)
+        else
+            fetch(L.qqLyricsUrl(a, t, len), (err, r) => answer(2, !err && r ? L.parseQrc(r.lyrics) : null))
+        if (skip.includes("lrcred"))
+            answer(1, null)
+        else
+            fetch(L.lrcRedSearchUrl(a, t), (err, r) => {
+                const isrc = !err && r ? L.pickLrcRed(r.hits, a, t, len) : ""
+                if (!isrc) {
+                    answer(1, null)
+                    return
+                }
+                fetch(L.lrcRedTtmlUrl(isrc), (err2, ttml) => answer(1, !err2 && ttml ? L.parseTtml(ttml) : null), true)
+            })
     }
 
     function load() {
@@ -144,6 +157,8 @@ QtObject {
                 return
             if (lines.length)
                 finish({ state: "synced", lines: lines })
+            else if (off.includes("lrclib"))
+                finish({ state: "none" })
             else
                 lrclib(k, a, t, al, len, finish)
         })
