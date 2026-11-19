@@ -11,7 +11,7 @@ Item {
     property var player: null
     // The position to show, counted on between the player's own updates.
     readonly property real livePosition: clock.value
-    LivePosition { id: clock; player: island.player; active: island.mode === "peek" || island.mode === "open" }
+    LivePosition { id: clock; player: island.player; active: island.mode === "peek" || island.mode === "open" || island.wantsLyrics }
     // Players to pick from in the Music tab (PlayerSource.choices), and the pick.
     property var playerChoices: []
     signal playerPicked(var p)
@@ -44,6 +44,31 @@ Item {
     // The speakers' level (0..1) for the bars, or -1; wantsLevel says when it's needed.
     property real audioLevel: -1
     readonly property bool wantsLevel: playing && mode === "compact" && activity === "music"
+    // The current lyric line takes the title's place on the pill. wantsLyrics says when lyrics
+    // are worth asking for; LyricsSource does the asking (and only then).
+    property bool pillLyrics: true
+    readonly property bool wantsLyrics: pillLyrics && playing && mode === "compact" && activity === "music"
+    readonly property bool showsLyricLine: wantsLyrics && lyrics !== null && lyrics.state === "synced"
+    readonly property string pillLyric: showsLyricLine ? L.lyricTextAt(lyrics.lines, clock.value / 1000) : ""
+    // The line's own width, so the pill can grow to fit it rather than scroll it.
+    TextMetrics {
+        id: lyricMetrics
+        font.pixelSize: 12
+        font.weight: Font.DemiBold
+        text: island.pillLyric
+    }
+    // The width the compact pill needs for the line, and the most it may take on the screen.
+    // 8 + 18 for the cover, 8 either side of the words, 18 for the bars and 10 at the edge.
+    readonly property int compactPillWidth: {
+        if (!showsLyricLine)
+            return compactWidth
+        const room = Math.ceil(lyricMetrics.advanceWidth) + 8 + 18 + 8 + 8 + 18 + 10 + 4
+        if (room <= compactWidth)
+            return compactWidth
+        // A line that needs a wider pill gets a little air on either side of it.
+        const most = Math.max(compactWidth, (parent ? parent.width : 900) - 20)
+        return Math.min(room + 24, most)
+    }
     property bool coverTinted: false
     property color coverTint: "transparent"
     readonly property color musicTint: coverTinted ? coverTint : palette.accent
@@ -270,7 +295,7 @@ Item {
                     : glance.kind === "clock" && glance.showBattery && glance.showTime && glance.showWeather ? Math.max(idleWidth, 200) + (glance.updates > 0 ? 44 : 0)
                     : glance.kind === "clock" && glance.updates > 0 ? idleWidth + 44
                     : idleWidth) + indicatorWidth + historyChipWidth, h: barHeight, r: cornerRadius },
-        compact: { w: compactWidth + indicatorWidth, h: barHeight, r: cornerRadius },
+        compact: { w: compactPillWidth + indicatorWidth, h: barHeight, r: cornerRadius },
         // Music is wider for its previous / play-pause / next buttons.
         peek: activity === "jobs" ? { w: 360, h: 22 + jobRows * 42, r: 20 } : { w: activity === "music" ? 390 : 330, h: 60, r: 20 },
         // 14 + 18: panelLoader's top and bottom margins.
@@ -295,8 +320,15 @@ Item {
     // Tucked behind a full-screen app the pill is a zero-height sliver; its contents mustn't spill out.
     clip: tucked
 
-    // Folding away uses no spring, so it never dips below the top edge.
-    Behavior on width { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
+    // Folding away uses no spring, so it never dips below the top edge. A pill growing or
+    // shrinking for a lyric line settles quietly instead.
+    Behavior on width {
+        NumberAnimation {
+            duration: island.showsLyricLine ? 240 : (island.tucked ? 260 : 350)
+            easing.type: island.showsLyricLine ? Easing.OutCubic : (island.tucked ? Easing.InCubic : Easing.OutBack)
+            easing.overshoot: 1.2
+        }
+    }
     Behavior on height { NumberAnimation { duration: island.tucked ? 260 : 350; easing.type: island.tucked ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.2 } }
 
     // The position timer only runs while playing, so fetch once on open.
@@ -876,8 +908,9 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        // The song title between the cover and the bars. A title too long for the gap scrolls
-        // slowly right to left, pausing at the start of each pass.
+        // The song title between the cover and the bars, or the lyric line being sung when there
+        // is one. A line too long for the gap scrolls slowly right to left, pausing at the start
+        // of each pass.
         Item {
             id: compactTitle
             objectName: "compactTitle"
@@ -890,26 +923,40 @@ Item {
             height: compactTitleText.implicitHeight
             clip: true
 
-            readonly property string title: island.player ? island.player.track || "" : ""
+            readonly property bool lyric: island.showsLyricLine && island.pillLyric !== ""
+            readonly property string title: lyric ? island.pillLyric : (island.player ? island.player.track || "" : "")
             readonly property int gap: 40
-            readonly property bool scrolls: compactTitleText.implicitWidth > width
+            // The room the words will have once the pill has settled: while it grows for a lyric
+            // line this is already the end width, so a line that fits never starts scrolling.
+            readonly property real room: lyric ? Math.max(0, island.compactPillWidth - 70) : width
+            readonly property bool scrolls: compactTitleText.implicitWidth > room
             readonly property real distance: compactTitleText.implicitWidth + gap
-            onTitleChanged: restartScroll()
+            // 0 at the start of a pass; the marquee moves it left while a line scrolls.
+            property real scrollX: 0
+            onTitleChanged: {
+                restartScroll()
+                lineFade.restart()
+            }
             onScrollsChanged: restartScroll()
             onVisibleChanged: restartScroll()
 
             function restartScroll() {
                 marqueeScroll.stop()
-                marquee.x = 0
+                scrollX = 0
                 if (scrolls && visible)
                     marqueeScroll.start()
             }
 
             Row {
                 id: marquee
+                // A lyric line sits in the middle of the gap between the cover and the bars.
+                x: compactTitle.scrolls ? compactTitle.scrollX
+                   : compactTitle.lyric ? (compactTitle.width - compactTitleText.implicitWidth) / 2
+                   : 0
                 spacing: compactTitle.gap
                 Text {
                     id: compactTitleText
+                    objectName: "compactTitleText"
                     text: compactTitle.title
                     color: palette.windowText
                     font.pixelSize: 12
@@ -924,17 +971,28 @@ Item {
                 }
             }
 
+            // Each new lyric line comes in softly instead of snapping over the old one.
+            NumberAnimation {
+                id: lineFade
+                target: marquee
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 180
+                easing.type: Easing.OutQuad
+            }
+
             SequentialAnimation {
                 id: marqueeScroll
                 loops: Animation.Infinite
                 PauseAnimation { duration: 1500 }
                 NumberAnimation {
-                    target: marquee
-                    property: "x"
+                    target: compactTitle
+                    property: "scrollX"
                     from: 0
                     to: -compactTitle.distance
-                    // About 30 pixels a second.
-                    duration: compactTitle.distance / 30 * 1000
+                    // About 30 pixels a second, or 80 for a lyric line, which won't stay long.
+                    duration: compactTitle.distance / (compactTitle.lyric ? 80 : 30) * 1000
                 }
             }
         }

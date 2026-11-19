@@ -9,6 +9,8 @@ QtObject {
     property bool enabled: false
     // Set by the lyrics view while it's on screen; no request is made otherwise.
     property bool wanted: false
+    // Set by the pill while it shows the current line in place of the title.
+    property bool wantedPill: false
     property string artist: ""
     property string title: ""
     property string album: ""
@@ -82,8 +84,11 @@ QtObject {
             show(cache.get(key))
             return
         }
-        show({ state: wanted ? "loading" : "idle" })
-        if (wanted)
+        // Read straight from the two flags: a derived property can still hold its old value
+        // in the change handler that brought us here.
+        const asked = wanted || wantedPill
+        show({ state: asked ? "loading" : "idle" })
+        if (asked)
             timer.restart()
     }
 
@@ -118,6 +123,7 @@ QtObject {
     onKeyChanged: refresh()
     onEnabledChanged: refresh()
     onWantedChanged: refresh()
+    onWantedPillChanged: refresh()
 
     property Timer timer: Timer {
         interval: lyrics.delayMs

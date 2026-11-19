@@ -1725,6 +1725,66 @@ Item {
             tryCompare(findChild(short.island, "compactTitle"), "scrolls", false)
         }
 
+        function test_pill_shows_the_lyric_line() {
+            const { island } = make({ position: 40000000 })
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            tryCompare(island, "wantsLyrics", true)
+            compare(island.showsLyricLine, true)
+            // The clock starts at the player's own position, 40 s into the song.
+            tryCompare(findChild(island, "compactTitleText"), "text", "Second line")
+            // Without synced lyrics the title is back.
+            lyrics.state = "plain"
+            tryCompare(findChild(island, "compactTitleText"), "text", "Evaluasi")
+        }
+
+        function test_pill_lyrics_only_while_music_shows() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            tryCompare(island, "wantsLyrics", true)
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            compare(island.wantsLyrics, false)
+            tryCompare(findChild(island, "title"), "text", "Evaluasi")
+        }
+
+        function test_pill_lyrics_can_be_turned_off() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            island.pillLyrics = false
+            compare(island.wantsLyrics, false)
+            compare(findChild(island, "compactTitleText").text, "Evaluasi")
+        }
+
+        function test_long_lyric_widens_the_pill() {
+            const { island } = make({ position: 40000000 })
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            // A line that doesn't fit the usual width, but does fit the screen.
+            lyrics.lines = [{ ms: 0, text: "x".repeat(50) }]
+            tryCompare(island, "wantsLyrics", true)
+            tryVerify(() => island.width > island.compactWidth)
+            const area = findChild(island, "compactTitle")
+            compare(area.scrolls, false)
+            // Centred between the cover and the bars.
+            const text = findChild(island, "compactTitleText")
+            tryVerify(() => Math.abs((text.mapToItem(island, 0, 0).x + text.width / 2)
+                                     - (area.mapToItem(island, 0, 0).x + area.width / 2)) < 2)
+        }
+
+        function test_too_long_lyric_still_scrolls() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            lyrics.lines = [{ ms: 0, text: "y".repeat(400) }]
+            tryCompare(island, "wantsLyrics", true)
+            tryCompare(findChild(island, "compactTitle"), "scrolls", true)
+            // It never grows past the screen it sits on.
+            tryVerify(() => island.width <= stage.width - 20)
+        }
+
         function test_leave_closes_after_delay() {
             const { island } = make()
             mouseMove(island, 10, 10)

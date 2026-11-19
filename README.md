@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/41d47ead-64d6-4dfa-99cd-7c2cd56dae01
 
 ### Closed pill
 
-- Cover art and a small level meter that follows the sound while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand.
+- Cover art and a small level meter that follows the sound while music plays, or the countdown while a timer runs. With both, it switches between them, and a touchpad swipe switches by hand. The song title in the middle gives way to the line being sung when LRCLIB has timed lyrics for it: the words sit centred and the notch grows to fit the line, scrolling only when it would outgrow the screen (Settings → Behaviour).
 - Point at the battery ring for the charge, whether it's charging, and the time until full or empty.
 - When nothing is going on, it shows a glance (an event starting soon, low battery on the laptop or a Bluetooth device, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default; click the count to see the packages and update them in a terminal) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
@@ -99,7 +99,7 @@ For calendar events, paste a calendar's secret iCal address (Google Calendar →
 
 Browsers often leave out the cover of a song you skip to. When one is missing, the island looks the song up on the iTunes Search API, sending only the artist and title. Turn this off in Settings → Behaviour.
 
-Lyrics come from [LRCLIB](https://lrclib.net), only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
+Lyrics come from [LRCLIB](https://lrclib.net), while the lyrics view or the pill's lyric line is shown; the artist, title, album and length are sent. Turn them off in Settings → Behaviour, where the pill's line can be turned off on its own.
 
 Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings. When the IP lookup has no city name, the place is named from its coordinates through BigDataCloud.
 
