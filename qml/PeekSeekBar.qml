@@ -47,7 +47,10 @@ Item {
         onPressed: mouse => peekSeek.dragFraction = fractionAt(mouse.x)
         onPositionChanged: mouse => { if (pressed) peekSeek.dragFraction = fractionAt(mouse.x) }
         onReleased: mouse => {
-            island.player.position = Math.round(fractionAt(mouse.x) * island.player.length)
+            const to = Math.round(fractionAt(mouse.x) * island.player.length)
+            island.player.position = to
+            if (island.songClock)
+                island.songClock.moveTo(to)
             peekSeek.dragFraction = -1
         }
         onCanceled: peekSeek.dragFraction = -1

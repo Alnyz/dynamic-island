@@ -896,6 +896,17 @@ Item {
             compare(lyrics.wanted, false)
         }
 
+        // The Music tab is made again on each open; its time must come from the island's one clock,
+        // not a new one starting from Plasma's stale copy.
+        function test_music_tab_shares_the_song_clock() {
+            const { island } = make({ position: 40000000, length: 200000000 })
+            island.animateOpen = false
+            openTab(island, "music")
+            const tab = findChild(island, "musicPlayer")
+            verify(tab.clock !== null)
+            compare(tab.clock.value, island.livePosition)
+        }
+
         function test_lyrics_button_hidden_when_off() {
             const { island } = make({})
             const lyrics = createTemporaryObject(lyricsFake, stage)

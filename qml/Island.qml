@@ -11,6 +11,7 @@ Item {
     property var player: null
     // The position to show, counted on between the player's own updates.
     readonly property real livePosition: clock.value
+    readonly property LivePosition songClock: clock
     LivePosition { id: clock; player: island.player; active: island.mode === "peek" || island.mode === "open" || island.wantsLyrics }
     // Players to pick from in the Music tab (PlayerSource.choices), and the pick.
     property var playerChoices: []
@@ -1401,6 +1402,7 @@ Item {
         anchors.topMargin: 14
         sourceComponent: HomePanel {
             tab: island.requestedTab || "home"
+            songClock: island.songClock
             onCloseRequested: island.open = false
             showJoin: island.glances.meetings !== false
             onLinkRequested: url => {

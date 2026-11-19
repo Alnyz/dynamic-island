@@ -13,6 +13,8 @@ Item {
     // Fill for music progress and volume, and the colour of active music toggles.
     property color musicTint: palette.brightText
     property color accentTint: palette.accent
+    // The island's song clock, for the Music tab.
+    property var songClock: null
     // While the pill's cover flies into the panel, the panel's own cover stays hidden.
     property bool coverHidden: false
     property var lyrics: null
@@ -64,7 +66,12 @@ Item {
             event.accepted = true
         } else if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && panel.player && panel.player.canSeek !== false && panel.player.length > 0) {
             const step = (event.key === Qt.Key_Right ? 1 : -1) * 5000000
-            panel.player.position = Math.max(0, Math.min(panel.player.length - 1000000, panel.player.position + step))
+            // From the counted time: Plasma's copy of the position can be minutes behind.
+            const from = panel.songClock ? panel.songClock.value : panel.player.position
+            const to = Math.max(0, Math.min(panel.player.length - 1000000, from + step))
+            panel.player.position = to
+            if (panel.songClock)
+                panel.songClock.moveTo(to)
             event.accepted = true
         }
     }
@@ -389,6 +396,7 @@ Item {
                 MusicCard {
                     width: parent.width
                     player: panel.player
+                    clock: panel.songClock
                     artUrl: panel.artUrl
                     tint: panel.musicTint
                     coverHidden: panel.coverHidden
@@ -447,6 +455,7 @@ Item {
             anchors.fill: parent
             visible: panel.tab === "music"
             player: panel.player
+            clock: panel.songClock
             artUrl: panel.artUrl
             tint: panel.musicTint
             accentTint: panel.accentTint
