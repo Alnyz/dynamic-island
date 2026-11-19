@@ -8,7 +8,9 @@ Item {
     id: music
 
     property var player: null
-    LivePosition { id: clock; player: music.player; active: music.visible }
+    // The island's song clock (LivePosition), shared: this tab is made again on every open, and a
+    // clock of its own would start from Plasma's stale copy of the position.
+    property LivePosition clock: null
     // Other players to switch to; chips show when there's more than one.
     property var choices: []
     signal picked(var p)
@@ -293,14 +295,14 @@ Item {
             trackColor: Qt.rgba(palette.windowText.r, palette.windowText.g, palette.windowText.b, 0.14)
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
-            value: music.player && music.player.length > 0 ? clock.value / music.player.length : 0
+            value: music.player && music.player.length > 0 ? (music.clock ? music.clock.value : 0) / music.player.length : 0
             onMoved: v => music.player.position = Math.round(v * music.player.length)
         }
         Item {
             width: parent.width
             height: 16
             Text {
-                text: music.player ? L.formatTime(clock.value) : ""
+                text: music.player ? L.formatTime(music.clock ? music.clock.value : 0) : ""
                 color: music.dim
                 font.pixelSize: 11
             }

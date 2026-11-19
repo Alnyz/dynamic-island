@@ -13,6 +13,8 @@ Item {
     // Fill for music progress and volume, and the colour of active music toggles.
     property color musicTint: palette.brightText
     property color accentTint: palette.accent
+    // The island's song clock, for the Music tab.
+    property var songClock: null
     // While the pill's cover flies into the panel, the panel's own cover stays hidden.
     property bool coverHidden: false
     property var lyrics: null
@@ -447,6 +449,7 @@ Item {
             anchors.fill: parent
             visible: panel.tab === "music"
             player: panel.player
+            clock: panel.songClock
             artUrl: panel.artUrl
             tint: panel.musicTint
             accentTint: panel.accentTint
