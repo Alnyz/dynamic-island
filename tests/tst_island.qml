@@ -762,10 +762,11 @@ Item {
             compare(stage.calls.playPause, 1)
             // Fakes are copied into the panel, so read its copy.
             keyClick(Qt.Key_Right)
-            compare(panel.player.position, 65000000)
+            // Skips go from the counted time, which moves on a little between key presses.
+            fuzzyCompare(panel.player.position, 65000000, 100000)
             keyClick(Qt.Key_Left)
             keyClick(Qt.Key_Left)
-            compare(panel.player.position, 55000000)
+            fuzzyCompare(panel.player.position, 55000000, 100000)
         }
 
         function test_typing_in_a_tab_keeps_its_keys() {
