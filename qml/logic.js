@@ -822,14 +822,15 @@ function lyricTable(d, xs, ys) {
     return ys[ys.length - 1]
 }
 
-// Opacity of words not yet sung, d lines from the focus (negative: behind it).
+// Opacity of words not yet sung, d lines from the focus (negative: behind it). Lower than
+// Spotifry's, which sits on a coloured page: on the island's dark panel its values hid the sweep.
 function unlitAlpha(d) {
-    return d >= 0 ? lyricTable(d, [0, 1, 2, 3, 4], [0.78, 0.70, 0.55, 0.41, 0.35])
-                  : lyricTable(d, [-3, -2, -1, 0], [0.35, 0.41, 0.51, 0.78])
+    return d >= 0 ? lyricTable(d, [0, 1, 2, 3, 4], [0.45, 0.40, 0.34, 0.28, 0.24])
+                  : lyricTable(d, [-3, -2, -1, 0], [0.24, 0.28, 0.34, 0.45])
 }
 // Opacity of sung words: full on the focus line, dimming as it falls behind.
 function litAlpha(d) {
-    return d >= 0 ? 1 : lyricTable(d, [-3, -2, -1, 0], [0.35, 0.41, 0.51, 1])
+    return d >= 0 ? 1 : lyricTable(d, [-3, -2, -1, 0], [0.24, 0.28, 0.40, 1])
 }
 // The focus line is 10% bigger, easing back as the focus moves on.
 function focusScale(d) {
