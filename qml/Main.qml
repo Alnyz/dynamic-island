@@ -270,6 +270,7 @@ Window {
         enabled: prefs.behaviour.lyrics
         // The pill asks too, while it shows the current line in place of the title.
         wantedPill: island.wantsLyrics
+        off: L.toList(prefs.behaviour.lyricSourcesOff)
         artist: source.player ? source.player.artist || "" : ""
         title: source.player ? source.player.track || "" : ""
         album: source.player ? source.player.album || "" : ""

@@ -10,7 +10,7 @@ QtObject {
     readonly property var defaults: ({
         style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
-        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true, pillLyrics: true },
+        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true, pillLyrics: true, lyricSourcesOff: [] },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
@@ -61,6 +61,8 @@ QtObject {
         property bool lyrics: prefs.defaults.behaviour.lyrics
         // The pill shows the line being sung instead of the title.
         property bool pillLyrics: prefs.defaults.behaviour.pillLyrics
+        // Lyrics sources turned off in Settings, by name (L.lyricSources).
+        property var lyricSourcesOff: prefs.defaults.behaviour.lyricSourcesOff
         // The first-run tour has been seen or skipped.
         property bool tourSeen: false
     }

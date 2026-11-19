@@ -571,7 +571,7 @@ function barHeight(level, index, phase) {
     return 3 + Math.round(v * 11 * 10) / 10
 }
 
-// --- Lyrics (LRCLIB) ---
+// --- Lyrics (LRCLIB, the last choice) ---
 
 // The exact lookup: LRCLIB matches title, artist and length (within a couple of seconds).
 function lyricsGetUrl(artist, title, album, lengthUs) {
@@ -635,6 +635,217 @@ function parseLrc(text) {
             out.push({ ms: ms, text: words })
     }
     return out.sort((x, y) => x.ms - y.ms)
+}
+
+// --- Word-timed lyrics (BetterLyrics, lrc.red, QQ Music), the same sources Spotifry asks ---
+// Their lines are { ms, text, words: [{ ms, end, text }] }; each word keeps the space after it.
+
+// Every lyrics source, best first, as listed in Settings; the first three are asked together.
+var lyricSources = [
+    { key: "betterlyrics", label: "BetterLyrics", note: "word by word" },
+    { key: "lrcred", label: "lrc.red", note: "word by word" },
+    { key: "qq", label: "QQ Music", note: "word by word, a big catalogue" },
+    { key: "lrclib", label: "LRCLIB", note: "line by line, the last choice" }
+]
+
+function wordLyricsQuery(artist, title, lengthUs) {
+    return "?s=" + encodeURIComponent(searchTitle(title)) + "&a=" + encodeURIComponent(artist || "")
+        + (lengthUs > 0 ? "&d=" + Math.round(lengthUs / 1e6) : "")
+}
+function betterLyricsUrl(artist, title, lengthUs) {
+    return "https://lyrics-api.boidu.dev/getLyrics" + wordLyricsQuery(artist, title, lengthUs)
+}
+function qqLyricsUrl(artist, title, lengthUs) {
+    return "https://lyrics-api.boidu.dev/qq/getLyrics" + wordLyricsQuery(artist, title, lengthUs)
+}
+function lrcRedSearchUrl(artist, title) {
+    return "https://lrc.red/search.json?q=" + encodeURIComponent(searchTitle(title) + " " + (artist || ""))
+}
+function lrcRedTtmlUrl(isrc) {
+    return "https://lrc.red/s/" + encodeURIComponent(isrc) + ".ttml"
+}
+
+// lrc.red's search is free text: a hit counts only with the same title and artist, a real
+// recording code and a length within 3 s; the nearest in length wins.
+// ponytail: no check for version words (live, remix) in the title; the length check covers most.
+function pickLrcRed(hits, artist, title, lengthUs) {
+    const a = coverWords(artist)
+    const t = coverBaseTitle(title)
+    const len = lengthUs > 0 ? lengthUs / 1e6 : 0
+    let best = ""
+    let bestOff = Infinity
+    for (const h of hits || []) {
+        const ha = coverWords(h.artist)
+        if (!/^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(h.isrc || "") || coverBaseTitle(h.title) !== t)
+            continue
+        if (!a || !ha || !(ha.includes(a) || a.includes(ha)))
+            continue
+        const off = len > 0 && h.duration > 0 ? Math.abs(h.duration - len) : 0
+        if (off <= 3 && off < bestOff) {
+            best = h.isrc
+            bestOff = off
+        }
+    }
+    return best
+}
+
+function unescapeXml(s) {
+    return String(s).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"")
+        .replace(/&apos;/g, "'").replace(/&#39;/g, "'").replace(/&amp;/g, "&")
+}
+
+// "1:02.345", "62.345" or "1:01:02.3" to ms; null when it isn't a time.
+function ttmlTime(attrs, name) {
+    const m = new RegExp("\\b" + name + "=\"([^\"]*)\"").exec(attrs)
+    if (!m)
+        return null
+    let s = 0
+    for (const part of m[1].split(":")) {
+        const n = Number(part)
+        if (isNaN(n))
+            return null
+        s = s * 60 + n
+    }
+    return Math.round(s * 1000)
+}
+
+// Apple Music's TTML (BetterLyrics, lrc.red): a <p> per line, a <span> per word or syllable
+// (spans with no space between are one word). Background singing and translations are left out.
+function parseTtml(ttml) {
+    let body = String(ttml || "").split("<body")[1]
+    if (!body)
+        return []
+    body = body.replace(/<span[^>]*ttm:role="x-(bg|translation|roman)[^"]*"[^>]*>(?:\s*<span[^>]*>[^<]*<\/span>)*[^<]*<\/span>/g, "")
+    const out = []
+    const pRe = /<p\b([^>]*)>([\s\S]*?)<\/p>/g
+    let p
+    while ((p = pRe.exec(body)) !== null) {
+        const at = ttmlTime(p[1], "begin")
+        if (at === null)
+            continue
+        const words = []
+        const sRe = /<span\b([^>]*)>([^<]*)<\/span>(\s*)/g
+        let s
+        while ((s = sRe.exec(p[2])) !== null) {
+            const start = ttmlTime(s[1], "begin")
+            if (start === null)
+                continue
+            const end = ttmlTime(s[1], "end")
+            words.push({ ms: start, end: end === null ? start : end, text: unescapeXml(s[2]) + (s[3] ? " " : "") })
+        }
+        const text = (words.length ? words.map(w => w.text).join("") : unescapeXml(p[2].replace(/<[^>]+>/g, ""))).trim()
+        if (text)
+            out.push(words.length ? { ms: at, text: text, words: words } : { ms: at, text: text })
+    }
+    return out.sort((x, y) => x.ms - y.ms)
+}
+
+// QQ Music's karaoke format inside an XML wrapper: "[lineMs,lengthMs]word(ms,length) word(...)".
+// Credit lines ("Lyrics by：…") and the title line are dropped. Plain "[mm:ss.xx]" lines are
+// used as they are, timed by line.
+function parseQrc(raw) {
+    const m = /LyricContent="([^"]*)"/.exec(String(raw || ""))
+    const body = m ? unescapeXml(m[1]) : String(raw || "")
+    const out = []
+    for (const src of body.split(/\r?\n/)) {
+        const lm = /^\[(\d+),(\d+)\](.*)$/.exec(src.trim())
+        if (!lm)
+            continue
+        const words = []
+        const re = /([^()]*)\((\d+),(\d+)\)/g
+        let w
+        while ((w = re.exec(lm[3])) !== null)
+            if (w[1])
+                words.push({ ms: Number(w[2]), end: Number(w[2]) + Number(w[3]), text: w[1] })
+        const text = words.map(x => x.text).join("").trim()
+        if (!text || text.indexOf("：") >= 0 || (lm[1] === "0" && text.indexOf(" - ") >= 0))
+            continue
+        out.push({ ms: Math.min(Number(lm[1]), words[0].ms), text: text, words: words })
+    }
+    return out.length ? out.sort((x, y) => x.ms - y.ms) : parseLrc(body)
+}
+
+// --- Lyrics motion, the numbers from Spotifry's lyrics page (LyricsMotion.kt) ---
+
+// A line starts growing FOCUS_LEAD_MS before it's sung and takes FOCUS_MS to get there.
+var LYRIC_FOCUS_LEAD_MS = 240
+var LYRIC_FOCUS_MS = 500
+// The page waits this long after a line starts, then moves in a chain: each lower line
+// LYRIC_STAGGER_MS after the one above, at most LYRIC_CHAIN_LINES deep, over LYRIC_TRAVEL_MS.
+var LYRIC_SCROLL_DELAY_MS = 100
+var LYRIC_TRAVEL_MS = 860
+var LYRIC_STAGGER_MS = 95
+var LYRIC_CHAIN_LINES = 6
+
+function smooth01(x) {
+    const t = Math.max(0, Math.min(1, x))
+    return t * t * (3 - 2 * t)
+}
+
+// Where the focus is, in lines: -1 before the first, then easing to 0, 1, 2… as each line's turn
+// comes, so it never jumps and the next line has grown a little by the time it's sung.
+function lyricFocus(lines, ms) {
+    let c = -1
+    for (const l of lines || []) {
+        if (l.ms - LYRIC_FOCUS_LEAD_MS >= ms)
+            break
+        c += smooth01((ms - (l.ms - LYRIC_FOCUS_LEAD_MS)) / LYRIC_FOCUS_MS)
+    }
+    return c
+}
+
+// How far through a word the song is: 0 before it, 1 at its end.
+function wordSweep(ms, w) {
+    if (ms < w.ms)
+        return 0
+    return w.end <= w.ms ? 1 : Math.min(1, (ms - w.ms) / (w.end - w.ms))
+}
+
+// 0..1: a word lifts as it's sung, stays up and settles 500 ms after it ends.
+function wordRise(ms, w) {
+    if (ms < w.ms)
+        return 0
+    return smooth01((ms - w.ms) / 250) * (1 - smooth01((ms - Math.max(w.end, w.ms)) / 500))
+}
+
+// A line without word times lights as a whole over 300 ms.
+function lineLight(ms, line) {
+    return smooth01((ms - line.ms) / 300)
+}
+
+function lyricTable(d, xs, ys) {
+    if (d <= xs[0])
+        return ys[0]
+    for (let k = 1; k < xs.length; ++k)
+        if (d <= xs[k])
+            return ys[k - 1] + (ys[k] - ys[k - 1]) * (d - xs[k - 1]) / (xs[k] - xs[k - 1])
+    return ys[ys.length - 1]
+}
+
+// Opacity of words not yet sung, d lines from the focus (negative: behind it). Lower than
+// Spotifry's, which sits on a coloured page: on the island's dark panel its values hid the sweep.
+function unlitAlpha(d) {
+    return d >= 0 ? lyricTable(d, [0, 1, 2, 3, 4], [0.45, 0.40, 0.34, 0.28, 0.24])
+                  : lyricTable(d, [-3, -2, -1, 0], [0.24, 0.28, 0.34, 0.45])
+}
+// Opacity of sung words: full on the focus line, dimming as it falls behind.
+function litAlpha(d) {
+    return d >= 0 ? 1 : lyricTable(d, [-3, -2, -1, 0], [0.24, 0.28, 0.40, 1])
+}
+// The focus line is 10% bigger, easing back as the focus moves on.
+function focusScale(d) {
+    return 1 + 0.1 * (1 - Math.min(1, Math.abs(d)))
+}
+
+// How long line i waits before moving when the page goes from line prev to now.
+function chainDelayMs(i, prev, now) {
+    const behind = now >= prev ? i - prev : prev - i
+    return Math.max(0, Math.min(LYRIC_CHAIN_LINES, behind)) * LYRIC_STAGGER_MS
+}
+// A move of one to three lines chains; the first one, a seek or a skip just jumps.
+function lyricChains(prev, now) {
+    const n = Math.abs(now - prev)
+    return prev >= 0 && n >= 1 && n <= 3
 }
 
 // Index of the line being sung at ms: the last one that has started, or -1 before the first.
