@@ -765,14 +765,86 @@ function parseQrc(raw) {
     return out.length ? out.sort((x, y) => x.ms - y.ms) : parseLrc(body)
 }
 
-// The current line as StyledText: the words already sung in the line's colour, the rest in rest.
-function sungLine(words, ms, rest) {
-    let html = ""
-    for (const w of words) {
-        const t = String(w.text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        html += w.ms <= ms ? t : "<font color=\"" + rest + "\">" + t + "</font>"
+// --- Lyrics motion, the numbers from Spotifry's lyrics page (LyricsMotion.kt) ---
+
+// A line starts growing FOCUS_LEAD_MS before it's sung and takes FOCUS_MS to get there.
+var LYRIC_FOCUS_LEAD_MS = 240
+var LYRIC_FOCUS_MS = 500
+// The page waits this long after a line starts, then moves in a chain: each lower line
+// LYRIC_STAGGER_MS after the one above, at most LYRIC_CHAIN_LINES deep, over LYRIC_TRAVEL_MS.
+var LYRIC_SCROLL_DELAY_MS = 100
+var LYRIC_TRAVEL_MS = 860
+var LYRIC_STAGGER_MS = 95
+var LYRIC_CHAIN_LINES = 6
+
+function smooth01(x) {
+    const t = Math.max(0, Math.min(1, x))
+    return t * t * (3 - 2 * t)
+}
+
+// Where the focus is, in lines: -1 before the first, then easing to 0, 1, 2… as each line's turn
+// comes, so it never jumps and the next line has grown a little by the time it's sung.
+function lyricFocus(lines, ms) {
+    let c = -1
+    for (const l of lines || []) {
+        if (l.ms - LYRIC_FOCUS_LEAD_MS >= ms)
+            break
+        c += smooth01((ms - (l.ms - LYRIC_FOCUS_LEAD_MS)) / LYRIC_FOCUS_MS)
     }
-    return html
+    return c
+}
+
+// How far through a word the song is: 0 before it, 1 at its end.
+function wordSweep(ms, w) {
+    if (ms < w.ms)
+        return 0
+    return w.end <= w.ms ? 1 : Math.min(1, (ms - w.ms) / (w.end - w.ms))
+}
+
+// 0..1: a word lifts as it's sung, stays up and settles 500 ms after it ends.
+function wordRise(ms, w) {
+    if (ms < w.ms)
+        return 0
+    return smooth01((ms - w.ms) / 250) * (1 - smooth01((ms - Math.max(w.end, w.ms)) / 500))
+}
+
+// A line without word times lights as a whole over 300 ms.
+function lineLight(ms, line) {
+    return smooth01((ms - line.ms) / 300)
+}
+
+function lyricTable(d, xs, ys) {
+    if (d <= xs[0])
+        return ys[0]
+    for (let k = 1; k < xs.length; ++k)
+        if (d <= xs[k])
+            return ys[k - 1] + (ys[k] - ys[k - 1]) * (d - xs[k - 1]) / (xs[k] - xs[k - 1])
+    return ys[ys.length - 1]
+}
+
+// Opacity of words not yet sung, d lines from the focus (negative: behind it).
+function unlitAlpha(d) {
+    return d >= 0 ? lyricTable(d, [0, 1, 2, 3, 4], [0.78, 0.70, 0.55, 0.41, 0.35])
+                  : lyricTable(d, [-3, -2, -1, 0], [0.35, 0.41, 0.51, 0.78])
+}
+// Opacity of sung words: full on the focus line, dimming as it falls behind.
+function litAlpha(d) {
+    return d >= 0 ? 1 : lyricTable(d, [-3, -2, -1, 0], [0.35, 0.41, 0.51, 1])
+}
+// The focus line is 10% bigger, easing back as the focus moves on.
+function focusScale(d) {
+    return 1 + 0.1 * (1 - Math.min(1, Math.abs(d)))
+}
+
+// How long line i waits before moving when the page goes from line prev to now.
+function chainDelayMs(i, prev, now) {
+    const behind = now >= prev ? i - prev : prev - i
+    return Math.max(0, Math.min(LYRIC_CHAIN_LINES, behind)) * LYRIC_STAGGER_MS
+}
+// A move of one to three lines chains; the first one, a seek or a skip just jumps.
+function lyricChains(prev, now) {
+    const n = Math.abs(now - prev)
+    return prev >= 0 && n >= 1 && n <= 3
 }
 
 // Index of the line being sung at ms: the last one that has started, or -1 before the first.

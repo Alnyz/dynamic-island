@@ -185,7 +185,7 @@ Item {
                     lines: music.lyrics ? music.lyrics.lines : []
                     plain: music.lyrics ? music.lyrics.plain : ""
                     positionMs: clock.value / 1000
-                    tint: music.accentTint
+                    playing: music.playing
                     onSeekRequested: ms => {
                         if (music.player && music.player.canSeek !== false) {
                             music.player.position = Math.round(ms * 1000)

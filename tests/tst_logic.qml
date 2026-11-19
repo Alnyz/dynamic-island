@@ -635,10 +635,28 @@ TestCase {
         compare(L.pickLrcRed([], "Bruno Mars", "Finesse", 191000000), "")
     }
 
-    function test_sung_line() {
-        const words = [{ ms: 0, text: "A " }, { ms: 500, text: "<b>" }]
-        compare(L.sungLine(words, 100, "#888888"), 'A <font color="#888888">&lt;b&gt;</font>')
-        compare(L.sungLine(words, 600, "#888888"), "A &lt;b&gt;")
+    function test_lyric_motion() {
+        const lines = [{ ms: 1000, text: "a" }, { ms: 5000, text: "b" }]
+        compare(L.lyricFocus(lines, 0), -1)
+        // Half-way through its step, 10 ms after the line starts.
+        compare(L.lyricFocus(lines, 1010), -0.5)
+        compare(L.lyricFocus(lines, 3000), 0)
+        compare(L.lyricFocus(lines, 9000), 1)
+        const w = { ms: 1000, end: 2000 }
+        compare(L.wordSweep(500, w), 0)
+        compare(L.wordSweep(1500, w), 0.5)
+        compare(L.wordRise(500, w), 0)
+        compare(L.wordRise(1600, w), 1)
+        compare(L.wordRise(2600, w), 0)
+        compare(L.focusScale(0), 1.1)
+        compare(L.focusScale(-2), 1)
+        compare(L.litAlpha(0), 1)
+        verify(L.unlitAlpha(3) < L.unlitAlpha(1))
+        compare(L.chainDelayMs(5, 2, 3), 285)
+        compare(L.chainDelayMs(20, 2, 3), 570)
+        verify(L.lyricChains(2, 3))
+        verify(!L.lyricChains(-1, 0))
+        verify(!L.lyricChains(2, 10))
     }
 
     function test_lyrics_urls() {
