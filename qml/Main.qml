@@ -289,6 +289,16 @@ Window {
         coverLookup: prefs.behaviour.coverLookup
     }
 
+    // A song starting over (repeat one, previous) seeks to 0, which Plasma doesn't pass on when its
+    // copy of the position already reads 0; the player's own Seeked signal is taken straight.
+    Connections {
+        target: MprisSeeks
+        function onSeeked(identity, position) {
+            if (source.player && source.player.identity === identity)
+                island.songClock.moveTo(position)
+        }
+    }
+
     Island {
         id: island
         anchors.horizontalCenter: parent.horizontalCenter
