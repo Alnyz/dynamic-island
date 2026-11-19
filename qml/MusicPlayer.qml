@@ -19,34 +19,9 @@ Item {
     property var lyrics: null
     property bool showLyrics: false
     readonly property bool lyricsOn: lyrics !== null && lyrics.enabled
-    onShowLyricsChanged: {
-        syncPosition()
-        if (lyrics)
-            lyrics.wanted = showLyrics && visible
-    }
-    onPlayerChanged: syncPosition()
-    Component.onCompleted: syncPosition()
+    onShowLyricsChanged: if (lyrics) lyrics.wanted = showLyrics && visible
     onVisibleChanged: if (lyrics) lyrics.wanted = showLyrics && visible
     Component.onDestruction: if (lyrics) lyrics.wanted = false
-    // The player's position only updates once a second; between updates it's counted on here.
-    property real positionMs: 0
-    property real positionAt: 0
-    Connections {
-        target: music.player
-        ignoreUnknownSignals: true
-        function onPositionChanged() { music.syncPosition() }
-    }
-    function syncPosition() {
-        positionMs = player ? player.position / 1000 : 0
-        positionAt = Date.now()
-    }
-    property real lyricsPositionMs: positionMs
-    Timer {
-        interval: 100
-        repeat: true
-        running: music.showLyrics && music.visible
-        onTriggered: music.lyricsPositionMs = music.positionMs + (music.playing ? Date.now() - music.positionAt : 0)
-    }
     property color accentTint: palette.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
@@ -209,13 +184,15 @@ Item {
                     state: music.lyrics ? music.lyrics.state : "off"
                     lines: music.lyrics ? music.lyrics.lines : []
                     plain: music.lyrics ? music.lyrics.plain : ""
-                    positionMs: music.lyricsPositionMs
+                    positionMs: clock.value / 1000
                     tint: music.accentTint
                     onSeekRequested: ms => {
                         if (music.player && music.player.canSeek !== false) {
                             music.player.position = Math.round(ms * 1000)
-                            music.positionMs = ms
-                            music.positionAt = Date.now()
+                            // Not every player announces a seek, so the clock is moved here too.
+                            clock.base = ms * 1000
+                            clock.at = Date.now()
+                            clock.tick++
                         }
                     }
                 }

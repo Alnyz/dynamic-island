@@ -99,7 +99,7 @@ For calendar events, paste a calendar's secret iCal address (Google Calendar →
 
 Browsers often leave out the cover of a song you skip to. When one is missing, the island looks the song up on the iTunes Search API, sending only the artist and title. Turn this off in Settings → Behaviour.
 
-Lyrics come from [LRCLIB](https://lrclib.net), only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
+Lyrics come from [BetterLyrics](https://lyrics-api.boidu.dev), [lrc.red](https://lrc.red) and QQ Music (through BetterLyrics), which time each word, and from [LRCLIB](https://lrclib.net) when none of them has the song. They are asked only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
 
 Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings. When the IP lookup has no city name, the place is named from its coordinates through BigDataCloud.
 

@@ -46,7 +46,10 @@ Item {
             required property int index
             objectName: "lyricLine" + index
             width: ListView.view.width
-            text: modelData.text || "♪"
+            // The line being sung lights up word by word when its words are timed.
+            readonly property bool byWord: index === view.current && !!modelData.words
+            text: byWord ? L.sungLine(modelData.words, view.positionMs, palette.text) : modelData.text || "♪"
+            textFormat: byWord ? Text.StyledText : Text.PlainText
             color: index === view.current ? view.tint : index < view.current ? palette.mid : palette.text
             font.pixelSize: index === view.current ? 15 : 13
             font.weight: index === view.current ? Font.DemiBold : Font.Normal

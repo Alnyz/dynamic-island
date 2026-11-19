@@ -595,6 +595,52 @@ TestCase {
         compare(L.lyricLine([], 5000), -1)
     }
 
+    function test_parse_ttml() {
+        const ttml = '<tt><head/><body><div>'
+            + '<p begin="1:02.500"><span begin="1:02.500" end="1:03.000">Good</span><span begin="1:03.000" end="1:03.400">bye</span> <span begin="1:03.400" end="1:04">you &amp; me</span>'
+            + '<span ttm:role="x-bg"><span begin="1:04" end="1:05">(ooh)</span></span></p>'
+            + '<p begin="70.0">Just a line</p></div></body></tt>'
+        const lines = L.parseTtml(ttml)
+        compare(lines.length, 2)
+        compare(lines[0].ms, 62500)
+        compare(lines[0].text, "Goodbye you & me")
+        compare(lines[0].words.length, 3)
+        compare(lines[0].words[1].end, 63400)
+        compare(lines[1].text, "Just a line")
+        verify(!lines[1].words)
+        compare(L.parseTtml(""), [])
+    }
+
+    function test_parse_qrc() {
+        const raw = '<Lyric_1 LyricContent="[ti:X]\n[0,2740]Song(0,100) (100,100)-(200,100) (300,100)Artist(400,100)\n'
+            + '[2740,500]Lyrics(2740,66) (2806,66)by(2872,66)：(2938,66)Someone(3004,66)\n'
+            + '[5000,2000]Hello (5000,500)there(5600,700)"/>'
+        const lines = L.parseQrc(raw)
+        compare(lines.length, 1)
+        compare(lines[0].ms, 5000)
+        compare(lines[0].text, "Hello there")
+        compare(lines[0].words[1].ms, 5600)
+        // Lines timed only by line still come through.
+        compare(L.parseQrc("[00:01.00]Plain")[0].text, "Plain")
+    }
+
+    function test_pick_lrc_red() {
+        const hits = [
+            { isrc: "USAT21705440", title: "Finesse (Remix) [feat. Cardi B]", artist: "Bruno Mars", duration: 217.3 },
+            { isrc: "USAT21602960", title: "Finesse", artist: "Bruno Mars", duration: 191.0 },
+            { isrc: "bad", title: "Finesse", artist: "Bruno Mars", duration: 191.0 }
+        ]
+        compare(L.pickLrcRed(hits, "Bruno Mars", "Finesse", 191000000), "USAT21602960")
+        compare(L.pickLrcRed(hits, "Someone Else", "Finesse", 191000000), "")
+        compare(L.pickLrcRed([], "Bruno Mars", "Finesse", 191000000), "")
+    }
+
+    function test_sung_line() {
+        const words = [{ ms: 0, text: "A " }, { ms: 500, text: "<b>" }]
+        compare(L.sungLine(words, 100, "#888888"), 'A <font color="#888888">&lt;b&gt;</font>')
+        compare(L.sungLine(words, 600, "#888888"), "A &lt;b&gt;")
+    }
+
     function test_lyrics_urls() {
         compare(L.lyricsGetUrl("Maroon 5", "Girls Like You", "Red Pill Blues", 235400000),
                 "https://lrclib.net/api/get?artist_name=Maroon%205&track_name=Girls%20Like%20You&album_name=Red%20Pill%20Blues&duration=235")

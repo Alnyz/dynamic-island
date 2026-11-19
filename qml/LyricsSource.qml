@@ -1,8 +1,9 @@
 import QtQuick
 import "logic.js" as L
 
-// Lyrics for the current song from LRCLIB (lrclib.net), only while something shows them.
-// Sends the artist, title, album and length; nothing else.
+// Lyrics for the current song, only while something shows them. Word-timed ones from
+// BetterLyrics, lrc.red and QQ Music (through BetterLyrics) are asked together; LRCLIB, timed by
+// line, only when none of them has the song. Sends the artist, title, album and length; nothing else.
 QtObject {
     id: lyrics
 
@@ -18,11 +19,12 @@ QtObject {
 
     // "off", "idle", "loading", "synced", "plain", "instrumental" or "none".
     property string state: "off"
-    // [{ ms, text }] for synced lyrics.
+    // [{ ms, text, words? }] for synced lyrics; words: [{ ms, end, text }] when timed by word.
     property var lines: []
     property string plain: ""
 
-    property var fetch: function(url, done) {
+    // asText: hand back the body as it is instead of parsing it as JSON.
+    property var fetch: function(url, done, asText) {
         const xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE)
@@ -36,7 +38,7 @@ QtObject {
                 return
             }
             try {
-                done(null, JSON.parse(xhr.responseText))
+                done(null, asText ? xhr.responseText : JSON.parse(xhr.responseText))
             } catch (e) {
                 done(String(e), null)
             }
@@ -87,6 +89,48 @@ QtObject {
             timer.restart()
     }
 
+    // The word-timed sources get this long in all; one that hasn't answered by then is a miss.
+    property int wordWaitMs: 4000
+    // Called when wordWait runs out, for the request still waiting.
+    property var giveUp: null
+
+    // BetterLyrics, lrc.red and QQ Music at once; done(lines) with the best answer, or [] for none.
+    // A word-timed answer beats a line-timed one, then the order above decides.
+    function askWordSources(a, t, len, done) {
+        const got = [null, null, null]
+        let left = 3
+        let over = false
+        let settle = null
+        settle = () => {
+            if (over || (left > 0 && wordWait.running && giveUp === settle))
+                return
+            over = true
+            // A late answer for an older song mustn't stop the wait for the newer one.
+            if (giveUp === settle) {
+                wordWait.stop()
+                giveUp = null
+            }
+            done(got.find(l => l && l.some(x => x.words)) || got.find(l => l && l.length) || [])
+        }
+        const answer = (i, lines) => {
+            got[i] = lines
+            --left
+            settle()
+        }
+        giveUp = settle
+        wordWait.restart()
+        fetch(L.betterLyricsUrl(a, t, len), (err, r) => answer(0, !err && r ? L.parseTtml(r.ttml) : null))
+        fetch(L.qqLyricsUrl(a, t, len), (err, r) => answer(2, !err && r ? L.parseQrc(r.lyrics) : null))
+        fetch(L.lrcRedSearchUrl(a, t), (err, r) => {
+            const isrc = !err && r ? L.pickLrcRed(r.hits, a, t, len) : ""
+            if (!isrc) {
+                answer(1, null)
+                return
+            }
+            fetch(L.lrcRedTtmlUrl(isrc), (err2, ttml) => answer(1, !err2 && ttml ? L.parseTtml(ttml) : null), true)
+        })
+    }
+
     function load() {
         const k = key
         const a = artist, t = title, al = album, len = lengthUs
@@ -95,6 +139,17 @@ QtObject {
             if (k === lyrics.key)
                 show(r)
         }
+        askWordSources(a, t, len, function(lines) {
+            if (k !== lyrics.key)
+                return
+            if (lines.length)
+                finish({ state: "synced", lines: lines })
+            else
+                lrclib(k, a, t, al, len, finish)
+        })
+    }
+
+    function lrclib(k, a, t, al, len, finish) {
         fetch(L.lyricsGetUrl(a, t, al, len), function(err, record) {
             if (k !== lyrics.key)
                 return
@@ -122,5 +177,9 @@ QtObject {
     property Timer timer: Timer {
         interval: lyrics.delayMs
         onTriggered: lyrics.load()
+    }
+    property Timer wordWait: Timer {
+        interval: lyrics.wordWaitMs
+        onTriggered: if (lyrics.giveUp) lyrics.giveUp()
     }
 }
