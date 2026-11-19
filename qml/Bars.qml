@@ -16,13 +16,10 @@ Row {
     spacing: 2
     height: 14
 
-    // Keeps the bars from moving in lockstep while following the level.
-    Timer {
-        interval: 60
-        repeat: true
-        running: bars.live
-        onTriggered: bars.phase += 0.35
-    }
+    // Keeps the bars from moving in lockstep while following the level. Moved on with each new
+    // level rather than by a timer of its own, so the bars redraw only when the sound is measured.
+    // The level comes about every 40 ms; 0.23 a step keeps the old sway of 0.35 every 60 ms.
+    onLevelChanged: if (live) phase += 0.23
 
     Repeater {
         model: 4
@@ -36,10 +33,6 @@ Row {
             anchors.bottom: parent.bottom
             // Reads running so it settles back to 3 when the loop stops; an assignment would break the binding.
             height: bars.live ? L.barHeight(bars.level, bar.index, bars.phase) : (bars.running, 3)
-            Behavior on height {
-                enabled: bars.live
-                NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
-            }
 
             SequentialAnimation on height {
                 running: bars.running && !bars.live
