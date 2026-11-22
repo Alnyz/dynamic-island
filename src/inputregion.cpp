@@ -9,6 +9,18 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/shape.h>
 
+InputRegion::InputRegion(QObject *parent)
+    : QObject(parent)
+{
+    // KWin restarting, crashing or being suspended (Alt+Shift+F12) turns compositing off for a while.
+    // Go by the signal's value: compositingActive() can still give the old state while it is sent.
+    m_composited = KWindowSystem::compositingActive();
+    connect(KWindowSystem::self(), &KWindowSystem::compositingChanged, this, [this](bool active) {
+        m_composited = active;
+        applyShape();
+    });
+}
+
 QRect InputRegion::maskRect(const QRectF &rect)
 {
     const QRect r = rect.toAlignedRect();
@@ -30,6 +42,27 @@ void InputRegion::set(QWindow *window, const QRectF &rect)
     xr.height = ushort(qMax(1.0, r.height() * dpr));
     XShapeCombineRectangles(QX11Info::display(), window->winId(), ShapeInput, 0, 0, &xr, 1, ShapeSet, Unsorted);
     XFlush(QX11Info::display());
+}
+
+void InputRegion::setShape(QWindow *window, const QRectF &rect, qreal radius)
+{
+    m_shapeWindow = window;
+    m_shapeRect = rect;
+    m_shapeRadius = radius;
+    applyShape();
+}
+
+void InputRegion::applyShape()
+{
+    if (!m_shapeWindow)
+        return;
+    if (m_composited) {
+        m_shapeWindow->setMask(QRegion());
+        return;
+    }
+    const QRegion region = roundedRegion(m_shapeRect, m_shapeRadius);
+    // An empty mask would show the whole window again.
+    m_shapeWindow->setMask(region.isEmpty() ? QRegion(maskRect(m_shapeRect)) : region);
 }
 
 void InputRegion::setKeyboard(QWindow *window, bool on, bool exclusive)
