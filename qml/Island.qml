@@ -48,6 +48,11 @@ Item {
     property color coverTint: "transparent"
     readonly property color musicTint: coverTinted ? coverTint : ipal.accent
     Behavior on coverTint { ColorAnimation { duration: 400 } }
+    // The outline while music shows: off, the cover's colour (when there is one) or a fixed colour.
+    property bool musicEdge: true
+    property string musicEdgeColor: ""
+    readonly property bool hasMusicEdge: musicEdge && musicShown && (musicEdgeColor !== "" || coverTinted)
+    readonly property color musicEdgeTint: musicEdgeColor !== "" ? musicEdgeColor : coverTint
     property var timer: null
     property var weather: null
     property var calendar: null
@@ -406,10 +411,10 @@ Item {
         ShapePath {
             objectName: "islandFill"
             fillColor: Qt.rgba(ipal.window.r, ipal.window.g, ipal.window.b, island.fillOpacity)
-            // A thin edge in the cover's colour while the music turn shows; a faint one in the light theme.
-            readonly property bool tintEdge: island.coverTinted && island.musicShown
+            // A thin edge while the music turn shows (Settings → Look); a faint one in the light theme.
+            readonly property bool tintEdge: island.hasMusicEdge
             strokeWidth: tintEdge || island.lightLook ? 1 : -1
-            strokeColor: tintEdge ? Qt.rgba(island.coverTint.r, island.coverTint.g, island.coverTint.b, 0.55) : Qt.rgba(0, 0, 0, 0.14)
+            strokeColor: tintEdge ? Qt.rgba(island.musicEdgeTint.r, island.musicEdgeTint.g, island.musicEdgeTint.b, 0.55) : Qt.rgba(0, 0, 0, 0.14)
             startX: notch.topR - notch.ear; startY: 0
             PathLine { x: island.width + notch.ear - notch.topR; y: 0 }
             PathArc { x: island.width; y: notch.corner; radiusX: notch.corner; radiusY: notch.corner; direction: notch.turn }

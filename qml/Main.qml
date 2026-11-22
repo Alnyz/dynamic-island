@@ -321,6 +321,8 @@ Window {
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"
+        musicEdge: prefs.style.musicEdge
+        musicEdgeColor: prefs.style.musicEdgeColor
         timer: timerModel
         weather: weatherSource
         calendar: calendarSource

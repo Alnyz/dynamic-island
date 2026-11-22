@@ -11,7 +11,7 @@ QtObject {
     required property string location
 
     readonly property var defaults: ({
-        style: { look: "notch", accent: "#0a84ff", coverTint: true, liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
+        style: { look: "notch", accent: "#0a84ff", coverTint: true, musicEdge: true, musicEdgeColor: "", liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
         behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
@@ -31,6 +31,9 @@ QtObject {
         property string accent: prefs.defaults.style.accent
         // Music controls take the cover's main colour.
         property bool coverTint: prefs.defaults.style.coverTint
+        // A thin outline round the pill while music shows, in the cover's colour ("") or "#rrggbb".
+        property bool musicEdge: prefs.defaults.style.musicEdge
+        property string musicEdgeColor: prefs.defaults.style.musicEdgeColor
         // The pill's level bars follow the sound instead of a loop.
         property bool liveBars: prefs.defaults.style.liveBars
         // "dark", "light" or "system" (follows Plasma's colour scheme).
