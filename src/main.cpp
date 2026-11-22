@@ -74,7 +74,9 @@ static void placeIsland(QQuickWindow *window)
     if (!screen)
         return;
     const QRect geo = screen->geometry();
-    window->setPosition(geo.x() + (geo.width() - window->width()) / 2, geo.y());
+    const QPoint pos(geo.x() + (geo.width() - window->width()) / 2, geo.y());
+    if (window->position() != pos)
+        window->setPosition(pos);
 }
 
 int main(int argc, char *argv[])
@@ -109,6 +111,10 @@ int main(int argc, char *argv[])
     window->setFlags(window->flags() | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::WindowDoesNotAcceptFocus);
     placeIsland(window);
     QObject::connect(window, &QWindow::widthChanged, window, [window] { placeIsland(window); });
+    // KWin pushes windows out of the area a panel reserves whenever that area changes (Latte Dock
+    // reconfigured, a panel added at the top), which would leave the island hanging below it.
+    QObject::connect(window, &QWindow::xChanged, window, [window] { placeIsland(window); }, Qt::QueuedConnection);
+    QObject::connect(window, &QWindow::yChanged, window, [window] { placeIsland(window); }, Qt::QueuedConnection);
     QObject::connect(qApp, &QGuiApplication::primaryScreenChanged, window, [window] { placeIsland(window); });
     if (QScreen *screen = QGuiApplication::primaryScreen())
         QObject::connect(screen, &QScreen::geometryChanged, window, [window] { placeIsland(window); });
