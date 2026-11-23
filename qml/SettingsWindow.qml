@@ -245,6 +245,65 @@ QQC.ApplicationWindow {
                         checked: win.prefs.style.coverTint
                         onToggled: win.prefs.style.coverTint = checked
                     }
+                    QQC.CheckBox {
+                        objectName: "musicEdge"
+                        Kirigami.FormData.label: "Music outline:"
+                        text: "Outline the pill while music plays"
+                        checked: win.prefs.style.musicEdge
+                        onToggled: win.prefs.style.musicEdge = checked
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline colour:"
+                        enabled: win.prefs.style.musicEdge
+                        opacity: enabled ? 1 : 0.5
+                        spacing: 8
+                        Repeater {
+                            model: ["", "#ffffff", "#0a84ff", "#bf5af2", "#ff375f", "#ff9f0a", "#ffd60a", "#30d158"]
+                            delegate: Rectangle {
+                                required property string modelData
+                                required property int index
+                                objectName: "musicEdgeColor" + index
+                                readonly property bool current: (win.prefs.style.musicEdgeColor || "").toLowerCase() === modelData
+                                width: 26
+                                height: 26
+                                radius: 13
+                                // The first one follows the cover, shown as a rainbow.
+                                color: modelData || "transparent"
+                                gradient: modelData === "" ? coverGradient : null
+                                border.width: current ? 3 : 1
+                                border.color: current ? Kirigami.Theme.highlightColor : Kirigami.Theme.disabledTextColor
+                                Gradient {
+                                    id: coverGradient
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: 0.0; color: "#ff375f" }
+                                    GradientStop { position: 0.33; color: "#ffd60a" }
+                                    GradientStop { position: 0.66; color: "#30d158" }
+                                    GradientStop { position: 1.0; color: "#0a84ff" }
+                                }
+                                QQC.ToolTip.visible: edgeSwatchArea.containsMouse
+                                QQC.ToolTip.text: modelData === "" ? "The cover's colour" : modelData
+                                MouseArea {
+                                    id: edgeSwatchArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.prefs.style.musicEdgeColor = parent.modelData
+                                }
+                            }
+                        }
+                        QQC.Button {
+                            objectName: "musicEdgeColorCustom"
+                            text: "Custom…"
+                            icon.name: "color-picker"
+                            onClicked: musicEdgeDialog.open()
+                        }
+                    }
+                    ColorDialog {
+                        id: musicEdgeDialog
+                        title: "Choose the music outline's colour"
+                        color: win.prefs.style.musicEdgeColor || "#ffffff"
+                        onAccepted: win.prefs.style.musicEdgeColor = color.toString().slice(0, 7)
+                    }
                     QQC.ComboBox {
                         objectName: "themePicker"
                         Kirigami.FormData.label: "Colours:"
