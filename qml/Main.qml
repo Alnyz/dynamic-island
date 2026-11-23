@@ -33,6 +33,7 @@ Window {
 
     function updateInputRegion() {
         InputRegion.set(root, island.inputRect)
+        InputRegion.setShape(root, island.inputRect, island.blurRadius)
         updateBlur()
     }
     function updateBlur() {
