@@ -49,6 +49,7 @@ Item {
                     required property int index
                     objectName: "output-" + index
                     height: 30
+                    maximumWidth: parent.width
                     iconName: modelData.iconName || "audio-speakers"
                     text: mixer.label(modelData)
                     selected: mixer.output !== null && modelData.name === mixer.output.name
@@ -75,6 +76,7 @@ Item {
                     required property int index
                     objectName: "input-" + index
                     height: 30
+                    maximumWidth: parent.width
                     iconName: "audio-input-microphone"
                     text: mixer.label(modelData)
                     selected: mixer.input !== null && modelData.name === mixer.input.name

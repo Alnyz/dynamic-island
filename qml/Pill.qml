@@ -13,12 +13,16 @@ Rectangle {
     property string toolTip
     property bool primary: false
     property bool selected: false
+    // Longer text is cut short with "…" and shown whole in the tooltip.
+    property real maximumWidth: Infinity
     signal clicked()
 
     readonly property color ink: selected ? ipal.window : ipal.windowText
 
     height: 40
-    width: text === "" ? height : content.implicitWidth + (height > 32 ? 36 : 26)
+    readonly property real padding: height > 32 ? 36 : 26
+    readonly property real iconSpace: iconName !== "" ? 16 + content.spacing : 0
+    width: text === "" ? height : Math.min(maximumWidth, iconSpace + label.implicitWidth + padding)
     radius: height / 2
     color: primary ? (area.containsMouse ? Qt.lighter(ipal.accent, 1.15) : ipal.accent)
          : selected ? ipal.windowText
@@ -38,7 +42,10 @@ Rectangle {
             isMask: true
         }
         Text {
+            id: label
             visible: pill.text !== ""
+            width: Math.min(implicitWidth, pill.width - pill.padding - pill.iconSpace)
+            elide: Text.ElideRight
             anchors.verticalCenter: parent.verticalCenter
             text: pill.text
             color: pill.ink
@@ -52,7 +59,7 @@ Rectangle {
         hoverEnabled: true
         onClicked: pill.clicked()
     }
-    QQC.ToolTip.visible: pill.toolTip !== "" && area.containsMouse
-    QQC.ToolTip.text: pill.toolTip
+    QQC.ToolTip.visible: (pill.toolTip !== "" || label.truncated) && area.containsMouse
+    QQC.ToolTip.text: pill.toolTip !== "" ? pill.toolTip : pill.text
     QQC.ToolTip.delay: 500
 }
