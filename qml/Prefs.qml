@@ -13,7 +13,7 @@ QtObject {
     readonly property var defaults: ({
         style: { look: "notch", accent: "#0a84ff", coverTint: true, musicEdge: true, musicEdgeColor: "", liveBars: true, theme: "dark", translucent: false, color: "", opacity: -1 },
         shape: { height: 32, idleWidth: 180, compactWidth: 260, radius: 12, ears: 8 },
-        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true, pillLyrics: true, titleScroll: true, titleScrollSpeed: 30, lyricSourcesOff: [] },
+        behaviour: { cycleSeconds: 6, swipeHoldSeconds: 15, pausedMinutes: 5, openOnHover: false, coverLookup: true, lyrics: true, pillLyrics: true, titleScroll: true, titleScrollSpeed: 30, titleScrollPause: 1.5, lyricSourcesOff: [] },
         weather: { city: "", latitude: 0, longitude: 0, fahrenheit: false },
         quickButtons: { hidden: [] },
         panel: { time: true, date: true },
@@ -71,6 +71,8 @@ QtObject {
         property bool titleScroll: prefs.defaults.behaviour.titleScroll
         // How fast a title too long for the pill scrolls, in pixels a second.
         property int titleScrollSpeed: prefs.defaults.behaviour.titleScrollSpeed
+        // Seconds a scrolling title rests at its start before each pass.
+        property real titleScrollPause: prefs.defaults.behaviour.titleScrollPause
         // Lyrics sources turned off in Settings, by name (L.lyricSources).
         property var lyricSourcesOff: prefs.defaults.behaviour.lyricSourcesOff
         // The first-run tour has been seen or skipped.

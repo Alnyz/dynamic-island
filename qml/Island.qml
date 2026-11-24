@@ -55,6 +55,8 @@ Item {
     property int titleScrollSpeed: 30
     // Off: a title too long for the pill stays still and ends in "…".
     property bool titleScroll: true
+    // Seconds a scrolling title rests at its start before each pass (Settings → Behaviour).
+    property real titleScrollPause: 1.5
     readonly property bool wantsLyrics: pillLyrics && playing && mode === "compact" && activity === "music"
     readonly property bool showsLyricLine: wantsLyrics && lyrics !== null && lyrics.state === "synced"
     readonly property string pillLyric: showsLyricLine ? L.lyricTextAt(lyrics.lines, clock.value / 1000) : ""
@@ -957,6 +959,7 @@ Item {
                 // Set here, not bound: a running animation keeps the values it started with.
                 marqueeStep.to = -distance
                 marqueeStep.duration = distance / speed * 1000
+                marqueePause.duration = Math.max(0, island.titleScrollPause) * 1000
                 if (scrolls && visible)
                     marqueeScroll.start()
             }
@@ -999,10 +1002,12 @@ Item {
                 easing.type: Easing.OutQuad
             }
 
+            // One pass at a time, started again when it ends: Qt 5 times a looping group wrongly
+            // once its step's duration is set from code, skipping the pause and jumping ahead.
             SequentialAnimation {
                 id: marqueeScroll
-                loops: Animation.Infinite
-                PauseAnimation { duration: 1500 }
+                // The title rests at its start before each pass; the length is set by restartScroll().
+                PauseAnimation { id: marqueePause }
                 NumberAnimation {
                     id: marqueeStep
                     target: compactTitle
@@ -1010,6 +1015,8 @@ Item {
                     from: 0
                     // to and duration are set by restartScroll().
                 }
+                // The copy now sits where the title started, so going back to 0 shows no jump.
+                onFinished: compactTitle.restartScroll()
             }
         }
 
