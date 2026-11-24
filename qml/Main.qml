@@ -347,6 +347,7 @@ Window {
         onTranslucentChanged: root.updateBlur()
         onBlurBehindChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
+        pointerInWindow: InputRegion.pointerInside
         pillLyrics: prefs.behaviour.pillLyrics
         titleScroll: prefs.behaviour.titleScroll
         titleScrollSpeed: prefs.behaviour.titleScrollSpeed

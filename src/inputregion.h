@@ -11,6 +11,10 @@ class InputRegion : public QObject
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
+    // Whether the pointer is over the island window's input area, from the window's own enter and
+    // leave events. Qt 5.15's HoverHandler sometimes misses the leave (the pointer stepping off
+    // while the pill grows), so the island checks this too. Follows the window given to set().
+    Q_PROPERTY(bool pointerInside READ pointerInside NOTIFY pointerInsideChanged)
 
 public:
     explicit InputRegion(QObject *parent = nullptr);
@@ -35,6 +39,14 @@ public:
     // KWin window type and states for the island window.
     static void applyWindowType(QWindow *window, bool overlay);
 
+    bool pointerInside() const { return m_pointerInside; }
+
+Q_SIGNALS:
+    void pointerInsideChanged();
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void applyShape();
 
@@ -44,4 +56,6 @@ private:
     bool m_composited = true;
     bool m_keyboard = false;
     bool m_overlay = false;
+    QPointer<QWindow> m_pointerWindow;
+    bool m_pointerInside = false;
 };

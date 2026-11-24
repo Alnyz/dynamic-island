@@ -1,5 +1,7 @@
 #include "inputregion.h"
 
+#include <QEvent>
+
 #include <KWindowEffects>
 #include <KWindowSystem>
 #include <QPainterPath>
@@ -29,6 +31,12 @@ QRect InputRegion::maskRect(const QRectF &rect)
 
 void InputRegion::set(QWindow *window, const QRectF &rect)
 {
+    if (window && window != m_pointerWindow) {
+        if (m_pointerWindow)
+            m_pointerWindow->removeEventFilter(this);
+        m_pointerWindow = window;
+        window->installEventFilter(this);
+    }
     if (!window || !QX11Info::isPlatformX11())
         return;
     // Only the input shape: QWindow::setMask on X11 also clips what is drawn, which would cut off
@@ -115,4 +123,16 @@ void InputRegion::setBlur(QWindow *window, const QRectF &rect, qreal radius, boo
         return;
     const QRegion region = roundedRegion(rect, radius);
     KWindowEffects::enableBlurBehind(window, on && !region.isEmpty(), region);
+}
+
+bool InputRegion::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_pointerWindow && (event->type() == QEvent::Enter || event->type() == QEvent::Leave)) {
+        const bool inside = event->type() == QEvent::Enter;
+        if (inside != m_pointerInside) {
+            m_pointerInside = inside;
+            Q_EMIT pointerInsideChanged();
+        }
+    }
+    return QObject::eventFilter(watched, event);
 }
