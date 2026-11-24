@@ -19,7 +19,7 @@ TestCase {
             title: "Girls Like You"
             album: ""
             lengthUs: 235000000
-            fetch: function(url, done) {
+            fetch: function(url, done, asText) {
                 tc.requests.push(url)
                 for (const k in tc.answers)
                     if (url.indexOf(k) >= 0) {
@@ -30,6 +30,11 @@ TestCase {
                 done(null, null)
             }
         }
+    }
+
+    // Only the LRCLIB requests, which come after the word-timed sources.
+    function lrclibRequests() {
+        return requests.filter(u => u.indexOf("lrclib.net") >= 0)
     }
 
     function make() {
@@ -53,8 +58,8 @@ TestCase {
         tryCompare(l, "state", "synced")
         compare(l.lines.length, 2)
         compare(l.lines[0].text, "Spent 24 hours")
-        compare(requests.length, 1)
-        verify(requests[0].indexOf("duration=235") > 0)
+        compare(lrclibRequests().length, 1)
+        verify(lrclibRequests()[0].indexOf("duration=235") > 0)
     }
 
     function test_falls_back_to_search() {
@@ -63,7 +68,7 @@ TestCase {
         l.wanted = true
         tryCompare(l, "state", "plain")
         compare(l.plain, "Spent 24 hours")
-        compare(requests.length, 2)
+        compare(lrclibRequests().length, 2)
     }
 
     function test_none_found_is_cached() {
@@ -75,7 +80,7 @@ TestCase {
         l.wanted = true
         compare(l.state, "none")
         wait(50)
-        compare(requests.length, 2)
+        compare(lrclibRequests().length, 2)
     }
 
     function test_network_failure_not_cached() {
@@ -98,8 +103,81 @@ TestCase {
         l.title = "Two"
         l.title = "Three"
         tryCompare(l, "state", "plain")
-        compare(requests.length, 1)
-        verify(requests[0].indexOf("track_name=Three") > 0)
+        compare(lrclibRequests().length, 1)
+        verify(lrclibRequests()[0].indexOf("track_name=Three") > 0)
+        // The word-timed sources are asked for the last song only, too.
+        compare(requests.filter(u => u.indexOf("getLyrics") >= 0).length, 2)
+        verify(requests.every(u => u.indexOf("One") < 0 && u.indexOf("Two") < 0))
+    }
+
+    readonly property string ttml: '<tt><body><div><p begin="6.94" end="9.0"><span begin="6.94" end="7.5">Spent</span> <span begin="7.5" end="8.0">24</span> <span begin="8.0" end="9.0">hours</span></p></div></body></tt>'
+
+    function test_word_timed_beats_lrclib() {
+        answers = { "/getLyrics": [null, { ttml: ttml }], "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        compare(l.lines[0].words.length, 3)
+        compare(l.lines[0].text, "Spent 24 hours")
+        compare(lrclibRequests().length, 0)
+    }
+
+    function test_lrc_red_by_recording_code() {
+        answers = {
+            "lrc.red/search": [null, { hits: [{ isrc: "USUM71800001", title: "Girls Like You", artist: "Maroon 5", duration: 235.2 }] }],
+            "lrc.red/s/USUM71800001.ttml": [null, ttml]
+        }
+        const l = make()
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        compare(l.lines[0].words[2].text, "hours")
+    }
+
+    function test_sources_turned_off_are_not_asked() {
+        answers = { "/getLyrics": [null, { ttml: ttml }], "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.off = ["betterlyrics", "qq", "lrcred"]
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        verify(!l.lines[0].words)
+        compare(requests.filter(u => u.indexOf("lrclib.net") < 0).length, 0)
+    }
+
+    function test_all_sources_off_finds_nothing() {
+        answers = { "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.off = ["betterlyrics", "qq", "lrcred", "lrclib"]
+        l.wanted = true
+        tryCompare(l, "state", "none")
+        compare(requests.length, 0)
+        // Turning one back on asks again.
+        l.off = ["betterlyrics", "qq", "lrcred"]
+        tryCompare(l, "state", "synced")
+    }
+
+    function test_slow_word_source_gives_way_to_lrclib() {
+        answers = { "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = createTemporaryObject(slowComp, tc)
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        verify(!l.lines[0].words)
+    }
+
+    Component {
+        id: slowComp
+        LyricsSource {
+            enabled: true
+            delayMs: 10
+            wordWaitMs: 100
+            artist: "Maroon 5"
+            title: "Girls Like You"
+            lengthUs: 235000000
+            // The word-timed sources never answer; LRCLIB does.
+            fetch: function(url, done) {
+                if (url.indexOf("lrclib.net/api/get") >= 0)
+                    done(null, { syncedLyrics: "[00:06.94]Spent 24 hours" })
+            }
+        }
     }
 
     function test_off() {

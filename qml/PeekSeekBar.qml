@@ -11,7 +11,7 @@ Item {
     // While dragging, the bar follows the pointer; the player seeks on release.
     property real dragFraction: -1
     readonly property real fraction: dragFraction >= 0 ? dragFraction
-        : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.player.position / island.player.length)) : 0
+        : island.player && island.player.length > 0 ? Math.max(0, Math.min(1, island.livePosition / island.player.length)) : 0
 
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
@@ -50,7 +50,10 @@ Item {
         onPressed: mouse => peekSeek.dragFraction = fractionAt(mouse.x)
         onPositionChanged: mouse => { if (pressed) peekSeek.dragFraction = fractionAt(mouse.x) }
         onReleased: mouse => {
-            island.player.position = Math.round(fractionAt(mouse.x) * island.player.length)
+            const to = Math.round(fractionAt(mouse.x) * island.player.length)
+            island.player.position = to
+            if (island.songClock)
+                island.songClock.moveTo(to)
             peekSeek.dragFraction = -1
         }
         onCanceled: peekSeek.dragFraction = -1

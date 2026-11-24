@@ -762,10 +762,11 @@ Item {
             compare(stage.calls.playPause, 1)
             // Fakes are copied into the panel, so read its copy.
             keyClick(Qt.Key_Right)
-            compare(panel.player.position, 65000000)
+            // Skips go from the counted time, which moves on a little between key presses.
+            fuzzyCompare(panel.player.position, 65000000, 100000)
             keyClick(Qt.Key_Left)
             keyClick(Qt.Key_Left)
-            compare(panel.player.position, 55000000)
+            fuzzyCompare(panel.player.position, 55000000, 100000)
         }
 
         function test_typing_in_a_tab_keeps_its_keys() {
@@ -894,6 +895,17 @@ Item {
             // Closing the panel stops asking for lyrics.
             island.open = false
             compare(lyrics.wanted, false)
+        }
+
+        // The Music tab is made again on each open; its time must come from the island's one clock,
+        // not a new one starting from Plasma's stale copy.
+        function test_music_tab_shares_the_song_clock() {
+            const { island } = make({ position: 40000000, length: 200000000 })
+            island.animateOpen = false
+            openTab(island, "music")
+            const tab = findChild(island, "musicPlayer")
+            verify(tab.clock !== null)
+            compare(tab.clock.value, island.livePosition)
         }
 
         function test_lyrics_button_hidden_when_off() {
@@ -1695,8 +1707,94 @@ Item {
         function test_long_title_elides() {
             const { island } = make({ track: "x".repeat(200) })
             mouseMove(island, 10, 10)
-            tryCompare(island, "width", 330)
+            tryCompare(island, "width", 390)
             compare(findChild(island, "title").truncated, true)
+        }
+
+        function test_peek_bar_moves_while_playing_without_position_updates() {
+            const { island } = make()
+            mouseMove(island, 10, 10)
+            tryCompare(island, "width", 390)
+            const fill = findChild(island, "peekSeekFill")
+            const before = fill.width
+            tryVerify(() => fill.width > before)
+        }
+
+        function test_peek_has_previous_and_next() {
+            const { island } = make()
+            mouseMove(island, 10, 10)
+            tryCompare(island, "width", 390)
+            mouseClick(findChild(island, "peekPrevious"))
+            mouseClick(findChild(island, "peekNext"))
+            compare(stage.calls.previous, 1)
+            compare(stage.calls.next, 1)
+        }
+
+        function test_compact_title_scrolls_only_when_too_long() {
+            const { island } = make({ track: "x".repeat(200) })
+            tryCompare(findChild(island, "compactTitle"), "scrolls", true)
+            const short = make({ track: "Hi" })
+            tryCompare(findChild(short.island, "compactTitle"), "scrolls", false)
+        }
+
+        function test_pill_shows_the_lyric_line() {
+            const { island } = make({ position: 40000000 })
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            tryCompare(island, "wantsLyrics", true)
+            compare(island.showsLyricLine, true)
+            // The clock starts at the player's own position, 40 s into the song.
+            tryCompare(findChild(island, "compactTitleText"), "text", "Second line")
+            // Without synced lyrics the title is back.
+            lyrics.state = "plain"
+            tryCompare(findChild(island, "compactTitleText"), "text", "Evaluasi")
+        }
+
+        function test_pill_lyrics_only_while_music_shows() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            tryCompare(island, "wantsLyrics", true)
+            mouseMove(island, 10, 10)
+            tryCompare(island, "mode", "peek")
+            compare(island.wantsLyrics, false)
+            tryCompare(findChild(island, "title"), "text", "Evaluasi")
+        }
+
+        function test_pill_lyrics_can_be_turned_off() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            island.pillLyrics = false
+            compare(island.wantsLyrics, false)
+            compare(findChild(island, "compactTitleText").text, "Evaluasi")
+        }
+
+        function test_long_lyric_widens_the_pill() {
+            const { island } = make({ position: 40000000 })
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            // A line that doesn't fit the usual width, but does fit the screen.
+            lyrics.lines = [{ ms: 0, text: "x".repeat(50) }]
+            tryCompare(island, "wantsLyrics", true)
+            tryVerify(() => island.width > island.compactWidth)
+            const area = findChild(island, "compactTitle")
+            compare(area.scrolls, false)
+            // Centred between the cover and the bars.
+            const text = findChild(island, "compactTitleText")
+            tryVerify(() => Math.abs((text.mapToItem(island, 0, 0).x + text.width / 2)
+                                     - (area.mapToItem(island, 0, 0).x + area.width / 2)) < 2)
+        }
+
+        function test_too_long_lyric_still_scrolls() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            lyrics.lines = [{ ms: 0, text: "y".repeat(400) }]
+            tryCompare(island, "wantsLyrics", true)
+            tryCompare(findChild(island, "compactTitle"), "scrolls", true)
+            // It never grows past the screen it sits on.
+            tryVerify(() => island.width <= stage.width - 20)
         }
 
         function test_leave_closes_after_delay() {

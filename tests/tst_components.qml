@@ -23,6 +23,7 @@ Item {
             height: 60
             property string mode: "peek"
             property var player: ({ position: 50000000, length: 200000000, canSeek: true })
+            property real livePosition: player.position
             property bool coverTinted: false
             property color coverTint: "transparent"
             property int tourStep: 0

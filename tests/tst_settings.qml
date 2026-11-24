@@ -69,6 +69,21 @@ TestCase {
         verify(!box.enabled)
     }
 
+    function test_lyric_source_switch() {
+        const { prefs, win } = make()
+        prefs.behaviour.lyricSourcesOff = []
+        win.page = 1
+        waitForRendering(win.contentItem)
+        const box = findChild(win.contentItem, "lyricSource_qq")
+        verify(box.checked)
+        mouseClick(box)
+        compare(L.toList(prefs.behaviour.lyricSourcesOff), ["qq"])
+        prefs.behaviour.lyrics = false
+        verify(!box.enabled)
+        prefs.behaviour.lyrics = true
+        prefs.behaviour.lyricSourcesOff = []
+    }
+
     function test_keep_for_days() {
         const { prefs, win } = make()
         const box = findChild(win.contentItem, "historyDays")
