@@ -348,6 +348,8 @@ Window {
         onBlurBehindChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
         pillLyrics: prefs.behaviour.pillLyrics
+        titleScroll: prefs.behaviour.titleScroll
+        titleScrollSpeed: prefs.behaviour.titleScrollSpeed
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"
         musicEdge: prefs.style.musicEdge

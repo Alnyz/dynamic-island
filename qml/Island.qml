@@ -51,6 +51,10 @@ Item {
     // The current lyric line takes the title's place on the pill. wantsLyrics says when lyrics
     // are worth asking for; LyricsSource does the asking (and only then).
     property bool pillLyrics: true
+    // Pixels a second for a title too long for the compact pill (Settings → Behaviour).
+    property int titleScrollSpeed: 30
+    // Off: a title too long for the pill stays still and ends in "…".
+    property bool titleScroll: true
     readonly property bool wantsLyrics: pillLyrics && playing && mode === "compact" && activity === "music"
     readonly property bool showsLyricLine: wantsLyrics && lyrics !== null && lyrics.state === "synced"
     readonly property string pillLyric: showsLyricLine ? L.lyricTextAt(lyrics.lines, clock.value / 1000) : ""
@@ -930,8 +934,10 @@ Item {
             // The room the words will have once the pill has settled: while it grows for a lyric
             // line this is already the end width, so a line that fits never starts scrolling.
             readonly property real room: lyric ? Math.max(0, island.compactPillWidth - 70) : width
-            readonly property bool scrolls: compactTitleText.implicitWidth > room
+            readonly property bool scrolls: island.titleScroll && compactTitleText.implicitWidth > room
             readonly property real distance: compactTitleText.implicitWidth + gap
+            // A lyric line won't stay long, so it never goes slower than 80 pixels a second.
+            readonly property real speed: Math.max(1, lyric ? Math.max(80, island.titleScrollSpeed) : island.titleScrollSpeed)
             // 0 at the start of a pass; the marquee moves it left while a line scrolls.
             property real scrollX: 0
             onTitleChanged: {
@@ -940,10 +946,17 @@ Item {
             }
             onScrollsChanged: restartScroll()
             onVisibleChanged: restartScroll()
+            // The text's width settles after the title changes; a pass timed for the old width
+            // would cover the new one at the wrong speed.
+            onDistanceChanged: if (scrolls) restartScroll()
+            onSpeedChanged: if (scrolls) restartScroll()
 
             function restartScroll() {
                 marqueeScroll.stop()
                 scrollX = 0
+                // Set here, not bound: a running animation keeps the values it started with.
+                marqueeStep.to = -distance
+                marqueeStep.duration = distance / speed * 1000
                 if (scrolls && visible)
                     marqueeScroll.start()
             }
@@ -952,12 +965,15 @@ Item {
                 id: marquee
                 // A lyric line sits in the middle of the gap between the cover and the bars.
                 x: compactTitle.scrolls ? compactTitle.scrollX
-                   : compactTitle.lyric ? (compactTitle.width - compactTitleText.implicitWidth) / 2
+                   : compactTitle.lyric ? (compactTitle.width - compactTitleText.width) / 2
                    : 0
                 spacing: compactTitle.gap
                 Text {
                     id: compactTitleText
                     objectName: "compactTitleText"
+                    // Without scrolling, a long title is cut short to the room it has.
+                    width: island.titleScroll ? implicitWidth : Math.min(implicitWidth, compactTitle.room)
+                    elide: island.titleScroll ? Text.ElideNone : Text.ElideRight
                     text: compactTitle.title
                     color: ipal.windowText
                     font.pixelSize: 12
@@ -988,12 +1004,11 @@ Item {
                 loops: Animation.Infinite
                 PauseAnimation { duration: 1500 }
                 NumberAnimation {
+                    id: marqueeStep
                     target: compactTitle
                     property: "scrollX"
                     from: 0
-                    to: -compactTitle.distance
-                    // About 30 pixels a second, or 80 for a lyric line, which won't stay long.
-                    duration: compactTitle.distance / (compactTitle.lyric ? 80 : 30) * 1000
+                    // to and duration are set by restartScroll().
                 }
             }
         }

@@ -490,6 +490,21 @@ QQC.ApplicationWindow {
                         onToggled: win.prefs.behaviour.coverLookup = checked
                     }
                     QQC.CheckBox {
+                        objectName: "titleScroll"
+                        Kirigami.FormData.label: "Long titles:"
+                        text: "Scroll titles too long for the pill (off: cut short with …)"
+                        checked: win.prefs.behaviour.titleScroll
+                        onToggled: win.prefs.behaviour.titleScroll = checked
+                    }
+                    SliderRow {
+                        objectName: "titleScrollSpeed"
+                        enabled: win.prefs.behaviour.titleScroll
+                        Kirigami.FormData.label: "Title scroll speed:"
+                        from: 5; to: 60; suffix: " px/s"
+                        value: win.prefs.behaviour.titleScrollSpeed
+                        onMoved: v => win.prefs.behaviour.titleScrollSpeed = v
+                    }
+                    QQC.CheckBox {
                         objectName: "lyricsSwitch"
                         Kirigami.FormData.label: "Lyrics:"
                         text: "Show lyrics in the Music tab (sends the song to the sources below when shown)"
