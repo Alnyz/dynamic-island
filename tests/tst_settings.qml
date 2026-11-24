@@ -1,11 +1,16 @@
-import QtQuick
-import QtCore
-import QtTest
+import QtQuick 2.15
+import Qt.labs.platform 1.1
+import QtTest 1.15
 import "../qml"
 import "../qml/logic.js" as L
 
 TestCase {
     id: tc
+
+    // Qt 5.15's test collector follows every type a test file names into its source and loops
+    // forever on files with inline components, so these are loaded by path instead.
+    readonly property var fx: Qt.createComponent(Qt.resolvedUrl("fixtures/SettingsFixtures.qml")).createObject(tc, { stage: tc })
+
     name: "Settings"
     when: windowShown
 
@@ -15,11 +20,6 @@ TestCase {
         id: prefsComp
         Prefs { location: tc.file }
     }
-    Component {
-        id: winComp
-        // Tall enough that the whole Alerts page fits without scrolling.
-        SettingsWindow { page: 2; visible: true; height: 1400 }
-    }
 
     function make() {
         const prefs = createTemporaryObject(prefsComp, tc)
@@ -27,7 +27,7 @@ TestCase {
         prefs.history.off = []
         prefs.history.apps = true
         prefs.history.save = true
-        const win = createTemporaryObject(winComp, tc, { prefs: prefs })
+        const win = createTemporaryObject(fx.winComp, tc, { prefs: prefs })
         waitForRendering(win.contentItem)
         return { prefs, win }
     }
@@ -138,6 +138,26 @@ TestCase {
         const first = win.results[0]
         keyClick(Qt.Key_Return)
         compare(win.page, first.page)
+    }
+
+    function test_title_scroll_settings() {
+        const { prefs, win } = make()
+        win.page = 1
+        const box = findChild(win.contentItem, "titleScroll")
+        const speed = findChild(win.contentItem, "titleScrollSpeed")
+        const pause = findChild(win.contentItem, "titleScrollPause")
+        verify(box.checked)
+        compare(speed.value, 30)
+        // The stop is kept in seconds; its slider moves in tenths.
+        compare(pause.value, 15)
+        verify(speed.enabled && pause.enabled)
+        pause.moved(25)
+        compare(prefs.behaviour.titleScrollPause, 2.5)
+        speed.moved(45)
+        compare(prefs.behaviour.titleScrollSpeed, 45)
+        mouseClick(box)
+        compare(prefs.behaviour.titleScroll, false)
+        verify(!speed.enabled && !pause.enabled)
     }
 
     function test_cover_tint_switch() {

@@ -1,5 +1,5 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 
 Item {
@@ -51,7 +51,10 @@ Item {
             compare(stage.log, ["add:ab"])
             compare(input.text, "")
             input.text = "second"
-            mouseClick(findChild(t, "todoAdd"))
+            // Qt 5's test clicks come too close together and count as a double-click, which a
+            // MouseArea doesn't report as a click; wait out the double-click time first.
+            const add = findChild(t, "todoAdd")
+            mouseClick(add, add.width / 2, add.height / 2, Qt.LeftButton, Qt.NoModifier, Qt.styleHints.mouseDoubleClickInterval + 50)
             compare(stage.log, ["add:ab", "add:second"])
             // Blank input adds nothing.
             input.text = "   "

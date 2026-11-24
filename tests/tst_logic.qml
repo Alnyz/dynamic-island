@@ -1,5 +1,5 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml/logic.js" as L
 
 TestCase {
@@ -506,7 +506,7 @@ TestCase {
     function contrast(a, b) {
         const lum = c => {
             const ch = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
-            const q = Qt.color(c)
+            const q = Qt.tint(c, "transparent")
             return 0.2126 * ch(q.r) + 0.7152 * ch(q.g) + 0.0722 * ch(q.b)
         }
         const x = lum(a), y = lum(b)
@@ -551,7 +551,7 @@ TestCase {
             verify(L.contrastRatio(t.windowText, t.base) >= 4.5, "windowText on base of " + c)
             verify(L.contrastRatio(t.text, t.window) >= 3.5, "text on " + c)
             verify(L.contrastRatio(t.placeholderText, t.window) >= 2.5, "placeholderText on " + c)
-            compare(Qt.color(t.window), Qt.color(c))
+            compare(Qt.tint(t.window, "transparent"), Qt.tint(c, "transparent"))
         }
         compare(L.wantsDarkText("#fff4dc"), true)
         compare(L.wantsDarkText("#0b1f33"), false)

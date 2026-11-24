@@ -67,7 +67,7 @@ The panel has buttons for battery, volume, Wi-Fi, Bluetooth (with a badge for a 
 - **Shortcut.** The panel opens with Meta+N or Meta+Alt+N. When Meta+N is already taken (Latte Dock uses it for its task entries), only Meta+Alt+N is set.
 - **System tools.** Volume buttons use `pactl` (Ubuntu 22.04's `wpctl` can't set the volume), and the update count uses `apt list --upgradable`; clicking it runs `sudo apt update && apt upgrade` in Konsole.
 - **Under the hood.** QML uses Qt 5 imports and Qt Graphical Effects, colours go through a shared `ipal` object instead of Qt 6's per-item `palette`, the idle animations are plain OpenGL GLSL, and the KWin scripts use the KWin 5 API.
-- **Tests.** The QML and C++ tests still target Qt 6 and aren't built on this branch.
+- **Tests.** The QML tests run on Qt 5 through a small runner of their own (`tests/qmltest.cpp`) that registers the app's C++ types, which Qt 6 does through its QML module. The C++ tests in `tests/cpp` still target Qt 6 and aren't built on this branch.
 
 ## Requirements
 
@@ -83,7 +83,7 @@ sudo apt install cmake ninja-build extra-cmake-modules libdbus-1-dev libx11-dev 
     qtbase5-dev qtbase5-private-dev qtdeclarative5-dev qtquickcontrols2-5-dev \
     libkf5calendarcore-dev libkf5config-dev libkf5globalaccel-dev libkf5guiaddons-dev libkf5idletime-dev libkf5windowsystem-dev \
     qml-module-qtgraphicaleffects qml-module-qtquick-shapes qml-module-qt-labs-settings qml-module-qt-labs-platform \
-    qml-module-qtquick-dialogs qml-module-org-kde-kirigami2 plasma-pa network-manager bluez kde-spectacle
+    qml-module-qtquick-dialogs qml-module-org-kde-kirigami2 qml-module-qttest plasma-pa network-manager bluez kde-spectacle
 ```
 
 The quick buttons call `pactl`, `nmcli`, `bluetoothctl`, `spectacle` and `loginctl`, and the update count calls `apt` and `konsole`.
@@ -97,6 +97,14 @@ cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 cmake --build build
 ./build/dynamic-island
 ```
+
+To run the QML tests (about a minute; their windows stay hidden, and they never touch your own settings or data):
+
+```sh
+ctest --test-dir build --output-on-failure
+```
+
+They need `qml-module-qttest`. Add `-DBUILD_TESTING=OFF` to the first `cmake` line to build without them.
 
 To install it to `~/.local/bin` and add it to the app menu:
 

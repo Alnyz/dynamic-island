@@ -6,67 +6,9 @@
 
 #include <KWindowSystem>
 
-#include "appconfig.h"
-#include "bluetoothwatcher.h"
-#include "blursettings.h"
-#include "calendarsource.h"
-#include "camerawatcher.h"
-#include "capslockwatcher.h"
-#include "clipboardhistory.h"
-#include "covercolor.h"
-#include "fullscreenwatcher.h"
 #include "inputregion.h"
 #include "islandpalette.h"
-#include "jobwatcher.h"
-#include "mprisplayers.h"
-#include "mpriseeks.h"
-#include "notesstore.h"
-#include "notificationlog.h"
-#include "notificationwatcher.h"
-#include "notifier.h"
-#include "panelshortcut.h"
-#include "plasmasettings.h"
-#include "systemstatus.h"
-#include "todostore.h"
-#include "updateswatcher.h"
-#include "windowactivator.h"
-
-template<typename T>
-static void registerSingleton(const char *name)
-{
-    qmlRegisterSingletonType<T>("Island", 1, 0, name, [](QQmlEngine *, QJSEngine *) -> QObject * {
-        return new T;
-    });
-}
-
-static void registerTypes()
-{
-    const char *uri = "Island";
-    qmlRegisterType<CameraWatcher>(uri, 1, 0, "CameraWatcher");
-    qmlRegisterType<BluetoothWatcher>(uri, 1, 0, "BluetoothWatcher");
-    qmlRegisterType<CalendarSource>(uri, 1, 0, "CalendarSource");
-    qmlRegisterType<PanelShortcut>(uri, 1, 0, "PanelShortcut");
-    qmlRegisterType<NotificationLog>(uri, 1, 0, "NotificationLog");
-    qmlRegisterType<CoverColor>(uri, 1, 0, "CoverColor");
-    qmlRegisterType<TodoStore>(uri, 1, 0, "TodoStore");
-    qmlRegisterType<JobWatcher>(uri, 1, 0, "JobWatcher");
-    qmlRegisterType<CapsLockWatcher>(uri, 1, 0, "CapsLockWatcher");
-    qmlRegisterType<ClipboardHistory>(uri, 1, 0, "ClipboardHistory");
-    qmlRegisterType<NotesStore>(uri, 1, 0, "NotesStore");
-    qmlRegisterType<FullScreenWatcher>(uri, 1, 0, "FullScreenWatcher");
-    qmlRegisterType<UpdatesWatcher>(uri, 1, 0, "UpdatesWatcher");
-    qmlRegisterType<BlurSettings>(uri, 1, 0, "BlurSettings");
-    qmlRegisterType<NotificationWatcher>(uri, 1, 0, "NotificationWatcher");
-    qmlRegisterType<MprisPlayers>(uri, 1, 0, "MprisPlayers");
-    qmlRegisterUncreatableType<MprisPlayer>(uri, 1, 0, "MprisPlayer", QStringLiteral("Made by MprisPlayers"));
-    registerSingleton<Notifier>("Notifier");
-    registerSingleton<InputRegion>("InputRegion");
-    registerSingleton<WindowActivator>("WindowActivator");
-    registerSingleton<AppConfig>("AppConfig");
-    registerSingleton<PlasmaSettings>("PlasmaSettings");
-    registerSingleton<SystemStatus>("SystemStatus");
-    registerSingleton<MprisSeeks>("MprisSeeks");
-}
+#include "islandtypes.h"
 
 // X11 has no layer shell: the island is a frameless, borderless window kept centred at the top
 // of the primary screen, above panels, on every desktop and out of the task manager.
@@ -98,7 +40,7 @@ int main(int argc, char *argv[])
     // Closing the settings window must not quit the island.
     app.setQuitOnLastWindowClosed(false);
 
-    registerTypes();
+    registerIslandTypes();
 
     QQmlApplicationEngine engine;
     // Qt 6 lets every item read and override `palette`; Qt 5 has no such thing on plain items,

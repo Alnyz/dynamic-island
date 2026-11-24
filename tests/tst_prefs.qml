@@ -1,6 +1,6 @@
-import QtQuick
-import QtCore
-import QtTest
+import QtQuick 2.15
+import Qt.labs.platform 1.1
+import QtTest 1.15
 import "../qml"
 import "../qml/logic.js" as L
 

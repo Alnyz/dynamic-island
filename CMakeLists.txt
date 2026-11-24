@@ -18,8 +18,9 @@ find_package(X11 REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DBUS1 REQUIRED IMPORTED_TARGET dbus-1)
 
+# Everything but main.cpp, shared by the app and the QML test runner.
 set(SOURCES
-    src/main.cpp src/mprisplayers.cpp src/islandpalette.cpp
+    src/mprisplayers.cpp src/islandpalette.cpp
     src/inputregion.cpp src/notifier.cpp src/systemstatus.cpp src/appconfig.cpp src/calendarsource.cpp
     src/clipboardhistory.cpp src/notesstore.cpp src/todostore.cpp src/covercolor.cpp src/blursettings.cpp
     src/windowactivator.cpp src/notificationwatcher.cpp src/notificationlog.cpp src/bluetoothwatcher.cpp
@@ -27,11 +28,25 @@ set(SOURCES
     src/jobwatcher.cpp src/fullscreenwatcher.cpp src/panelshortcut.cpp src/mpriseeks.cpp)
 file(GLOB HEADERS src/*.h)
 
-add_executable(dynamic-island ${SOURCES} ${HEADERS} resources.qrc)
-target_include_directories(dynamic-island PRIVATE src)
-target_link_libraries(dynamic-island PRIVATE Qt5::Widgets Qt5::Quick Qt5::DBus Qt5::Network Qt5::Concurrent Qt5::X11Extras
+add_library(island-core STATIC ${SOURCES} ${HEADERS})
+target_include_directories(island-core PUBLIC src)
+target_link_libraries(island-core PUBLIC Qt5::Widgets Qt5::Quick Qt5::DBus Qt5::Network Qt5::Concurrent Qt5::X11Extras
     KF5::CalendarCore KF5::GuiAddons KF5::ConfigCore KF5::IdleTime KF5::GlobalAccel KF5::WindowSystem
     PkgConfig::DBUS1 ${X11_LIBRARIES} ${X11_Xext_LIB})
+
+add_executable(dynamic-island src/main.cpp resources.qrc)
+target_link_libraries(dynamic-island PRIVATE island-core)
+
+option(BUILD_TESTING "Build the QML tests (needs Qt 5's QuickTest and qml-module-qttest)" ON)
+if(BUILD_TESTING)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS QuickTest)
+    enable_testing()
+    add_executable(tst_qml tests/qmltest.cpp)
+    target_link_libraries(tst_qml PRIVATE island-core Qt5::QuickTest)
+    target_compile_definitions(tst_qml PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}/tests")
+    # The runner hides its windows itself (offscreen), so it also runs without a display.
+    add_test(NAME qml COMMAND tst_qml)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS dynamic-island DESTINATION ${CMAKE_INSTALL_BINDIR})

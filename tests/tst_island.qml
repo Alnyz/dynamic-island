@@ -1,10 +1,15 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 import "../qml/logic.js" as L
 
 Item {
     id: stage
+
+    // Qt 5.15's test collector follows every type a test file names into its source and loops
+    // forever on files with inline components, so these are loaded by path instead.
+    readonly property var fx: Qt.createComponent(Qt.resolvedUrl("fixtures/IslandFixtures.qml")).createObject(stage, { stage: stage })
+
     width: 1100
     height: 520
 
@@ -30,15 +35,6 @@ Item {
     }
 
     Component {
-        id: centeredComp
-        Item {
-            width: 0
-            property alias island: isl
-            Island { id: isl; anchors.horizontalCenter: parent.horizontalCenter; systemControls: false }
-        }
-    }
-
-    Component {
         id: timerFake
         QtObject {
             property bool running: true
@@ -57,11 +53,6 @@ Item {
         }
     }
 
-    Component {
-        id: islandComp
-        Island { x: 100; y: 20; systemControls: false }
-    }
-
     TestCase {
         name: "Island"
         when: windowShown
@@ -69,7 +60,7 @@ Item {
         function make(props, withTimer) {
             const fake = props === null ? null : stage.fakePlayer(props)
             const timer = withTimer ? createTemporaryObject(timerFake, stage) : null
-            const island = createTemporaryObject(islandComp, stage, { player: fake, timer: timer, cycleInterval: 200 })
+            const island = createTemporaryObject(fx.islandComp, stage, { player: fake, timer: timer, cycleInterval: 200 })
             return { island, fake, timer }
         }
 
@@ -139,7 +130,7 @@ Item {
         }
 
         function test_input_rect_follows_position() {
-            const holder = createTemporaryObject(centeredComp, stage)
+            const holder = createTemporaryObject(fx.centeredComp, stage)
             const island = holder.island
             tryCompare(island, "width", 180)
             holder.width = 900
@@ -788,21 +779,21 @@ Item {
 
         function test_cover_colour_tints_music() {
             const { island } = make({ position: 50000000, length: 200000000 })
-            compare(findChild(island, "bars").color, Qt.color("#e8e2d0"))
-            compare(island.musicTint, island.palette.accent)
+            compare(findChild(island, "bars").color, Qt.tint("#e8e2d0", "transparent"))
+            compare(island.musicTint, ipal.accent)
             island.coverTinted = true
             island.coverTint = "#e0403a"
-            tryCompare(findChild(island, "bars"), "color", Qt.color("#e0403a"))
-            compare(island.musicTint, Qt.color("#e0403a"))
+            tryCompare(findChild(island, "bars"), "color", Qt.tint("#e0403a", "transparent"))
+            compare(island.musicTint, Qt.tint("#e0403a", "transparent"))
             mouseMove(island, 10, 10)
             tryCompare(island, "mode", "peek")
-            compare(findChild(island, "peekSeekFill").color, Qt.color("#e0403a"))
+            compare(findChild(island, "peekSeekFill").color, Qt.tint("#e0403a", "transparent"))
             island.open = true
             tryCompare(island, "height", island.size.h)
-            compare(findChild(island, "cardProgressFill").color, Qt.color("#e0403a"))
+            compare(findChild(island, "cardProgressFill").color, Qt.tint("#e0403a", "transparent"))
             // No usable colour: back to the usual look.
             island.coverTinted = false
-            compare(findChild(island, "cardProgressFill").color, Qt.color("#e8e2d0"))
+            compare(findChild(island, "cardProgressFill").color, Qt.tint("#e8e2d0", "transparent"))
         }
 
         function test_cover_flies_into_the_panel() {
@@ -945,17 +936,17 @@ Item {
         function test_light_theme_reaches_everything() {
             const { island } = make({})
             const fill = findChild(island, "islandFill")
-            compare(fill.fillColor, Qt.color("#000000"))
+            compare(fill.fillColor, Qt.tint("#000000", "transparent"))
             island.lightTheme = true
-            compare(island.palette.window, Qt.color(L.themeColors(true).window))
-            compare(fill.fillColor, Qt.color(L.themeColors(true).window))
+            compare(ipal.window, Qt.tint(L.themeColors(true).window, "transparent"))
+            compare(fill.fillColor, Qt.tint(L.themeColors(true).window, "transparent"))
             // A faint edge keeps a light pill from melting into a light wallpaper.
             compare(fill.strokeWidth, 1)
             island.open = true
             tryCompare(island, "height", island.size.h)
-            // Children inherit the palette: the panel's tabs and text follow.
-            const panel = findChild(island, "homePanel")
-            compare(panel.palette.windowText, Qt.color(L.themeColors(true).windowText))
+            // The panel reads the same shared colours (ipal), so its tabs and text follow.
+            verify(findChild(island, "homePanel"))
+            compare(ipal.windowText, Qt.tint(L.themeColors(true).windowText, "transparent"))
         }
 
         function test_opacity_and_custom_colour() {
@@ -966,20 +957,20 @@ Item {
             island.fillOpacity = 0.6
             verify(Math.abs(fill.fillColor.a - 0.6) < 0.01)
             compare(island.translucent, true)
-            // A custom colour fills the island and sets the palette around it.
+            // A custom colour fills the island and sets the shared colours (ipal) around it.
             island.customColor = "#0b1f33"
-            compare(Qt.rgba(fill.fillColor.r, fill.fillColor.g, fill.fillColor.b, 1), Qt.color("#0b1f33"))
-            compare(island.palette.window, Qt.color("#0b1f33"))
-            compare(island.palette.windowText, Qt.color("#ffffff"))
+            compare(Qt.rgba(fill.fillColor.r, fill.fillColor.g, fill.fillColor.b, 1), Qt.tint("#0b1f33", "transparent"))
+            compare(ipal.window, Qt.tint("#0b1f33", "transparent"))
+            compare(ipal.windowText, Qt.tint("#ffffff", "transparent"))
             compare(island.lightLook, false)
             // A pale one gets dark text and the faint edge.
             island.customColor = "#fff4dc"
-            compare(island.palette.windowText, Qt.color("#111113"))
+            compare(ipal.windowText, Qt.tint("#111113", "transparent"))
             compare(island.lightLook, true)
             compare(fill.strokeWidth, 1)
             // Back to the theme.
             island.customColor = "transparent"
-            compare(island.palette.window, Qt.color("#000000"))
+            compare(ipal.window, Qt.tint("#000000", "transparent"))
         }
 
         function test_player_chips_pick_a_player() {
@@ -1034,12 +1025,12 @@ Item {
         function test_pomodoro_colours_the_countdown() {
             const { island, timer } = make(null, true)
             const text = findChild(island, "timerText")
-            compare(text.color, island.palette.brightText)
+            compare(text.color, ipal.brightText)
             timer.pomodoro = true
             timer.phase = "work"
-            compare(text.color, Qt.color("#ff6b5a"))
+            compare(text.color, Qt.tint("#ff6b5a", "transparent"))
             timer.phase = "break"
-            compare(text.color, Qt.color("#30d158"))
+            compare(text.color, Qt.tint("#30d158", "transparent"))
         }
 
         function test_update_count_opens_the_list() {
@@ -1579,7 +1570,7 @@ Item {
             verify(findChild(island, "jobAlert").visible)
             const title = findChild(island, "jobAlertTitle")
             compare(title.text, "Copy failed")
-            compare(title.color, Qt.color("#ff8a8a"))
+            compare(title.color, Qt.tint("#ff8a8a", "transparent"))
             compare(findChild(island, "jobAlertBody").text, "Photos 2026 · Not enough free space")
         }
 
@@ -1589,7 +1580,7 @@ Item {
             island.linkRequested.connect(u => opened = u)
             island.showAlert({ kind: "job", ok: true, title: "Downloaded", body: "a.iso", folder: "file:///home/alnyz/Downloads" }, 4000)
             tryCompare(island, "height", 64)
-            compare(findChild(island, "jobAlertTitle").color, Qt.color("#ffffff"))
+            compare(findChild(island, "jobAlertTitle").color, Qt.tint("#ffffff", "transparent"))
             mouseClick(island, 40, 30)
             compare(opened, "file:///home/alnyz/Downloads")
             compare(island.mode, "idle")
@@ -1733,8 +1724,46 @@ Item {
         function test_compact_title_scrolls_only_when_too_long() {
             const { island } = make({ track: "x".repeat(200) })
             tryCompare(findChild(island, "compactTitle"), "scrolls", true)
-            const short = make({ track: "Hi" })
-            tryCompare(findChild(short.island, "compactTitle"), "scrolls", false)
+            const shortOne = make({ track: "Hi" })
+            tryCompare(findChild(shortOne.island, "compactTitle"), "scrolls", false)
+        }
+
+        function test_title_scroll_off_cuts_the_title_short() {
+            const { island } = make({ track: "x".repeat(200) })
+            const area = findChild(island, "compactTitle")
+            tryCompare(area, "scrolls", true)
+            island.titleScroll = false
+            compare(area.scrolls, false)
+            compare(area.scrollX, 0)
+            const text = findChild(island, "compactTitleText")
+            verify(text.truncated)
+            verify(text.width <= area.room)
+        }
+
+        function test_title_rests_for_the_set_time_before_scrolling() {
+            const { island } = make({ track: "x".repeat(200) })
+            const area = findChild(island, "compactTitle")
+            tryCompare(area, "scrolls", true)
+            island.titleScrollPause = 0.6
+            area.restartScroll()
+            wait(300)
+            compare(area.scrollX, 0)
+            tryVerify(() => area.scrollX < -5, 2000)
+        }
+
+        function test_each_pass_starts_again_from_rest() {
+            // Qt 5 once looped the marquee without its pause and started the next pass part way
+            // through, so the title jumped. Each pass must end, go back to 0 and rest there.
+            const { island } = make({ track: "x".repeat(40) })
+            const area = findChild(island, "compactTitle")
+            tryCompare(area, "scrolls", true)
+            island.titleScrollSpeed = 1000
+            island.titleScrollPause = 0.5
+            area.restartScroll()
+            tryVerify(() => area.scrollX < -5, 2000)
+            tryVerify(() => area.scrollX === 0, 3000)
+            wait(250)
+            compare(area.scrollX, 0)
         }
 
         function test_pill_shows_the_lyric_line() {
