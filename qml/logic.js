@@ -505,7 +505,7 @@ function islandOpacity(opacity, translucent) {
 
 // Relative luminance (WCAG) of a colour, 0 (black) to 1 (white).
 function luminance(c) {
-    const q = Qt.color(c)
+    const q = toColor(c)
     const ch = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
     return 0.2126 * ch(q.r) + 0.7152 * ch(q.g) + 0.0722 * ch(q.b)
 }
@@ -513,6 +513,12 @@ function luminance(c) {
 function contrastRatio(a, b) {
     const x = luminance(a), y = luminance(b)
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+// A colour value from a name or "#rrggbb", as Qt 6's Qt.color() gives; Qt 5 has no Qt.color(),
+// and tinting with a transparent colour returns the colour as it is.
+function toColor(c) {
+    return Qt.tint(c, "transparent")
 }
 
 // Whether text on this background reads better dark than light.
@@ -524,7 +530,7 @@ function wantsDarkText(background) {
 // shades of it, and its text is dark or light, whichever reads better on it.
 function themeColors(light, custom) {
     if (custom) {
-        const bg = Qt.color(custom)
+        const bg = toColor(custom)
         const dark = wantsDarkText(bg)
         // A softened black, unless the background is a mid-tone that needs the full contrast.
         const ink = !dark ? "#ffffff" : contrastRatio("#111113", bg) >= 4.5 ? "#111113" : "#000000"
