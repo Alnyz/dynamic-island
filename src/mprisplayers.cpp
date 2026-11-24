@@ -53,11 +53,8 @@ QVariantMap toMap(const QVariant &v)
 MprisPlayer::MprisPlayer(const QString &service, QObject *parent)
     : QObject(parent)
     , m_service(service)
-    , m_tick(new QTimer(this))
 {
     setObjectName(service.mid(kPrefix.size()));
-    m_tick->setInterval(1000);
-    connect(m_tick, &QTimer::timeout, this, &MprisPlayer::positionChanged);
 
     auto bus = QDBusConnection::sessionBus();
     bus.connect(service, kPath, kProps, QStringLiteral("PropertiesChanged"), this,
@@ -127,10 +124,6 @@ void MprisPlayer::apply(const QString &iface, const QVariantMap &props)
             m_status = status;
             m_position = now;
             m_positionAt = QDateTime::currentMSecsSinceEpoch();
-            if (m_status == Playing)
-                m_tick->start();
-            else
-                m_tick->stop();
             Q_EMIT playbackStatusChanged();
             updatePosition();
         }
@@ -178,8 +171,16 @@ void MprisPlayer::applyMetadata(const QVariantMap &meta)
     };
     const QVariant id = meta.value(QStringLiteral("mpris:trackid"));
     const QString trackId = id.canConvert<QDBusObjectPath>() ? id.value<QDBusObjectPath>().path() : id.toString();
+    const QString title = meta.value(QStringLiteral("xesam:title")).toString();
+    // Spotify and others start a new song without sending its position, so the count from the
+    // old song would carry on into it. Start the new one at 0 and ask the player for the truth.
+    const bool newSong = !m_track.isEmpty() && (trackId != m_trackId || title != m_track);
     m_trackId = trackId;
-    update(m_track, meta.value(QStringLiteral("xesam:title")).toString(), &MprisPlayer::trackChanged, this);
+    if (newSong) {
+        m_position = 0;
+        m_positionAt = QDateTime::currentMSecsSinceEpoch();
+    }
+    update(m_track, title, &MprisPlayer::trackChanged, this);
     update(m_artist, joined(meta.value(QStringLiteral("xesam:artist"))), &MprisPlayer::artistChanged, this);
     update(m_album, meta.value(QStringLiteral("xesam:album")).toString(), &MprisPlayer::albumChanged, this);
     update(m_artUrl, meta.value(QStringLiteral("mpris:artUrl")).toString(), &MprisPlayer::artUrlChanged, this);
@@ -188,6 +189,8 @@ void MprisPlayer::applyMetadata(const QVariantMap &meta)
         m_length = length;
         Q_EMIT lengthChanged();
     }
+    if (newSong)
+        updatePosition();
 }
 
 double MprisPlayer::position() const

@@ -117,7 +117,6 @@ private:
     double m_volume = 0;
     bool m_canSeek = false, m_canGoNext = false, m_canGoPrevious = false, m_canPlay = false, m_canPause = false, m_canControl = false,
          m_canRaise = false;
-    QTimer *m_tick = nullptr;
 };
 
 // All MPRIS players on the session bus, as `list`.
