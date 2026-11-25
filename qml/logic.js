@@ -752,13 +752,14 @@ function parseQrc(raw) {
         if (!lm)
             continue
         const words = []
-        const re = /([^()]*)\((\d+),(\d+)\)/g
+        const re = /([\s\S]*?)\((\d+),(\d+)\)/g
         let w
         while ((w = re.exec(lm[3])) !== null)
             if (w[1])
                 words.push({ ms: Number(w[2]), end: Number(w[2]) + Number(w[3]), text: w[1] })
         const text = words.map(x => x.text).join("").trim()
-        if (!text || text.indexOf("：") >= 0 || (lm[1] === "0" && text.indexOf(" - ") >= 0))
+        // Credits ("Lyrics by：…") come before the first sung line.
+        if (!text || (!out.length && text.indexOf("：") >= 0) || (lm[1] === "0" && text.indexOf(" - ") >= 0))
             continue
         out.push({ ms: Math.min(Number(lm[1]), words[0].ms), text: text, words: words })
     }

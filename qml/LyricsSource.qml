@@ -75,6 +75,13 @@ QtObject {
         return { state: "none" }
     }
 
+    // The song the latest request is for, while it runs.
+    property string asking: ""
+    property int serial: 0
+    // An answer a source failed to contribute to: kept for this song only, so it's asked again
+    // the next time the song comes round.
+    property var partial: null
+
     function refresh() {
         timer.stop()
         if (!enabled) {
@@ -87,6 +94,15 @@ QtObject {
         }
         if (cache.has(key)) {
             show(cache.get(key))
+            return
+        }
+        if (partial && partial.key === key) {
+            show(partial.result)
+            return
+        }
+        // Already on its way; the pill asks again each time the pointer leaves it.
+        if (asking === key) {
+            show({ state: "loading" })
             return
         }
         // Read straight from the two flags: a derived property can still hold its old value
@@ -102,12 +118,14 @@ QtObject {
     // Called when wordWait runs out, for the request still waiting.
     property var giveUp: null
 
-    // BetterLyrics, lrc.red and QQ Music at once; done(lines) with the best answer, or [] for none.
+    // BetterLyrics, lrc.red and QQ Music at once; done(lines, failed) with the best answer, or [] for
+    // none. failed: a source errored or didn't answer in time.
     // A word-timed answer beats a line-timed one, then the order above decides.
     function askWordSources(a, t, len, done) {
         const got = [null, null, null]
         let left = 3
         let over = false
+        let failed = false
         let settle = null
         settle = () => {
             if (over || (left > 0 && wordWait.running && giveUp === settle))
@@ -118,9 +136,10 @@ QtObject {
                 wordWait.stop()
                 giveUp = null
             }
-            done(got.find(l => l && l.some(x => x.words)) || got.find(l => l && l.length) || [])
+            done(got.find(l => l && l.some(x => x.words)) || got.find(l => l && l.length) || [], failed || left > 0)
         }
-        const answer = (i, lines) => {
+        const answer = (i, lines, err) => {
+            failed = failed || !!err
             got[i] = lines
             --left
             settle()
@@ -131,57 +150,73 @@ QtObject {
         if (skip.includes("betterlyrics"))
             answer(0, null)
         else
-            fetch(L.betterLyricsUrl(a, t, len), (err, r) => answer(0, !err && r ? L.parseTtml(r.ttml) : null))
+            fetch(L.betterLyricsUrl(a, t, len), (err, r) => answer(0, !err && r ? L.parseTtml(r.ttml) : null, err))
         if (skip.includes("qq"))
             answer(2, null)
         else
-            fetch(L.qqLyricsUrl(a, t, len), (err, r) => answer(2, !err && r ? L.parseQrc(r.lyrics) : null))
+            fetch(L.qqLyricsUrl(a, t, len), (err, r) => answer(2, !err && r ? L.parseQrc(r.lyrics) : null, err))
         if (skip.includes("lrcred"))
             answer(1, null)
         else
             fetch(L.lrcRedSearchUrl(a, t), (err, r) => {
                 const isrc = !err && r ? L.pickLrcRed(r.hits, a, t, len) : ""
                 if (!isrc) {
-                    answer(1, null)
+                    answer(1, null, err)
                     return
                 }
-                fetch(L.lrcRedTtmlUrl(isrc), (err2, ttml) => answer(1, !err2 && ttml ? L.parseTtml(ttml) : null), true)
+                fetch(L.lrcRedTtmlUrl(isrc), (err2, ttml) => answer(1, !err2 && ttml ? L.parseTtml(ttml) : null, err2), true)
             })
     }
 
     function load() {
         const k = key
+        const n = ++serial
+        asking = k
         const a = artist, t = title, al = album, len = lengthUs
-        const finish = r => {
-            cache.set(k, r)
-            if (k === lyrics.key)
-                show(r)
+        // True once the answer is no use: a newer request took over, or the song or setting changed.
+        const stale = () => {
+            if (n !== serial)
+                return true
+            if (k === lyrics.key && enabled)
+                return false
+            asking = ""
+            return true
         }
-        askWordSources(a, t, len, function(lines) {
-            if (k !== lyrics.key)
+        askWordSources(a, t, len, function(lines, failed) {
+            if (stale())
                 return
+            const finish = r => {
+                asking = ""
+                // A word-timed answer can't be bettered; anything else might be, once the failed source is back.
+                if (!failed || (r.lines && r.lines.some(x => x.words)))
+                    cache.set(k, r)
+                else if (r.state !== "none")
+                    partial = { key: k, result: r }
+                show(r)
+            }
             if (lines.length)
                 finish({ state: "synced", lines: lines })
             else if (off.includes("lrclib"))
                 finish({ state: "none" })
             else
-                lrclib(k, a, t, al, len, finish)
+                lrclib(stale, a, t, al, len, finish)
         })
     }
 
-    function lrclib(k, a, t, al, len, finish) {
+    function lrclib(stale, a, t, al, len, finish) {
         fetch(L.lyricsGetUrl(a, t, al, len), function(err, record) {
-            if (k !== lyrics.key)
+            if (stale())
                 return
             if (!err && record) {
                 finish(fromRecord(record))
                 return
             }
             fetch(L.lyricsSearchUrl(a, t), function(err2, list) {
-                if (k !== lyrics.key)
+                if (stale())
                     return
                 // A network failure isn't remembered, so it's tried again next time.
                 if (err2) {
+                    asking = ""
                     show({ state: "none" })
                     return
                 }
@@ -190,7 +225,11 @@ QtObject {
         })
     }
 
-    onKeyChanged: refresh()
+    onKeyChanged: {
+        if (partial && partial.key !== key)
+            partial = null
+        refresh()
+    }
     onEnabledChanged: refresh()
     onWantedChanged: refresh()
     onWantedPillChanged: refresh()

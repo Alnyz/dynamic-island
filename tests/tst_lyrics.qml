@@ -180,6 +180,81 @@ TestCase {
         }
     }
 
+    // Answers only when the test says so.
+    property var pending: []
+    Component {
+        id: heldComp
+        LyricsSource {
+            enabled: true
+            delayMs: 10
+            artist: "Maroon 5"
+            title: "Girls Like You"
+            lengthUs: 235000000
+            fetch: function(url, done) { tc.pending.push({ url: url, done: done }) }
+        }
+    }
+
+    function test_hovering_while_loading_asks_once() {
+        pending = []
+        const l = createTemporaryObject(heldComp, tc)
+        l.wanted = true
+        tryVerify(() => pending.length === 3)
+        l.wanted = false
+        l.wanted = true
+        compare(l.state, "loading")
+        wait(50)
+        compare(pending.length, 3)
+        pending[0].done(null, { ttml: ttml })
+        pending[1].done(null, null)
+        pending[2].done(null, null)
+        tryCompare(l, "state", "synced")
+        compare(l.lines[0].words.length, 3)
+    }
+
+    function test_coming_back_to_a_song_waits_for_its_new_request() {
+        pending = []
+        const l = createTemporaryObject(heldComp, tc)
+        l.wanted = true
+        tryVerify(() => pending.length === 3)
+        l.title = "Other"
+        tryVerify(() => pending.length === 6)
+        l.title = "Girls Like You"
+        tryVerify(() => pending.length === 9)
+        // The first request is out of date: one early miss must not settle anything.
+        pending[0].done(null, null)
+        compare(pending.length, 9)
+        compare(l.state, "loading")
+    }
+
+    function test_a_result_missing_a_source_is_asked_again_next_time() {
+        answers = { "/getLyrics": ["HTTP 500", null], "/api/get": [null, { syncedLyrics: "[00:06.94]Spent 24 hours" }] }
+        const l = make()
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+        const sent = requests.length
+        // The same song keeps showing it without asking again.
+        l.wanted = false
+        l.wanted = true
+        compare(l.state, "synced")
+        wait(50)
+        compare(requests.length, sent)
+        l.title = "Other"
+        l.title = "Girls Like You"
+        tryVerify(() => requests.length > sent)
+    }
+
+    function test_nothing_found_while_offline_is_not_remembered() {
+        answers = { "/getLyrics": ["HTTP 0", null], "lrc.red": ["HTTP 0", null] }
+        const l = make()
+        l.off = ["lrclib"]
+        l.wanted = true
+        tryCompare(l, "state", "none")
+        answers = { "/getLyrics": [null, { ttml: ttml }] }
+        l.wanted = false
+        l.wanted = true
+        tryCompare(l, "state", "synced")
+    }
+
     function test_off() {
         const l = make()
         l.enabled = false

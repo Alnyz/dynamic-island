@@ -19,22 +19,26 @@ class MprisSeeks : public QObject, protected QDBusContext
 public:
     explicit MprisSeeks(QObject *parent = nullptr);
 
-    // Asks the player named identity for its position; the answer comes as positionRead. Plasma
-    // can't do this: asking it to read the position again leaves its copy as it was.
-    Q_INVOKABLE void askPosition(const QString &identity);
+    // Asks the player named identity, on the song named title, for its position; the answer comes as
+    // positionRead. Plasma can't do this: asking it to read the position again leaves its copy as it was.
+    Q_INVOKABLE void askPosition(const QString &identity, const QString &title);
 
 Q_SIGNALS:
-    // identity: the player's MPRIS Identity, as Plasma shows it; position in microseconds.
-    void seeked(const QString &identity, qlonglong position);
-    void positionRead(const QString &identity, qlonglong position);
+    // identity and title: the player's MPRIS Identity and song, as Plasma shows them; position in
+    // microseconds.
+    void seeked(const QString &identity, const QString &title, qlonglong position);
+    void positionRead(const QString &identity, const QString &title, qlonglong position);
 
 private Q_SLOTS:
     void onSeeked(qlonglong position);
 
 private:
-    void readPosition(const QString &identity, const QString &service);
+    void readPosition(const QString &identity, const QString &title, const QString &service);
+    void title(const QString &service, std::function<void(const QString &)> done);
     void get(const QString &service, const QString &iface, const QString &name, std::function<void(const QVariant &)> done);
 
-    // Identity -> bus address, found once per player; dropped when a read fails (the player quit).
+    // Identity and title -> bus address, so the bus is searched once per song.
+    // ponytail: two players with one name on the same title can't be told apart; Plasma's QML
+    // doesn't give the bus address.
     QHash<QString, QString> m_services;
 };

@@ -636,6 +636,13 @@ TestCase {
         compare(L.parseQrc("[00:01.00]Plain")[0].text, "Plain")
     }
 
+    function test_parse_qrc_keeps_brackets_and_later_colons() {
+        const lines = L.parseQrc("[5000,2000]Hello (5000,500)(yeah)(5600,700)\n[8000,500]she said：(8000,200)go(8200,300)")
+        compare(lines.length, 2)
+        compare(lines[0].text, "Hello (yeah)")
+        compare(lines[1].text, "she said：go")
+    }
+
     function test_pick_lrc_red() {
         const hits = [
             { isrc: "USAT21705440", title: "Finesse (Remix) [feat. Cardi B]", artist: "Bruno Mars", duration: 217.3 },
