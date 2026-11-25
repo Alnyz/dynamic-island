@@ -293,15 +293,15 @@ Window {
     // copy of the position already reads 0; the player's own Seeked signal is taken straight.
     Connections {
         target: MprisSeeks
-        function onSeeked(identity, position) {
-            if (source.player && source.player.identity === identity)
+        function onSeeked(identity, title, position) {
+            if (source.player && source.player.identity === identity && (source.player.track || "") === title)
                 island.songClock.moveTo(position)
         }
         // A new song can take a moment to start after it says it's at 0:00, and a player can stall,
         // so the counted time is checked against the player's own while it's shown. Smaller
         // differences are left alone, so the time never twitches.
-        function onPositionRead(identity, position) {
-            if (source.player && source.player.identity === identity && Math.abs(island.songClock.value - position) > 250000)
+        function onPositionRead(identity, title, position) {
+            if (source.player && source.player.identity === identity && (source.player.track || "") === title && Math.abs(island.songClock.value - position) > 250000)
                 island.songClock.moveTo(position)
         }
     }
@@ -310,7 +310,7 @@ Window {
         repeat: true
         triggeredOnStart: true
         running: island.songClock.active && island.songClock.player !== null
-        onTriggered: MprisSeeks.askPosition(source.player ? source.player.identity || "" : "")
+        onTriggered: if (source.player) MprisSeeks.askPosition(source.player.identity || "", source.player.track || "")
     }
 
     Island {

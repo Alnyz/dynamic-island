@@ -66,6 +66,14 @@ TestCase {
         verify(c.value >= 90000000)
     }
 
+    function test_counts_at_the_players_speed() {
+        const c = createTemporaryObject(clockComp, tc, { player: { playbackStatus: L.Status.Playing, length: 0, position: 5000000, rate: 3 } })
+        tryVerify(() => c.value >= 5000000)
+        const from = c.value
+        wait(1000)
+        verify(c.value - from >= 2000000, String(c.value - from))
+    }
+
     function test_a_plain_player_counts() {
         const c = createTemporaryObject(clockComp, tc, { player: { playbackStatus: L.Status.Playing, length: 0, position: 5000000 } })
         tryVerify(() => c.value >= 5000000)

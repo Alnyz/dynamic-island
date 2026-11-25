@@ -40,6 +40,11 @@ configure_file(data/dynamic-island.desktop.in dynamic-island.desktop @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/dynamic-island.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
 find_package(Qt6 REQUIRED COMPONENTS Test)
+# A private session bus, so the fake players never meet the real ones.
+qt_add_executable(tst_mpriseeks tests/cpp/tst_mpriseeks.cpp src/mpriseeks.cpp src/mpriseeks.h)
+target_include_directories(tst_mpriseeks PRIVATE src)
+target_link_libraries(tst_mpriseeks PRIVATE Qt6::Test Qt6::DBus Qt6::Qml)
+add_test(NAME cpp_mpriseeks COMMAND dbus-run-session -- $<TARGET_FILE:tst_mpriseeks>)
 qt_add_executable(tst_systemstatus tests/cpp/tst_systemstatus.cpp src/systemstatus.cpp src/systemstatus.h)
 target_include_directories(tst_systemstatus PRIVATE src)
 target_link_libraries(tst_systemstatus PRIVATE Qt6::Test Qt6::Gui Qt6::DBus Qt6::Qml KF6::IdleTime)

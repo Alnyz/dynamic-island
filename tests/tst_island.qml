@@ -1797,6 +1797,20 @@ Item {
             tryVerify(() => island.width <= stage.width - 20)
         }
 
+        function test_too_long_lyric_with_dots_fits_the_screen() {
+            const { island } = make({})
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            lyrics.lines = [{ ms: 0, text: "y".repeat(400) }]
+            island.micApps = ["Discord"]
+            island.cameraApps = ["Discord"]
+            island.shelf = ["file:///tmp/a"]
+            tryCompare(island, "wantsLyrics", true)
+            tryVerify(() => island.width > island.compactWidth)
+            wait(600)
+            verify(island.width <= stage.width - 20, island.width + " > " + (stage.width - 20))
+        }
+
         function test_leave_closes_after_delay() {
             const { island } = make()
             mouseMove(island, 10, 10)
