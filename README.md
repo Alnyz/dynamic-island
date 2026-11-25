@@ -47,7 +47,7 @@ Not tried yet: replacing Plasma's notification and volume popups, behaviour over
 ### Panel tabs
 
 - Home: music, the month calendar (click a day to see its events; public holidays in orange, festivals with an orange dot), weather for the next few hours (click it for the full forecast on weather.com), upcoming events with a Join button for Meet, Zoom and Teams links, and the timer.
-- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. With more than one player open, chips pick which one the island follows. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics from LRCLIB; click a line to jump to it.
+- Music: cover with a soft colour glow, seeking, shuffle, repeat and player volume. With more than one player open, chips pick which one the island follows. The level bars, seek bars and a thin edge on the pill take the cover's main colour (Settings → Look). The lyrics button shows synced lyrics, word by word when the source times each word; click a line to jump to it.
 - Timer: drag the minute tape or pick a preset, or start a Pomodoro (25 minutes of focus, 5 minute breaks, a long one every fourth). The pill's countdown turns red while focusing and green on a break.
 - Sound mixer: output and input devices, mic level, and per-app volume.
 - Notifications: the saved ones from the last 7 days, grouped by app, with the new ones marked. Click one to open its app. Settings choose how long they're kept and which kinds and apps are saved.
@@ -116,7 +116,7 @@ For calendar events, paste a calendar's secret iCal address (Google Calendar →
 
 Browsers often leave out the cover of a song you skip to. When one is missing, the island looks the song up on the iTunes Search API, sending only the artist and title. Turn this off in Settings → Behaviour.
 
-Lyrics come from [LRCLIB](https://lrclib.net), only while the lyrics view is open; the artist, title, album and length are sent. Turn them off in Settings → Behaviour.
+Lyrics come from [BetterLyrics](https://lyrics-api.boidu.dev), [lrc.red](https://lrc.red) and QQ Music (through BetterLyrics), which time each word, and from [LRCLIB](https://lrclib.net) when none of them has the song. They are asked for only while the lyrics view or the pill's lyric line is shown; the artist, title and length are sent, and the album to LRCLIB too. Turn lyrics or any one source off in Settings → Behaviour, where the pill's line can be turned off on its own.
 
 Weather comes from [Open-Meteo](https://open-meteo.com). The location is found from your IP address through geojs.io, or you can set a city in Settings. When the IP lookup has no city name, the place is named from its coordinates through BigDataCloud.
 
