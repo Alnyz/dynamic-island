@@ -492,7 +492,7 @@ QQC.ApplicationWindow {
                     QQC.CheckBox {
                         objectName: "titleScroll"
                         Kirigami.FormData.label: "Long titles:"
-                        text: "Scroll titles too long for the pill (off: cut short with …)"
+                        text: "Scroll song titles too long for the pill (off: cut short with …)"
                         checked: win.prefs.behaviour.titleScroll
                         onToggled: win.prefs.behaviour.titleScroll = checked
                     }

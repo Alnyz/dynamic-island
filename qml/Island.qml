@@ -52,6 +52,7 @@ Item {
     // are worth asking for; LyricsSource does the asking (and only then).
     property bool pillLyrics: true
     // Pixels a second for a title too long for the compact pill (Settings → Behaviour).
+    // These three are for song titles only; a lyric line scrolls as it does on main.
     property int titleScrollSpeed: 30
     // Off: a title too long for the pill stays still and ends in "…".
     property bool titleScroll: true
@@ -936,10 +937,14 @@ Item {
             // The room the words will have once the pill has settled: while it grows for a lyric
             // line this is already the end width, so a line that fits never starts scrolling.
             readonly property real room: lyric ? Math.max(0, island.compactPillWidth - 70) : width
-            readonly property bool scrolls: island.titleScroll && compactTitleText.implicitWidth > room
+            // A lyric line is only up for a few seconds, so the title settings don't touch it: it
+            // always scrolls when it must, at 80 pixels a second, after a 1.5 s rest.
+            readonly property bool scrolls: (lyric || island.titleScroll) && compactTitleText.implicitWidth > room
             readonly property real distance: compactTitleText.implicitWidth + gap
-            // A lyric line won't stay long, so it never goes slower than 80 pixels a second.
-            readonly property real speed: Math.max(1, lyric ? Math.max(80, island.titleScrollSpeed) : island.titleScrollSpeed)
+            readonly property real speed: lyric ? 80 : Math.max(1, island.titleScrollSpeed)
+            readonly property real pause: lyric ? 1.5 : Math.max(0, island.titleScrollPause)
+            // Cut short with "…" instead of scrolling: only a song title, with scrolling off.
+            readonly property bool cut: !lyric && !island.titleScroll
             // 0 at the start of a pass; the marquee moves it left while a line scrolls.
             property real scrollX: 0
             onTitleChanged: {
@@ -959,7 +964,7 @@ Item {
                 // Set here, not bound: a running animation keeps the values it started with.
                 marqueeStep.to = -distance
                 marqueeStep.duration = distance / speed * 1000
-                marqueePause.duration = Math.max(0, island.titleScrollPause) * 1000
+                marqueePause.duration = pause * 1000
                 if (scrolls && visible)
                     marqueeScroll.start()
             }
@@ -975,8 +980,8 @@ Item {
                     id: compactTitleText
                     objectName: "compactTitleText"
                     // Without scrolling, a long title is cut short to the room it has.
-                    width: island.titleScroll ? implicitWidth : Math.min(implicitWidth, compactTitle.room)
-                    elide: island.titleScroll ? Text.ElideNone : Text.ElideRight
+                    width: compactTitle.cut ? Math.min(implicitWidth, compactTitle.room) : implicitWidth
+                    elide: compactTitle.cut ? Text.ElideRight : Text.ElideNone
                     text: compactTitle.title
                     color: ipal.windowText
                     font.pixelSize: 12
