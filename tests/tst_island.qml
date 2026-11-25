@@ -1826,6 +1826,57 @@ Item {
             tryVerify(() => island.width <= stage.width - 20)
         }
 
+        // The title scroll settings are for song titles; a lyric line scrolls as it does on main.
+        function longLyric(island) {
+            const lyrics = createTemporaryObject(lyricsFake, stage)
+            island.lyrics = lyrics
+            lyrics.lines = [{ ms: 0, text: "y".repeat(400) }]
+            tryCompare(island, "wantsLyrics", true)
+            const area = findChild(island, "compactTitle")
+            tryCompare(area, "scrolls", true)
+            return area
+        }
+
+        function test_lyric_line_ignores_the_title_stop() {
+            const { island } = make({})
+            island.titleScrollPause = 5
+            const area = longLyric(island)
+            compare(area.pause, 1.5)
+            // It starts moving after its own 1.5 s rest, long before the titles' 5 s.
+            tryVerify(() => area.scrollX < -5, 2500)
+        }
+
+        function test_lyric_line_ignores_the_title_speed() {
+            const { island } = make({})
+            island.titleScrollSpeed = 5
+            const area = longLyric(island)
+            compare(area.speed, 80)
+            island.titleScrollSpeed = 60
+            compare(area.speed, 80)
+        }
+
+        function test_lyric_line_scrolls_with_title_scroll_off() {
+            const { island } = make({})
+            island.titleScroll = false
+            const area = longLyric(island)
+            compare(area.cut, false)
+            compare(findChild(island, "compactTitleText").truncated, false)
+            // The song title still follows the switch once the lyric line is gone.
+            island.lyrics.state = "plain"
+            tryCompare(area, "lyric", false)
+            compare(area.cut, true)
+        }
+
+        function test_title_keeps_its_own_stop_and_speed() {
+            const { island } = make({ track: "x".repeat(200) })
+            island.titleScrollPause = 3
+            island.titleScrollSpeed = 12
+            const area = findChild(island, "compactTitle")
+            tryCompare(area, "scrolls", true)
+            compare(area.pause, 3)
+            compare(area.speed, 12)
+        }
+
         function test_leave_closes_after_delay() {
             const { island } = make()
             mouseMove(island, 10, 10)
