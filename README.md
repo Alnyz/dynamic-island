@@ -2,7 +2,7 @@
 
 A notch at the top of the screen for KDE Plasma 5 on X11. It shows what's playing, takes over volume and notification popups, and opens into a small panel with a calendar, weather, a timer and a few tools.
 
-This is the `port/plasma5-x11` branch: a port of [Alnyz's Dynamic Island](https://github.com/Alnyz/dynamic-island), which is made for Plasma 6 on Wayland, to Qt 5.15 and KDE Frameworks 5, for distributions that still ship Plasma 5. It looks and works like the Plasma 6 version as of early November 2026; features added to `main` since then aren't here. Ported by [@viktorg1](https://github.com/viktorg1) with Claude as a coding assistant.
+This is the `port/plasma5-x11` branch: a port of [Alnyz's Dynamic Island](https://github.com/Alnyz/dynamic-island), which is made for Plasma 6 on Wayland, to Qt 5.15 and KDE Frameworks 5, for distributions that still ship Plasma 5. It looks and works like the Plasma 6 version as of late November 2026 (lyrics on the pill, word-timed lyrics, the shared song clock and the lighter level bars included); features added to `main` after that aren't here yet. Ported by [@viktorg1](https://github.com/viktorg1) with Claude as a coding assistant.
 
 If you're on Plasma 6, use the [`main` branch](https://github.com/Alnyz/dynamic-island) instead.
 

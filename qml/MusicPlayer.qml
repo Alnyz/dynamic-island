@@ -11,6 +11,9 @@ Item {
     id: music
 
     property var player: null
+    // The island's song clock (LivePosition), shared: this tab is made again on every open, and a
+    // clock of its own would start from Plasma's stale copy of the position.
+    property LivePosition clock: null
     // Other players to switch to; chips show when there's more than one.
     property var choices: []
     signal picked(var p)
@@ -21,34 +24,9 @@ Item {
     property var lyrics: null
     property bool showLyrics: false
     readonly property bool lyricsOn: lyrics !== null && lyrics.enabled
-    onShowLyricsChanged: {
-        syncPosition()
-        if (lyrics)
-            lyrics.wanted = showLyrics && visible
-    }
-    onPlayerChanged: syncPosition()
-    Component.onCompleted: syncPosition()
+    onShowLyricsChanged: if (lyrics) lyrics.wanted = showLyrics && visible
     onVisibleChanged: if (lyrics) lyrics.wanted = showLyrics && visible
     Component.onDestruction: if (lyrics) lyrics.wanted = false
-    // The player's position only updates once a second; between updates it's counted on here.
-    property real positionMs: 0
-    property real positionAt: 0
-    Connections {
-        target: music.player
-        ignoreUnknownSignals: true
-        function onPositionChanged() { music.syncPosition() }
-    }
-    function syncPosition() {
-        positionMs = player ? player.position / 1000 : 0
-        positionAt = Date.now()
-    }
-    property real lyricsPositionMs: positionMs
-    Timer {
-        interval: 100
-        repeat: true
-        running: music.showLyrics && music.visible
-        onTriggered: music.lyricsPositionMs = music.positionMs + (music.playing ? Date.now() - music.positionAt : 0)
-    }
     property color accentTint: ipal.accent
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property string appIcon: player ? player.iconName || player.desktopEntry || "" : ""
@@ -168,13 +146,15 @@ Item {
                     visible: music.choices.length > 1
                     topPadding: 8
                     spacing: 6
+                    // The chips hold plain text, never the player objects: a player that quits (Spotifry
+                    // restarting) while the tab builds its chips would leave the list pointing at a dead object.
                     Repeater {
-                        model: music.choices.length > 1 ? music.choices : []
+                        model: music.choices.length > 1 ? music.choices.map(p => ({ name: p.objectName || "", label: p.identity || p.objectName || "Player" })) : []
                         delegate: Rectangle {
                             required property var modelData
                             required property int index
                             readonly property bool current: music.player !== null
-                                && (modelData === music.player || (modelData.objectName || "") === (music.player.objectName || "") && modelData.objectName)
+                                && (music.choices[index] === music.player || modelData.name !== "" && modelData.name === (music.player.objectName || ""))
                             objectName: "playerChip" + index
                             width: chipLabel.implicitWidth + 22
                             height: 24
@@ -183,7 +163,7 @@ Item {
                             Text {
                                 id: chipLabel
                                 anchors.centerIn: parent
-                                text: modelData.identity || modelData.objectName || "Player"
+                                text: modelData.label
                                 color: parent.current ? ipal.window : ipal.windowText
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
@@ -193,7 +173,11 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: music.picked(parent.modelData)
+                                onClicked: {
+                                    const p = music.choices[parent.index]
+                                    if (p)
+                                        music.picked(p)
+                                }
                             }
                         }
                     }
@@ -206,13 +190,15 @@ Item {
                     state: music.lyrics ? music.lyrics.state : "off"
                     lines: music.lyrics ? music.lyrics.lines : []
                     plain: music.lyrics ? music.lyrics.plain : ""
-                    positionMs: music.lyricsPositionMs
-                    tint: music.accentTint
+                    positionMs: clock.value / 1000
+                    playing: music.playing
                     onSeekRequested: ms => {
                         if (music.player && music.player.canSeek !== false) {
                             music.player.position = Math.round(ms * 1000)
-                            music.positionMs = ms
-                            music.positionAt = Date.now()
+                            // Not every player announces a seek, so the clock is moved here too.
+                            clock.base = ms * 1000
+                            clock.at = Date.now()
+                            clock.tick++
                         }
                     }
                 }
@@ -290,14 +276,18 @@ Item {
             trackColor: Qt.rgba(ipal.windowText.r, ipal.windowText.g, ipal.windowText.b, 0.14)
             enabled: music.player !== null && music.player.canSeek
             dimmed: !enabled
-            value: music.player && music.player.length > 0 ? music.player.position / music.player.length : 0
-            onMoved: v => music.player.position = Math.round(v * music.player.length)
+            value: music.player && music.player.length > 0 ? (music.clock ? music.clock.value : 0) / music.player.length : 0
+            onMoved: v => {
+                music.player.position = Math.round(v * music.player.length)
+                if (music.clock)
+                    music.clock.moveTo(v * music.player.length)
+            }
         }
         Item {
             width: parent.width
             height: 16
             Text {
-                text: music.player ? L.formatTime(music.player.position) : ""
+                text: music.player ? L.formatTime(music.clock ? music.clock.value : 0) : ""
                 color: music.dim
                 font.pixelSize: 11
             }

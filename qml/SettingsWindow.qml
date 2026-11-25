@@ -31,6 +31,7 @@ QQC.ApplicationWindow {
     readonly property var calendarUrls: L.toList(prefs.calendar.icsUrls)
     readonly property var disabledUrls: L.toList(prefs.calendar.disabled)
     readonly property var hiddenButtons: L.toList(prefs.quickButtons.hidden)
+    readonly property var lyricSourcesOff: L.toList(prefs.behaviour.lyricSourcesOff)
     readonly property var links: L.parseLinks(prefs.tools.links)
     readonly property var knownApps: L.parseKnownApps(prefs.history.known)
     readonly property var offApps: L.toList(prefs.history.off)
@@ -491,9 +492,29 @@ QQC.ApplicationWindow {
                     QQC.CheckBox {
                         objectName: "lyricsSwitch"
                         Kirigami.FormData.label: "Lyrics:"
-                        text: "Show lyrics in the Music tab (sends the song to lrclib.net when shown)"
+                        text: "Show lyrics in the Music tab (sends the song to the sources below when shown)"
                         checked: win.prefs.behaviour.lyrics
                         onToggled: win.prefs.behaviour.lyrics = checked
+                    }
+                    QQC.CheckBox {
+                        objectName: "pillLyricsSwitch"
+                        text: "Show the line being sung in place of the title on the pill"
+                        enabled: win.prefs.behaviour.lyrics
+                        checked: win.prefs.behaviour.pillLyrics
+                        onToggled: win.prefs.behaviour.pillLyrics = checked
+                    }
+                    Repeater {
+                        model: L.lyricSources
+                        delegate: QQC.CheckBox {
+                            required property var modelData
+                            required property int index
+                            objectName: "lyricSource_" + modelData.key
+                            Kirigami.FormData.label: index === 0 ? "Lyrics sources:" : ""
+                            text: modelData.label + " (" + modelData.note + ")"
+                            enabled: win.prefs.behaviour.lyrics
+                            checked: !win.lyricSourcesOff.includes(modelData.key)
+                            onToggled: win.prefs.behaviour.lyricSourcesOff = win.toggled(win.lyricSourcesOff, modelData.key, !checked)
+                        }
                     }
                     QQC.ButtonGroup { id: openGroup }
                     QQC.RadioButton {

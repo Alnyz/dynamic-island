@@ -272,6 +272,9 @@ Window {
     LyricsSource {
         id: lyricsSource
         enabled: prefs.behaviour.lyrics
+        // The pill asks too, while it shows the current line in place of the title.
+        wantedPill: island.wantsLyrics
+        off: L.toList(prefs.behaviour.lyricSourcesOff)
         artist: source.player ? source.player.artist || "" : ""
         title: source.player ? source.player.track || "" : ""
         album: source.player ? source.player.album || "" : ""
@@ -291,6 +294,30 @@ Window {
     }
 
     Binding { target: ipal; property: "accent"; value: prefs.style.accent }
+
+    // A song starting over (repeat one, previous) seeks to 0, which Plasma doesn't pass on when its
+    // copy of the position already reads 0; the player's own Seeked signal is taken straight.
+    Connections {
+        target: MprisSeeks
+        function onSeeked(identity, position) {
+            if (source.player && source.player.identity === identity)
+                island.songClock.moveTo(position)
+        }
+        // A new song can take a moment to start after it says it's at 0:00, and a player can stall,
+        // so the counted time is checked against the player's own while it's shown. Smaller
+        // differences are left alone, so the time never twitches.
+        function onPositionRead(identity, position) {
+            if (source.player && source.player.identity === identity && Math.abs(island.songClock.value - position) > 250000)
+                island.songClock.moveTo(position)
+        }
+    }
+    Timer {
+        interval: 2000
+        repeat: true
+        triggeredOnStart: true
+        running: island.songClock.active && island.songClock.player !== null
+        onTriggered: MprisSeeks.askPosition(source.player ? source.player.identity || "" : "")
+    }
 
     Island {
         id: island
@@ -320,6 +347,7 @@ Window {
         onTranslucentChanged: root.updateBlur()
         onBlurBehindChanged: root.updateBlur()
         audioLevel: prefs.style.liveBars ? soundSource.outputLevel : -1
+        pillLyrics: prefs.behaviour.pillLyrics
         coverTinted: coverColor.valid
         coverTint: coverColor.valid ? coverColor.color : "transparent"
         musicEdge: prefs.style.musicEdge

@@ -23,6 +23,7 @@
   <file>qml/NotificationHistory.qml</file>
   <file>qml/NotificationsTab.qml</file>
   <file>qml/PeekSeekBar.qml</file>
+  <file>qml/LivePosition.qml</file>
   <file>qml/PillMenu.qml</file>
   <file>qml/Pill.qml</file>
   <file>qml/PixelCat.qml</file>

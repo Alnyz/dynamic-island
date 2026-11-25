@@ -24,7 +24,7 @@ set(SOURCES
     src/clipboardhistory.cpp src/notesstore.cpp src/todostore.cpp src/covercolor.cpp src/blursettings.cpp
     src/windowactivator.cpp src/notificationwatcher.cpp src/notificationlog.cpp src/bluetoothwatcher.cpp
     src/plasmasettings.cpp src/camerawatcher.cpp src/capslockwatcher.cpp src/updateswatcher.cpp
-    src/jobwatcher.cpp src/fullscreenwatcher.cpp src/panelshortcut.cpp)
+    src/jobwatcher.cpp src/fullscreenwatcher.cpp src/panelshortcut.cpp src/mpriseeks.cpp)
 file(GLOB HEADERS src/*.h)
 
 add_executable(dynamic-island ${SOURCES} ${HEADERS} resources.qrc)

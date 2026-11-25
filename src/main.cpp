@@ -19,6 +19,7 @@
 #include "islandpalette.h"
 #include "jobwatcher.h"
 #include "mprisplayers.h"
+#include "mpriseeks.h"
 #include "notesstore.h"
 #include "notificationlog.h"
 #include "notificationwatcher.h"
@@ -64,6 +65,7 @@ static void registerTypes()
     registerSingleton<AppConfig>("AppConfig");
     registerSingleton<PlasmaSettings>("PlasmaSettings");
     registerSingleton<SystemStatus>("SystemStatus");
+    registerSingleton<MprisSeeks>("MprisSeeks");
 }
 
 // X11 has no layer shell: the island is a frameless, borderless window kept centred at the top
