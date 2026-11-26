@@ -1,9 +1,14 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 
 Item {
     id: stage
+
+    // Qt 5.15's test collector follows every type a test file names into its source and loops
+    // forever on files with inline components, so these are loaded by path instead.
+    readonly property var fx: Qt.createComponent(Qt.resolvedUrl("fixtures/MixerFixtures.qml")).createObject(stage, { stage: stage })
+
     width: 860
     height: 360
 
@@ -20,11 +25,6 @@ Item {
                  volume: volume * full, muted: false, corked: false, virtualStream: false }
     }
 
-    Component {
-        id: comp
-        Mixer { width: 824; height: 330 }
-    }
-
     TestCase {
         name: "Mixer"
         when: windowShown
@@ -32,7 +32,7 @@ Item {
         function make(apps) {
             stage.changes = {}
             const record = (d, key, v) => { stage.changes[d.name + "." + key] = v }
-            return createTemporaryObject(comp, stage, {
+            return createTemporaryObject(fx.comp, stage, {
                 setDefault: d => record(d, "default", true),
                 setVolume: (d, v) => record(d, "volume", v),
                 setMuted: (d, m) => record(d, "muted", m),
@@ -53,7 +53,7 @@ Item {
 
         function test_zero_mutes_and_turning_up_unmutes() {
             const dev = createTemporaryObject(liveDevice, stage)
-            const mixer = createTemporaryObject(comp, stage, { setMuted: (d, m) => d.muted = m, outputs: [], inputs: [], apps: [] })
+            const mixer = createTemporaryObject(fx.comp, stage, { setMuted: (d, m) => d.muted = m, outputs: [], inputs: [], apps: [] })
             mixer.setVolume(dev, 0)
             compare(dev.volume, 0)
             compare(dev.muted, true)

@@ -1,26 +1,19 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 
 Item {
     id: stage
+
+    // Qt 5.15's test collector follows every type a test file names into its source and loops
+    // forever on files with inline components, so these are loaded by path instead.
+    readonly property var fx: Qt.createComponent(Qt.resolvedUrl("fixtures/NotificationsTabFixtures.qml")).createObject(stage, { stage: stage })
+
     width: 860
     height: 360
 
     property var calls: []
     readonly property real now: new Date(2026, 9, 25, 15, 42).getTime()
-
-    Component {
-        id: comp
-        NotificationsTab {
-            width: 820
-            height: 300
-            now: () => stage.now
-            onOpenRequested: (id, entry) => stage.calls.push("open " + id + " " + entry)
-            onRemoveRequested: id => stage.calls.push("remove " + id)
-            onClearRequested: stage.calls.push("clear")
-        }
-    }
 
     TestCase {
         name: "NotificationsTab"
@@ -36,13 +29,14 @@ Item {
 
         function make(groups) {
             stage.calls = []
-            return createTemporaryObject(comp, stage, { groups: groups !== undefined ? groups : fixture(false), lastSeen: 0 })
+            return createTemporaryObject(fx.comp, stage, { groups: groups !== undefined ? groups : fixture(false), lastSeen: 0 })
         }
 
         function rows(t) {
             const out = []
             const walk = item => {
-                for (const c of item.children) {
+                // Qt 5's list properties can't be walked with for...of.
+                for (const c of Array.from(item.children)) {
                     if (c.objectName === "notifRow")
                         out.push(c)
                     walk(c)
@@ -76,6 +70,8 @@ Item {
             const t = make()
             const r = rows(t)[0]
             mouseMove(r)
+            // Qt 5's HoverHandler reacts to the move after the pointer gets there, as a real mouse sends.
+            mouseMove(r, r.width / 2 + 1, r.height / 2)
             const x = findChild(r, "notifRemove")
             tryCompare(x, "visible", true)
             mouseClick(x)

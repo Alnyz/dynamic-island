@@ -1,11 +1,16 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 import "../qml/logic.js" as L
 
 // The parts split out of Island.qml, each on its own with a stand-in for the island.
 Item {
     id: stage
+
+    // Qt 5.15's test collector follows every type a test file names into its source and loops
+    // forever on files with inline components, so these are loaded by path instead.
+    readonly property var fx: Qt.createComponent(Qt.resolvedUrl("fixtures/ComponentsFixtures.qml")).createObject(stage, { stage: stage })
+
     width: 600
     height: 300
 
@@ -43,10 +48,6 @@ Item {
     Component {
         id: tourComp
         TourCard {}
-    }
-    Component {
-        id: menuComp
-        PillMenu {}
     }
 
     TestCase {
@@ -89,7 +90,7 @@ Item {
             isl.mode = "menu"
             isl.width = 290
             isl.height = 16 + 4 * 36
-            const menu = createTemporaryObject(menuComp, isl, { island: isl })
+            const menu = createTemporaryObject(fx.menuComp, isl, { island: isl })
             tryVerify(() => findChild(menu, "menu-settings") !== null)
             mouseClick(findChild(menu, "menu-settings"))
             wait(Qt.styleHints.mouseDoubleClickInterval + 50)

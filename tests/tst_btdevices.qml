@@ -1,5 +1,5 @@
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 import "../qml"
 
 Item {
@@ -26,7 +26,7 @@ Item {
             tryCompare(p, "opened", true)
             compare(findChild(p.contentItem, "btBattery0").text, "80%")
             compare(findChild(p.contentItem, "btBattery1").text, "9%")
-            compare(findChild(p.contentItem, "btBattery1").color, Qt.color("#ff6b6b"))
+            compare(findChild(p.contentItem, "btBattery1").color, Qt.tint("#ff6b6b", "transparent"))
             compare(findChild(p.contentItem, "btBattery2").text, "—")
             compare(findChild(p.contentItem, "btNone").visible, false)
         }
