@@ -51,6 +51,13 @@ Item {
     // The current lyric line takes the title's place on the pill. wantsLyrics says when lyrics
     // are worth asking for; LyricsSource does the asking (and only then).
     property bool pillLyrics: true
+    // Pixels a second for a title too long for the compact pill (Settings → Behaviour).
+    // These three are for song titles only; a lyric line scrolls as it does on main.
+    property int titleScrollSpeed: 30
+    // Off: a title too long for the pill stays still and ends in "…".
+    property bool titleScroll: true
+    // Seconds a scrolling title rests at its start before each pass (Settings → Behaviour).
+    property real titleScrollPause: 1.5
     readonly property bool wantsLyrics: pillLyrics && playing && mode === "compact" && activity === "music"
     readonly property bool showsLyricLine: wantsLyrics && lyrics !== null && lyrics.state === "synced"
     readonly property string pillLyric: showsLyricLine ? L.lyricTextAt(lyrics.lines, clock.value / 1000) : ""
@@ -930,8 +937,14 @@ Item {
             // The room the words will have once the pill has settled: while it grows for a lyric
             // line this is already the end width, so a line that fits never starts scrolling.
             readonly property real room: lyric ? Math.max(0, island.compactPillWidth - 70) : width
-            readonly property bool scrolls: compactTitleText.implicitWidth > room
+            // A lyric line is only up for a few seconds, so the title settings don't touch it: it
+            // always scrolls when it must, at 80 pixels a second, after a 1.5 s rest.
+            readonly property bool scrolls: (lyric || island.titleScroll) && compactTitleText.implicitWidth > room
             readonly property real distance: compactTitleText.implicitWidth + gap
+            readonly property real speed: lyric ? 80 : Math.max(1, island.titleScrollSpeed)
+            readonly property real pause: lyric ? 1.5 : Math.max(0, island.titleScrollPause)
+            // Cut short with "…" instead of scrolling: only a song title, with scrolling off.
+            readonly property bool cut: !lyric && !island.titleScroll
             // 0 at the start of a pass; the marquee moves it left while a line scrolls.
             property real scrollX: 0
             onTitleChanged: {
@@ -940,10 +953,18 @@ Item {
             }
             onScrollsChanged: restartScroll()
             onVisibleChanged: restartScroll()
+            // The text's width settles after the title changes; a pass timed for the old width
+            // would cover the new one at the wrong speed.
+            onDistanceChanged: if (scrolls) restartScroll()
+            onSpeedChanged: if (scrolls) restartScroll()
 
             function restartScroll() {
                 marqueeScroll.stop()
                 scrollX = 0
+                // Set here, not bound: a running animation keeps the values it started with.
+                marqueeStep.to = -distance
+                marqueeStep.duration = distance / speed * 1000
+                marqueePause.duration = pause * 1000
                 if (scrolls && visible)
                     marqueeScroll.start()
             }
@@ -952,12 +973,15 @@ Item {
                 id: marquee
                 // A lyric line sits in the middle of the gap between the cover and the bars.
                 x: compactTitle.scrolls ? compactTitle.scrollX
-                   : compactTitle.lyric ? (compactTitle.width - compactTitleText.implicitWidth) / 2
+                   : compactTitle.lyric ? (compactTitle.width - compactTitleText.width) / 2
                    : 0
                 spacing: compactTitle.gap
                 Text {
                     id: compactTitleText
                     objectName: "compactTitleText"
+                    // Without scrolling, a long title is cut short to the room it has.
+                    width: compactTitle.cut ? Math.min(implicitWidth, compactTitle.room) : implicitWidth
+                    elide: compactTitle.cut ? Text.ElideRight : Text.ElideNone
                     text: compactTitle.title
                     color: ipal.windowText
                     font.pixelSize: 12
@@ -983,18 +1007,21 @@ Item {
                 easing.type: Easing.OutQuad
             }
 
+            // One pass at a time, started again when it ends: Qt 5 times a looping group wrongly
+            // once its step's duration is set from code, skipping the pause and jumping ahead.
             SequentialAnimation {
                 id: marqueeScroll
-                loops: Animation.Infinite
-                PauseAnimation { duration: 1500 }
+                // The title rests at its start before each pass; the length is set by restartScroll().
+                PauseAnimation { id: marqueePause }
                 NumberAnimation {
+                    id: marqueeStep
                     target: compactTitle
                     property: "scrollX"
                     from: 0
-                    to: -compactTitle.distance
-                    // About 30 pixels a second, or 80 for a lyric line, which won't stay long.
-                    duration: compactTitle.distance / (compactTitle.lyric ? 80 : 30) * 1000
+                    // to and duration are set by restartScroll().
                 }
+                // The copy now sits where the title started, so going back to 0 shows no jump.
+                onFinished: compactTitle.restartScroll()
             }
         }
 

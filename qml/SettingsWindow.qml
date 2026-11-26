@@ -490,6 +490,30 @@ QQC.ApplicationWindow {
                         onToggled: win.prefs.behaviour.coverLookup = checked
                     }
                     QQC.CheckBox {
+                        objectName: "titleScroll"
+                        Kirigami.FormData.label: "Long titles:"
+                        text: "Scroll song titles too long for the pill (off: cut short with …)"
+                        checked: win.prefs.behaviour.titleScroll
+                        onToggled: win.prefs.behaviour.titleScroll = checked
+                    }
+                    SliderRow {
+                        objectName: "titleScrollSpeed"
+                        enabled: win.prefs.behaviour.titleScroll
+                        Kirigami.FormData.label: "Title scroll speed:"
+                        from: 5; to: 60; suffix: " px/s"
+                        value: win.prefs.behaviour.titleScrollSpeed
+                        onMoved: v => win.prefs.behaviour.titleScrollSpeed = v
+                    }
+                    SliderRow {
+                        objectName: "titleScrollPause"
+                        enabled: win.prefs.behaviour.titleScroll
+                        Kirigami.FormData.label: "Stop between scrolls:"
+                        // In tenths of a second.
+                        from: 0; to: 50; divisor: 10; suffix: " s"
+                        value: Math.round(win.prefs.behaviour.titleScrollPause * 10)
+                        onMoved: v => win.prefs.behaviour.titleScrollPause = v / 10
+                    }
+                    QQC.CheckBox {
                         objectName: "lyricsSwitch"
                         Kirigami.FormData.label: "Lyrics:"
                         text: "Show lyrics in the Music tab (sends the song to the sources below when shown)"
@@ -1162,6 +1186,8 @@ QQC.ApplicationWindow {
         property int to
         property int value
         property string suffix
+        // The label shows value / divisor, for a slider that moves in tenths and so on.
+        property int divisor: 1
         signal moved(int v)
         QQC.Slider {
             Layout.preferredWidth: 200
@@ -1172,7 +1198,7 @@ QQC.ApplicationWindow {
             onMoved: row.moved(Math.round(value))
         }
         QQC.Label {
-            text: row.value + row.suffix
+            text: (row.value / row.divisor) + row.suffix
             Layout.minimumWidth: 60
         }
     }

@@ -25,7 +25,7 @@ Not tried yet: replacing Plasma's notification and volume popups, behaviour over
 
 ### Closed pill
 
-- Cover art, the song's title and a small level meter that follows the sound while music plays. A title too long to fit scrolls slowly from right to left. While a timer runs it shows the countdown; with both, it switches between them, and a touchpad swipe switches by hand.
+- Cover art, the song's title and a small level meter that follows the sound while music plays. A title too long to fit scrolls slowly from right to left; Settings → Behaviour sets its speed and how long it stops between scrolls, or turns scrolling off so the title ends in "…". Lyric lines in the pill aren't affected by these. While a timer runs it shows the countdown; with both, it switches between them, and a touchpad swipe switches by hand.
 - Point at the battery ring for the charge, whether it's charging, and the time until full or empty.
 - When nothing is going on, it shows a glance (an event starting soon, low battery on the laptop or a Bluetooth device, your next To-Do task with a circle to tick it off, the time, the weather, how many system updates are waiting, off by default; click the count to see the packages and update them in a terminal) or an animation: aurora, wave, fireflies, a pixel cat, or your own GIF or WebP.
 - While a download, copy or extraction runs, it takes a turn too: the file name or "3 jobs", the combined percent and a thin line filling along the bottom. Point at it to see each job and its time left. On the music and timer turns, a small blue chip shows jobs are running.
