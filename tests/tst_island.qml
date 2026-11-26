@@ -150,6 +150,18 @@ Item {
             tryCompare(island, "width", 300)
         }
 
+        function test_leaving_the_window_ends_the_peek() {
+            // Qt 5.15's HoverHandler can stay hovered after the pointer leaves the window, so the
+            // window's own enter and leave (pointerInWindow) decide as well.
+            const { island } = make({})
+            mouseMove(island, 20, 10)
+            tryCompare(island, "mode", "peek")
+            island.pointerInWindow = false
+            compare(island.mode, "compact")
+            island.pointerInWindow = true
+            compare(island.mode, "peek")
+        }
+
         function test_open_on_hover() {
             const { island } = make()
             island.openOnHover = true

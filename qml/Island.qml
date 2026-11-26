@@ -114,7 +114,11 @@ Item {
     readonly property bool wantsKeyboard: open && panelLoader.item !== null && (panelLoader.item.wantsKeyboard || openedByKeyboard)
     property bool systemControls: true
     property bool open: false
-    readonly property bool hovered: hover.hovered
+    // Whether the pointer is in the island's window, from the window itself (InputRegion). Qt 5.15's
+    // HoverHandler sometimes stays hovered after the pointer leaves, which left the pill in its
+    // peek view. Tests have no such window and leave it true.
+    property bool pointerInWindow: true
+    readonly property bool hovered: hover.hovered && pointerInWindow
     // Not named `state`: Item already has a `state` property.
     readonly property bool timerActive: timer !== null && (timer.running || timer.paused)
     readonly property var activities: L.activities(island.playing, timerActive, jobs.count > 0)
