@@ -18,7 +18,6 @@
 #include "islandpalette.h"
 #include "jobwatcher.h"
 #include "mprisplayers.h"
-#include "mpriseeks.h"
 #include "notesstore.h"
 #include "notificationlog.h"
 #include "notificationwatcher.h"
@@ -64,5 +63,4 @@ inline void registerIslandTypes()
     registerSingleton<AppConfig>("AppConfig");
     registerSingleton<PlasmaSettings>("PlasmaSettings");
     registerSingleton<SystemStatus>("SystemStatus");
-    registerSingleton<MprisSeeks>("MprisSeeks");
 }

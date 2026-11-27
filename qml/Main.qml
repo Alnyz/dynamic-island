@@ -295,19 +295,16 @@ Window {
 
     Binding { target: ipal; property: "accent"; value: prefs.style.accent }
 
-    // A song starting over (repeat one, previous) seeks to 0, which Plasma doesn't pass on when its
-    // copy of the position already reads 0; the player's own Seeked signal is taken straight.
+    // A new song can take a moment to start after it says it's at 0:00, and a player can stall,
+    // so the counted time is checked against the player's own while it's shown. Smaller
+    // differences are left alone, so the time never twitches. Each player object is one bus name
+    // and answers only for itself, so two players with the same name (two browsers, say) never
+    // move each other's time; seeks already arrive through the player's own position.
     Connections {
-        target: MprisSeeks
-        function onSeeked(identity, position) {
-            if (source.player && source.player.identity === identity)
-                island.songClock.moveTo(position)
-        }
-        // A new song can take a moment to start after it says it's at 0:00, and a player can stall,
-        // so the counted time is checked against the player's own while it's shown. Smaller
-        // differences are left alone, so the time never twitches.
-        function onPositionRead(identity, position) {
-            if (source.player && source.player.identity === identity && Math.abs(island.songClock.value - position) > 250000)
+        target: source.player
+        ignoreUnknownSignals: true
+        function onPositionRead(position) {
+            if (Math.abs(island.songClock.value - position) > 250000)
                 island.songClock.moveTo(position)
         }
     }
@@ -316,7 +313,7 @@ Window {
         repeat: true
         triggeredOnStart: true
         running: island.songClock.active && island.songClock.player !== null
-        onTriggered: MprisSeeks.askPosition(source.player ? source.player.identity || "" : "")
+        onTriggered: if (source.player && source.player.askPosition) source.player.askPosition()
     }
 
     Island {

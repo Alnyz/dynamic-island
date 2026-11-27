@@ -25,7 +25,7 @@ set(SOURCES
     src/clipboardhistory.cpp src/notesstore.cpp src/todostore.cpp src/covercolor.cpp src/blursettings.cpp
     src/windowactivator.cpp src/notificationwatcher.cpp src/notificationlog.cpp src/bluetoothwatcher.cpp
     src/plasmasettings.cpp src/camerawatcher.cpp src/capslockwatcher.cpp src/updateswatcher.cpp
-    src/jobwatcher.cpp src/fullscreenwatcher.cpp src/panelshortcut.cpp src/mpriseeks.cpp)
+    src/jobwatcher.cpp src/fullscreenwatcher.cpp src/panelshortcut.cpp)
 file(GLOB HEADERS src/*.h)
 
 add_library(island-core STATIC ${SOURCES} ${HEADERS})
@@ -46,6 +46,14 @@ if(BUILD_TESTING)
     target_compile_definitions(tst_qml PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}/tests")
     # The runner hides its windows itself (offscreen), so it also runs without a display.
     add_test(NAME qml COMMAND tst_qml)
+    # The player client, against stand-in players on a private bus; needs python3-dbus.
+    find_program(DBUS_RUN_SESSION dbus-run-session)
+    execute_process(COMMAND python3 -c "import dbus, gi" RESULT_VARIABLE NO_PYTHON_DBUS OUTPUT_QUIET ERROR_QUIET)
+    if(DBUS_RUN_SESSION AND NOT NO_PYTHON_DBUS)
+        add_test(NAME qml_players COMMAND ${DBUS_RUN_SESSION} -- sh ${CMAKE_SOURCE_DIR}/tests/dbus/run.sh $<TARGET_FILE:tst_qml>)
+    else()
+        message(STATUS "python3-dbus or dbus-run-session not found; the player client test is skipped")
+    endif()
 endif()
 
 include(GNUInstallDirs)
