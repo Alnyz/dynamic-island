@@ -114,8 +114,16 @@ void MprisPlayer::apply(const QString &iface, const QVariantMap &props)
 
     if (props.contains(QStringLiteral("Metadata")))
         applyMetadata(toMap(props.value(QStringLiteral("Metadata"))));
-    if (props.contains(QStringLiteral("Rate")))
-        m_rate = props.value(QStringLiteral("Rate")).toDouble();
+    if (props.contains(QStringLiteral("Rate"))) {
+        const double rate = props.value(QStringLiteral("Rate")).toDouble();
+        if (rate != m_rate) {
+            // The time so far was counted at the old rate; keep it before counting at the new one.
+            m_position = position();
+            m_positionAt = QDateTime::currentMSecsSinceEpoch();
+            m_rate = rate;
+            Q_EMIT rateChanged();
+        }
+    }
     if (props.contains(QStringLiteral("PlaybackStatus"))) {
         const double now = position();
         const QString s = props.value(QStringLiteral("PlaybackStatus")).toString();
@@ -229,6 +237,21 @@ void MprisPlayer::updatePosition()
         QDBusPendingReply<QDBusVariant> reply = *w;
         if (!reply.isError())
             setRawPosition(reply.value().variant().toDouble());
+    });
+}
+
+void MprisPlayer::askPosition()
+{
+    QDBusMessage msg = QDBusMessage::createMethodCall(m_service, kPath, kProps, QStringLiteral("Get"));
+    msg << kPlayer << QStringLiteral("Position");
+    auto *w = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(msg), this);
+    const QString trackId = m_trackId, track = m_track;
+    connect(w, &QDBusPendingCallWatcher::finished, this, [this, trackId, track](QDBusPendingCallWatcher *w) {
+        w->deleteLater();
+        QDBusPendingReply<QDBusVariant> reply = *w;
+        // An answer that lands after a song change is the old song's time.
+        if (!reply.isError() && trackId == m_trackId && track == m_track)
+            Q_EMIT positionRead(reply.value().variant().toDouble());
     });
 }
 

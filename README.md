@@ -2,7 +2,7 @@
 
 A notch at the top of the screen for KDE Plasma 5 on X11. It shows what's playing, takes over volume and notification popups, and opens into a small panel with a calendar, weather, a timer and a few tools.
 
-This is the `port/plasma5-x11` branch: a port of [Alnyz's Dynamic Island](https://github.com/Alnyz/dynamic-island), which is made for Plasma 6 on Wayland, to Qt 5.15 and KDE Frameworks 5, for distributions that still ship Plasma 5. It looks and works like the Plasma 6 version as of late November 2026 (lyrics on the pill, word-timed lyrics, the shared song clock and the lighter level bars included); features added to `main` after that aren't here yet. Ported by [@viktorg1](https://github.com/viktorg1) with Claude as a coding assistant.
+This is the `port/plasma5-x11` branch: a port of [Alnyz's Dynamic Island](https://github.com/Alnyz/dynamic-island), which is made for Plasma 6 on Wayland, to Qt 5.15 and KDE Frameworks 5, for distributions that still ship Plasma 5. It looks and works like the Plasma 6 version as of 25 November 2026 (lyrics on the pill, word-timed lyrics, the shared song clock and the lighter level bars included); features added to `main` after that aren't here yet. Ported by [@viktorg1](https://github.com/viktorg1) with Claude as a coding assistant.
 
 If you're on Plasma 6, use the [`main` branch](https://github.com/Alnyz/dynamic-island) instead.
 
@@ -63,11 +63,11 @@ The panel has buttons for battery, volume, Wi-Fi, Bluetooth (with a badge for a 
 
 - **The window.** X11 has no layer shell, so the island is a frameless window of the notification type, centred at the top of the primary screen, above panels and on every desktop. While a full-screen window covers it, it becomes an on-screen-display window to stay in front. Clicks outside the pill pass through to the windows below (an X shape input region). If KWin moves it, for example when a panel's reserved space changes, it moves straight back.
 - **Compositing.** See-through areas need KWin's compositing. While compositing is off (KWin restarting, or Alt+Shift+F12), the window is clipped to the pill's shape, so it never shows as a black box.
-- **Music** comes from a small MPRIS client in C++ (`src/mprisplayers.cpp`), since Plasma 5 has no private MPRIS QML module.
+- **Music** comes from a small MPRIS client in C++ (`src/mprisplayers.cpp`), since Plasma 5 has no private MPRIS QML module. It follows each player by its own bus name, so two players with the same name (two browser windows, say) never move each other's song time; `main` only sees the names and tells such players apart by song title.
 - **Shortcut.** The panel opens with Meta+N or Meta+Alt+N. When Meta+N is already taken (Latte Dock uses it for its task entries), only Meta+Alt+N is set.
 - **System tools.** Volume buttons use `pactl` (Ubuntu 22.04's `wpctl` can't set the volume), and the update count uses `apt list --upgradable`; clicking it runs `sudo apt update && apt upgrade` in Konsole.
 - **Under the hood.** QML uses Qt 5 imports and Qt Graphical Effects, colours go through a shared `ipal` object instead of Qt 6's per-item `palette`, the idle animations are plain OpenGL GLSL, and the KWin scripts use the KWin 5 API.
-- **Tests.** The QML tests run on Qt 5 through a small runner of their own (`tests/qmltest.cpp`) that registers the app's C++ types, which Qt 6 does through its QML module. The C++ tests in `tests/cpp` still target Qt 6 and aren't built on this branch.
+- **Tests.** The QML tests run on Qt 5 through a small runner of their own (`tests/qmltest.cpp`) that registers the app's C++ types, which Qt 6 does through its QML module. The C++ tests in `tests/cpp` still target Qt 6 and aren't built on this branch. Instead, `tests/dbus` checks the MPRIS client against two stand-in players on a private session bus.
 
 ## Requirements
 
@@ -104,7 +104,7 @@ To run the QML tests (about a minute; their windows stay hidden, and they never 
 ctest --test-dir build --output-on-failure
 ```
 
-They need `qml-module-qttest`. Add `-DBUILD_TESTING=OFF` to the first `cmake` line to build without them.
+They need `qml-module-qttest`; the MPRIS client test also needs `python3-dbus` and `python3-gi`, and is skipped without them. Add `-DBUILD_TESTING=OFF` to the first `cmake` line to build without them.
 
 To install it to `~/.local/bin` and add it to the app menu:
 

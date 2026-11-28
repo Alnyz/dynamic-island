@@ -14,11 +14,12 @@ QtObject {
     property bool active: true
     readonly property bool playing: player !== null && player.playbackStatus === L.Status.Playing
     readonly property real length: player ? player.length || 0 : 0
+    readonly property real rate: player && player.rate > 0 ? player.rate : 1
     readonly property real value: {
         tick
         if (!player)
             return 0
-        const ahead = counting ? (Date.now() - at) * 1000 : 0
+        const ahead = counting ? (Date.now() - at) * 1000 * countRate : 0
         return length > 0 ? Math.min(base + ahead, length) : base + ahead
     }
 
@@ -27,21 +28,25 @@ QtObject {
     property int tick: 0
     // Whether the count is running; follows playing, but changed only after the time so far is kept.
     property bool counting: false
+    // The speed of the running count; follows rate the same way.
+    property real countRate: 1
 
     // Takes the player's own position: when the clock gets a player, and after a jump.
     function sync() {
         base = player ? player.position || 0 : 0
         at = Date.now()
         counting = playing
+        countRate = rate
         tick++
     }
     // Pausing or playing keeps the counted time instead of rereading the stale copy.
     function hold() {
         // Worked out now: value itself only moves on each tick.
-        const now = base + (counting ? (Date.now() - at) * 1000 : 0)
+        const now = base + (counting ? (Date.now() - at) * 1000 * countRate : 0)
         base = length > 0 ? Math.min(now, length) : now
         at = Date.now()
         counting = playing
+        countRate = rate
         tick++
     }
     // Called after telling the player to seek: not every player reports the jump.
@@ -53,6 +58,7 @@ QtObject {
     // Deferred: syncing while the binding above is still being worked out makes a binding loop.
     onPlayerChanged: Qt.callLater(sync)
     onPlayingChanged: hold()
+    onRateChanged: hold()
 
     property Connections follow: Connections {
         target: clock.player

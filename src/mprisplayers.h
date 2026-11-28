@@ -23,6 +23,8 @@ class MprisPlayer : public QObject
     // Microseconds, as MPRIS gives them.
     Q_PROPERTY(double length READ length NOTIFY lengthChanged)
     Q_PROPERTY(double position READ position WRITE setPosition NOTIFY positionChanged)
+    // Playback speed, 1 at normal speed; MPRIS Rate.
+    Q_PROPERTY(double rate READ rate NOTIFY rateChanged)
     Q_PROPERTY(int playbackStatus READ playbackStatus NOTIFY playbackStatusChanged)
     Q_PROPERTY(int loopStatus READ loopStatus WRITE setLoopStatus NOTIFY loopStatusChanged)
     Q_PROPERTY(int shuffle READ shuffle WRITE setShuffle NOTIFY shuffleChanged)
@@ -51,6 +53,7 @@ public:
     double length() const { return m_length; }
     double position() const;
     void setPosition(double us);
+    double rate() const { return m_rate; }
     int playbackStatus() const { return m_status; }
     int loopStatus() const { return m_loop; }
     void setLoopStatus(int status);
@@ -76,6 +79,9 @@ public:
     Q_INVOKABLE void Seek(double offsetUs);
     // Asks the player where it is now; the position otherwise runs on from the last report.
     Q_INVOKABLE void updatePosition();
+    // Reads the player's position without taking it; the answer comes as positionRead, and only if
+    // the song is still the one playing when it was asked.
+    Q_INVOKABLE void askPosition();
 
 Q_SIGNALS:
     void identityChanged();
@@ -86,6 +92,9 @@ Q_SIGNALS:
     void artUrlChanged();
     void lengthChanged();
     void positionChanged();
+    // Microseconds, the answer to askPosition.
+    void positionRead(double position);
+    void rateChanged();
     void playbackStatusChanged();
     void loopStatusChanged();
     void shuffleChanged();

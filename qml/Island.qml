@@ -77,7 +77,7 @@ Item {
         if (room <= compactWidth)
             return compactWidth
         // A line that needs a wider pill gets a little air on either side of it.
-        const most = Math.max(compactWidth, (parent ? parent.width : 900) - 20)
+        const most = Math.max(compactWidth, (parent ? parent.width : 900) - 20 - indicatorWidth)
         return Math.min(room + 24, most)
     }
     property bool coverTinted: false
